@@ -1,0 +1,1538 @@
+OPTICSIM-SYNCHRO-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, 
+       Unsigned32, Integer32                                         FROM SNMPv2-SMI
+       RowStatus, TruthValue,  TEXTUAL-CONVENTION                    FROM SNMPv2-TC
+       InterfaceIndex, InterfaceIndexOrZero                          FROM IF-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP                               FROM SNMPv2-CONF
+       OpticsIMProtectionPriority, OpticsIMProtectionGroupType, 
+       OpticsIMProtectionSwitchStatus,    
+       OpticsIMProtectionSwitchCommand, OpticsIMRevertive            FROM OPTICSIM-COMMON-TC
+       TsdimOperationalState                                         FROM TSDIM-SNMP-TC
+       opticsimSdhPdhMib, opticsimSdhPdhMC   FROM OPTICSIM-RADIOREG-MIB;
+
+opticsIMSynchroMib MODULE-IDENTITY
+    LAST-UPDATED "202310050000Z"
+    ORGANIZATION "Alcatel TND"
+    CONTACT-INFO "Alcatel TND"
+    DESCRIPTION
+      "Synchronization MIB "
+
+    REVISION "202310050000Z"
+    DESCRIPTION
+	" Added opticsIMSyncEECEnable Scalar object.
+	"
+
+    REVISION "201511130000Z"
+    DESCRIPTION
+	"-SNMPIDL-507, update LAST-UPDATED and REVISION date format adding the 2 digits missing (20) for yers after 1999.
+Added a REVISION block corresponding to the LAST-UPDATED timestamp.
+       - SNMPIDL-508, added a space between opening and closing braces and the enclosed content.
+	Added TEXTUAL-CONVENTION FROM SNMPv2-TC.
+	"
+
+    REVISION "201401060000Z"
+    DESCRIPTION
+      "OPTnm25362 changes by Zhu Hao
+       1) add opticsIMStationClockProcessQL;
+       2) keep opticsIMStationClockInterfaceSignalType no change after reviewing the MIB by RONCHETTI LUIGI;
+       //to cover CRC: add item 4) 
+       3) add opticsIMStationClockInterfaceSaBit;
+       4) add opticsIMStationClockInterfaceCRC(not included in OPTnm25362); 	
+       
+      "
+    REVISION "201311180000Z"
+	DESCRIPTION
+      "TSDnm578Changes by He Zong Ying
+	   The description for the object opticsIMStationClockInterfaceSignalType has been updated,
+       adding tow new values 
+	   - 64K+8K +400HZ (5)
+	   - 6.312MHZ (6)
+        "
+	REVISION "201009300000Z"	
+	DESCRIPTION
+      "Changes by D.Spreafico
+	   The following objects  have been updated:
+	    - added holdOver (3) value to opticsIMSyncOperatingCondition
+	    - added opticsIMSyncProtectionUnitQualityLevel to opticsIMSyncProtectionUnitTable   
+        "
+	REVISION "201005130000Z"
+	DESCRIPTION
+      "Changes by He Zong Ying (May 2010)
+	   The following scalars objects  have been added:
+	   opticsIMGlobalSecEecControlEECEnable,opticsIMGlobalSecEecControlEECOption,
+	   opticsIMGlobalSecEecControlSSM, opticsIMSystemClockProcessTimingMode,
+	   opticsIMSystemClockProcessSwitchOperation, opticsIMSystemClockProcessSwitchToRefSource,
+	   opticsIMSystemClockProcessLastOperationStatus , opticsIMSystemClockProcessRevertiveMode,
+	   opticsIMSystemClockProcessWtrTimer, opticsIMSystemClockProcessOperStatus,
+	   opticsIMSystemClockProcessLockedRefSource, opticsIMSystemClockProcessQL ,
+	   opticsIMStationClockProcessOutputSelector, opticsIMStationClockProcessSwitchOperation,
+	   opticsIMStationClockProcessSwitchToRefSource, opticsIMStationClockProcessLastOperationStatus 
+	   opticsIMStationClockProcessRevertiveMode,opticsIMStationClockProcessWtrTimer,
+	   opticsIMStationClockProcessOperStatus, opticsIMStationClockProcessLockedRefSource.
+	   The following table objects  have been added:
+	   opticsIMRefClockSourceTable, opticsIMRefClockSourcePriorityTable,
+	   opticsIMOutgoingClockTable, opticsIMStationClockInterfaceTable
+        "
+	REVISION "201003010000Z"  
+	DESCRIPTION
+                "The following object are added:
+			- syncQualityLevel
+			- syncQualityLevelPriority
+			- opticsIMAllowedSyncPhysicalInterfacesTable
+                        - opticsIMSyncProtectionGroupWTRTime (opticsIMSyncProtectionGroupTable)
+                 "
+
+       REVISION "200904230000Z"
+ 	DESCRIPTION
+
+                "New enumerated value (oneMHz) added to syncPhysicalInterfaceType.
+                 "
+
+       REVISION "200710110000Z"
+      DESCRIPTION
+                "New enumerated value (signalDegraded) added to opticsIMSyncProtectionUnitSwitchCriteria.
+                 AsapIndex object added to opticsIMSyncProtectionUnitEntry.
+                 "
+
+       REVISION "200610190000Z"
+       DESCRIPTION
+                "The following object are added:
+                 - opticsIMSyncPhysicalInterfacesTable
+                 - opticsIMSyncProtectionUnitSwitchCriteria, 
+                   opticsIMSyncProtectionUnitPriority,  opticsIMSyncProtectionUnitRowStatus 
+                   on opticsIMSyncProtectionUnitTable
+                 The changes:
+                 - the opticsIMSyncProtectionUnitIndex SYNTAX is changed from Integer32 
+                    to InterfaceIndexOrZero
+                 - new enumerated value for opticsIMSyncRole: 
+                 "
+
+       REVISION "200510270000Z"
+       DESCRIPTION
+                "Initial Release of Synchronization MIB."
+ ::= {  opticsimSdhPdhMib 9 }
+
+
+opticsIMSynchroMibObject OBJECT IDENTIFIER ::= { opticsIMSynchroMib 1 }
+
+
+OpticsIMNECQualityLevel ::= TEXTUAL-CONVENTION
+     STATUS current
+     DESCRIPTION
+          "The list of quality levels (SSM code) for the NEC."
+	SYNTAX INTEGER {
+         qL-INV1  (1),
+   	 qL-PRC   (2),
+   	 qL-INV3  (3),
+   	 qL-SSUA  (4),
+   	 qL-INV5  (5),
+   	 qL-INV6  (6),
+   	 qL-INV7  (7),
+   	 qL-SSUB  (8),
+   	 qL-INV9  (9),
+   	 qL-INV10 (10),
+   	 qL-SEC   (11),
+   	 qL-INV12 (12),
+   	 qL-INV13 (13),
+ 	 qL-INV14 (14)
+    }
+
+OpticsIMIfQualityLevel ::= TEXTUAL-CONVENTION
+     STATUS current
+     DESCRIPTION
+          "The list of quality levels (SSM code) for the synchronization sources."
+	SYNTAX INTEGER {
+         qL-INV0  (0),
+         qL-INV1  (1),
+   	 qL-PRC   (2),
+   	 qL-INV3  (3),
+   	 qL-SSUA  (4),
+   	 qL-INV5  (5),
+   	 qL-INV6  (6),
+   	 qL-INV7  (7),
+   	 qL-SSUB  (8),
+   	 qL-INV9  (9),
+   	 qL-INV10 (10),
+   	 qL-SEC   (11),
+   	 qL-INV12 (12),
+   	 qL-INV13 (13),
+ 	 qL-INV14 (14),
+ 	 qL-DNU   (15)
+    }
+
+opticsIMSyncRole OBJECT-TYPE
+     SYNTAX INTEGER {
+         master       (1),
+         slave        (2),
+         independent  (3)
+         }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          "This object specifies the rules (constraints) for the selection of timing clock source:
+            -  master: the clock is generated by the signal received from an external source or 
+                       internally (free-running mode) and distribuited to other NE
+            -  slave:  the clock is traceable (locked) to the Master clock (from an other NE on a 
+                      physical port) 
+            -  independent: no constraints about the selection of timing clock source. The NE 
+                            selects the reference timing source in the list provided by managing 
+                            system. "
+
+::= { opticsIMSynchroMibObject 1 }
+
+opticsIMSyncQualityLevel OBJECT-TYPE
+     SYNTAX OpticsIMNECQualityLevel
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          "This object indicates the quality level of the system (NEC).
+           It is derived from the quality level of the synchronization source selected by the selection process to be the reference timing source."
+::= { opticsIMSynchroMibObject 8 }
+
+opticsIMSyncQualityLevelPriority OBJECT-TYPE
+     SYNTAX INTEGER {
+         undefined (1),
+         master1   (2),
+         slave1    (3)
+         }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          "This object indicates the quality level priority of the system (NEC).
+           It is dependent from the opticsIMSyncRole and the quality level priority of the reference timing source."
+::= { opticsIMSynchroMibObject 9 }
+
+
+opticsIMSyncOperatingCondition OBJECT-TYPE
+     SYNTAX INTEGER {
+         freeRunning  (1),
+         locked (2),
+         holdOver (3)
+         }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          "This object reports to the managing system the operating condition of the NE clock:
+
+            -  freeRunning : the clock has no an external reference input and has no acces to stored data, 
+                             but it's strongly influenced by an internal oscillator.
+
+            -  locked: the clock output signal is controlled by an external reference input.
+
+	    -  holdover: the clock lost synchronization with its references and is holding (i.e. operating according to) 
+                         the state of the last synchronization.
+           "
+::= { opticsIMSynchroMibObject 2 }
+
+
+
+opticsIMSyncCode OBJECT-TYPE
+     SYNTAX Integer32 
+     MAX-ACCESS			read-create
+     STATUS					current
+     DESCRIPTION
+          "This object define a code specific for NE used to detect the clock’s 
+           source in case of a loop situation on two adjacent NEs."
+::= { opticsIMSynchroMibObject 3 }
+
+opticsIMCurrentSyncSource OBJECT-TYPE
+     SYNTAX InterfaceIndex
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          "This object contains the clock's source currently in use (ifIndex of the external interface 
+           on which the NE is synchronized). 
+          The value '0' indicates that the NE is not synchronized on an external interface and uses the
+          internal oscillator. "
+::= { opticsIMSynchroMibObject 4 }
+
+ opticsIMSyncProtectionGroupTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF   OpticsIMSyncProtectionGroupEntry
+	MAX-ACCESS                     not-accessible
+	STATUS                               current
+	DESCRIPTION
+" This table is used to manage all the protection schemes related to the Synchronization Protection function."
+::= { opticsIMSynchroMibObject 5 } 
+
+opticsIMSyncProtectionGroupEntry OBJECT-TYPE
+	SYNTAX                     OpticsIMSyncProtectionGroupEntry
+	MAX-ACCESS            not-accessible
+	STATUS                      current
+	DESCRIPTION
+"An entry of the opticsIMSyncProtectionGroup table. Each entry corresponds to a Radio Protection 
+ Switch  protection scheme and allows to define all the related common management functions."
+	INDEX    { opticsIMSyncProtectionGroupIndex }
+::= { opticsIMSyncProtectionGroupTable 1 }
+
+OpticsIMSyncProtectionGroupEntry ::= SEQUENCE {
+   opticsIMSyncProtectionGroupIndex                  Unsigned32,
+   opticsIMSyncProtectionGroupType                   OpticsIMProtectionGroupType,
+   opticsIMSyncProtectionGroupRevertive              OpticsIMRevertive,
+   opticsIMSyncProtectionGroupOperationalState       TsdimOperationalState,
+   opticsIMSyncProtectionGroupWTRTime       	     INTEGER
+   }
+
+opticsIMSyncProtectionGroupIndex OBJECT-TYPE
+	SYNTAX					Unsigned32
+	MAX-ACCESS			not-accessible
+	STATUS					current
+	DESCRIPTION
+" This object is the identifier of the opticsIMSyncProtectionGroupTable. "
+::= { opticsIMSyncProtectionGroupEntry 1 }
+
+opticsIMSyncProtectionGroupType OBJECT-TYPE
+	SYNTAX			OpticsIMProtectionGroupType 
+	MAX-ACCESS			read-only
+	STATUS			current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMSyncProtectionGroupEntry 2 }
+
+
+opticsIMSyncProtectionGroupRevertive  OBJECT-TYPE
+	SYNTAX			OpticsIMRevertive
+	MAX-ACCESS			read-write
+	STATUS			current
+	DESCRIPTION
+" See Textual conventions."
+::= { opticsIMSyncProtectionGroupEntry 3 }
+
+opticsIMSyncProtectionGroupOperationalState OBJECT-TYPE
+     SYNTAX				TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS				current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMSyncProtectionGroupEntry 4 }
+
+opticsIMSyncProtectionGroupWTRTime OBJECT-TYPE
+     SYNTAX				INTEGER
+     MAX-ACCESS			read-write
+     STATUS				current
+     DESCRIPTION
+       "The time to wait before to restore the nominal behaviour. 
+        It is an integer with associated measure unit expressed in number of seconds."
+::= { opticsIMSyncProtectionGroupEntry 5 }
+
+
+opticsIMSyncProtectionUnitTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF   OpticsIMSyncProtectionUnitEntry
+	MAX-ACCESS                     not-accessible
+	STATUS                               current
+	DESCRIPTION
+" This table contains the Sync Protection Unit associated to each Sync Protection Group."
+::= { opticsIMSynchroMibObject 6 } 
+
+opticsIMSyncProtectionUnitEntry OBJECT-TYPE
+	SYNTAX                          OpticsIMSyncProtectionUnitEntry
+	MAX-ACCESS                 not-accessible
+	STATUS                           current
+	DESCRIPTION
+  " An entry in the opticsIMSyncProtectionUnit table. Entries of this table are created when the 
+    associated Sync Protection Group is already created and or as 
+    consequence of the clock's source provisioning or by managing system. The different behaviour is 
+    NE dependent and will e defined in each external product specification.
+	All instances of this object class will act in the protecting role."
+	INDEX  { opticsIMSyncProtectionGroupIndex, opticsIMSyncProtectionUnitIndex }
+::= { opticsIMSyncProtectionUnitTable 1 }
+
+OpticsIMSyncProtectionUnitEntry ::= SEQUENCE {
+   opticsIMSyncProtectionUnitIndex               InterfaceIndexOrZero,
+   opticsIMSyncProtectionUnitSwitchCommand       OpticsIMProtectionSwitchCommand,
+   opticsIMSyncProtectionUnitQualityCriteria     Integer32,
+   opticsIMSyncProtectionUnitSwitchStatus        OpticsIMProtectionSwitchStatus,
+   opticsIMSyncProtectionUnitSwitchCriteria      INTEGER,
+   opticsIMSyncProtectionUnitPriority            OpticsIMProtectionPriority,
+   opticsIMSyncProtectionUnitRowStatus           RowStatus,
+   opticsIMSyncProtectionUnitAsapIndex	         Integer32,
+   opticsIMSyncProtectionUnitQualityLevel        OpticsIMIfQualityLevel                                      
+   }
+opticsIMSyncProtectionUnitIndex               OBJECT-TYPE
+	SYNTAX			InterfaceIndexOrZero
+	MAX-ACCESS			not-accessible
+	STATUS			current
+	DESCRIPTION
+" This object identifies the index of protection unit. It contains the interface index 
+  of the clock's source physical interface. The 0 value is related to the internal 
+  oscillator as clock's source."
+::= { opticsIMSyncProtectionUnitEntry 1 }
+
+opticsIMSyncProtectionUnitSwitchCommand       OBJECT-TYPE
+	SYNTAX			OpticsIMProtectionSwitchCommand
+	MAX-ACCESS			read-write
+	STATUS			current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMSyncProtectionUnitEntry 2 }
+
+opticsIMSyncProtectionUnitQualityCriteria OBJECT-TYPE
+	SYNTAX Integer32 (0..999) 
+	MAX-ACCESS				read-only
+	STATUS				current
+	DESCRIPTION
+" This object contains a value used by automatic selection algorithm to select the clock's source reference. 
+  This value is derived from received external clock's source or it's NE dependent (stated in each product 
+  specification). The value '999' indicated that the clock's source physical interface is in failure."
+::= { opticsIMSyncProtectionUnitEntry 3 }
+
+opticsIMSyncProtectionUnitSwitchStatus OBJECT-TYPE
+	SYNTAX			OpticsIMProtectionSwitchStatus
+	MAX-ACCESS			read-only
+	STATUS			current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMSyncProtectionUnitEntry 4 }
+
+opticsIMSyncProtectionUnitSwitchCriteria OBJECT-TYPE
+	SYNTAX INTEGER {
+         noOne        (1),
+         signalFail   (2),
+	   signalDegraded (3)
+         }
+	MAX-ACCESS			read-only
+	STATUS			current
+	DESCRIPTION
+" This object contains the highest priority automatic switch request currently active on the channel. "
+::= { opticsIMSyncProtectionUnitEntry 5 }
+
+opticsIMSyncProtectionUnitPriority OBJECT-TYPE
+	SYNTAX			OpticsIMProtectionPriority
+	MAX-ACCESS			read-write
+	STATUS			current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMSyncProtectionUnitEntry 6 }
+
+
+opticsIMSyncProtectionUnitRowStatus OBJECT-TYPE
+	SYNTAX			RowStatus                                                     
+	MAX-ACCESS			read-write
+	STATUS			current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMSyncProtectionUnitEntry 7 }
+
+opticsIMSyncProtectionUnitAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMSyncProtectionUnitEntry 8 }
+
+opticsIMSyncProtectionUnitQualityLevel OBJECT-TYPE
+     SYNTAX					OpticsIMIfQualityLevel                                      
+     MAX-ACCESS			read-only 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the Quality level associated to this entry."
+::= { opticsIMSyncProtectionUnitEntry 9 }
+
+ 
+
+--- PhysicalInterfacesTable
+
+opticsIMSyncPhysicalInterfacesTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF   OpticsIMSyncPhysicalInterfacesEntry
+	MAX-ACCESS                     not-accessible
+	STATUS                               current
+	DESCRIPTION
+" This table contains the informations related to dedicated input or output synchronization 
+  interfaces of NE ."
+::= { opticsIMSynchroMibObject 7 } 
+
+opticsIMPhysicalInterfacesEntry OBJECT-TYPE
+	SYNTAX                          OpticsIMSyncPhysicalInterfacesEntry
+	MAX-ACCESS                 not-accessible
+	STATUS                           current
+	DESCRIPTION
+  " An entry in the opticsIMPhysicalInterfaces table."
+	INDEX  { syncPhysicalInterfaceIndex }
+::= { opticsIMSyncPhysicalInterfacesTable 1 }
+
+OpticsIMSyncPhysicalInterfacesEntry ::= SEQUENCE {
+   syncPhysicalInterfaceIndex              InterfaceIndex,
+   syncPhysicalInterfaceType               INTEGER,
+   syncPhysicalInterfaceOperationalState   TsdimOperationalState,
+   syncPhysicalInterfaceAsapIndex          Integer32
+   }
+
+syncPhysicalInterfaceIndex              OBJECT-TYPE
+	SYNTAX			InterfaceIndex
+	MAX-ACCESS			not-accessible
+	STATUS			current
+	DESCRIPTION
+" This object identifies the index of dedicated synchronization interface. It contains the interface index 
+  of the synchronization physical interface."
+
+::= { opticsIMPhysicalInterfacesEntry 1 }
+
+syncPhysicalInterfaceType               OBJECT-TYPE
+	SYNTAX			INTEGER{
+         notUsed  (0),
+         twoMHz   (1),
+         fiveMHz  (2),
+         tenMHz   (3),
+ 	 oneMHz   (4)  }
+	MAX-ACCESS			read-write
+	STATUS			current
+	DESCRIPTION
+" This object identifies the type of dedicated synchronization interface."
+::= { opticsIMPhysicalInterfacesEntry 2 }
+
+syncPhysicalInterfaceOperationalState   OBJECT-TYPE
+	SYNTAX			TsdimOperationalState
+	MAX-ACCESS			read-only
+	STATUS			current
+	DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMPhysicalInterfacesEntry 3 }
+
+syncPhysicalInterfaceAsapIndex          OBJECT-TYPE
+	SYNTAX			Integer32
+	MAX-ACCESS			read-write
+	STATUS			current
+	DESCRIPTION
+       "This object defines the ASAP object associated to this synchronization physical port."
+::= { opticsIMPhysicalInterfacesEntry 4 }
+
+
+
+-- allowedSyncPhysicalInterfaces 
+
+opticsIMAllowedSyncPhysicalInterfacesTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF   OpticsIMAllowedSyncPhysicalInterfacesEntry
+	MAX-ACCESS                     not-accessible
+	STATUS                               current
+	DESCRIPTION
+" This table contains the physical interfaces allowed to be selected as nominated 
+  (Sync Protection Unit) for the selection process for the reference timimg source."
+::= { opticsIMSynchroMibObject 10 } 
+
+opticsIMAllowedSyncPhysicalInterfacesEntry OBJECT-TYPE
+	SYNTAX                          OpticsIMAllowedSyncPhysicalInterfacesEntry
+	MAX-ACCESS                 not-accessible
+	STATUS                           current
+	DESCRIPTION
+  " An entry in the opticsIMAllowedSyncPhysicalInterfaces table."
+	INDEX  { opticsIMAllowedSyncPhysicalInterfacesIndex }
+::= { opticsIMAllowedSyncPhysicalInterfacesTable 1 }
+
+OpticsIMAllowedSyncPhysicalInterfacesEntry ::= SEQUENCE {
+   opticsIMAllowedSyncPhysicalInterfacesIndex           InterfaceIndexOrZero,
+   opticsIMAllowedSyncPhysicalInterfacesSSMMode         INTEGER,
+   opticsIMAllowedSyncPhysicalInterfacesQualityLevel    OpticsIMIfQualityLevel
+                                                     
+   }
+opticsIMAllowedSyncPhysicalInterfacesIndex               OBJECT-TYPE
+	SYNTAX			InterfaceIndexOrZero
+	MAX-ACCESS			not-accessible
+	STATUS			current
+
+	DESCRIPTION
+" This object identifies the index of the physical interface. It contains the interface index 
+  of the allowed clock's source physical interface. The 0 value is related to the internal 
+  oscillator as allowed clock's source."
+::= { opticsIMAllowedSyncPhysicalInterfacesEntry 1 }
+
+opticsIMAllowedSyncPhysicalInterfacesSSMMode         OBJECT-TYPE
+	SYNTAX	INTEGER {
+         disabled (1),
+         enabled  (2)
+         }
+	MAX-ACCESS			read-write
+	STATUS			current
+	DESCRIPTION
+         " This object enable or disable the SSM support on this physical interface. 
+           SET operation on this object is allowed only on interfaces that carry quality informations. 
+           When the SSM support is enabled the Quality level and Quality level priority of the interface are acquired 
+           from the ESMC messages received on the specific interface. 
+	   When the SSM support is disabled the Quality level and Quality level priority are fixed values 
+           specifc for the physical interface type. 
+         "
+::= { opticsIMAllowedSyncPhysicalInterfacesEntry 2 }
+
+opticsIMAllowedSyncPhysicalInterfacesQualityLevel    OBJECT-TYPE
+	SYNTAX OpticsIMIfQualityLevel
+	MAX-ACCESS				read-write
+	STATUS				current
+	DESCRIPTION
+        " This object contains the quality level of the source timing interfaces configured by managing system and 
+          overwriting the fix value according to the interface type.
+        "
+::= { opticsIMAllowedSyncPhysicalInterfacesEntry 3 }
+
+opticsIMSyncEECEnable OBJECT-TYPE
+     SYNTAX     TruthValue 
+     MAX-ACCESS read-write
+     STATUS		current
+     DESCRIPTION
+          "This object is used to enable/disable the whole EEC function."
+::= { opticsIMSynchroMibObject 11 }
+
+-- ******************************************************************
+-- Global Control Object for SDH/SONET SEC or SYNC-E EEC
+-- ******************************************************************			
+opticsIMGlobalSecEecControlScalarObjects   OBJECT IDENTIFIER ::= { opticsIMSynchroMibObject 501 }
+
+opticsIMGlobalSecEecControlEECEnable  OBJECT-TYPE
+    SYNTAX     TruthValue 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to enable/disable the whole SYNC-E EEC function
+			 When the EEC is disabled, the system clock will run according to internal XO
+       Default is FALSE
+       "
+--  DEFVAL { FALSE }
+  ::= { opticsIMGlobalSecEecControlScalarObjects   1 }
+
+opticsIMGlobalSecEecControlEECOption  OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the EEC option supported
+       1  EEC option 1/SEC option 1
+
+       2  EEC option 2/SEC option 2
+       
+       Default Value 1
+       "
+--  DEFVAL { 1 }
+  ::= { opticsIMGlobalSecEecControlScalarObjects   2 }
+  
+opticsIMGlobalSecEecControlSSM  OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to enable/disable SSM globally
+       0  SSM enabled
+       1  SSM Disabled
+       
+       Default Value 1
+       "
+
+  ::= { opticsIMGlobalSecEecControlScalarObjects   3 }  
+
+-- ******************************************************************
+-- Reference Sources Object for SDH/SONET SEC or SYNC-E EEC
+-- ******************************************************************			
+
+opticsIMRefClockSourceTable OBJECT-TYPE
+    SYNTAX    SEQUENCE OF    OpticsIMRefClockSourceEntry
+    MAX-ACCESS     not-accessible
+    STATUS    current
+    DESCRIPTION
+      "The table defines reference clock sources used in SEC or EEC"
+   ::= { opticsIMSynchroMibObject 502 }
+
+
+opticsIMRefClockSourceEntry OBJECT-TYPE
+    SYNTAX    OpticsIMRefClockSourceEntry 
+    MAX-ACCESS     not-accessible
+    STATUS    current
+    DESCRIPTION
+      "This conceptual row defines the reference clock sources used in SEC or EEC
+      "
+
+    INDEX { opticsIMRefClockSourceIndex
+          }
+    ::= { opticsIMRefClockSourceTable 1 }
+
+
+OpticsIMRefClockSourceEntry::= SEQUENCE {
+        opticsIMRefClockSourceIndex            Unsigned32,
+        opticsIMRefClockSourcePortType				 INTEGER,
+        opticsIMRefClockSourceSlotNo           INTEGER,
+        opticsIMRefClockSourcePortNo					 Integer32,
+        opticsIMRefClockSourceMonitoring			 TruthValue,
+        
+-- Added for Incoming QL/SSM       
+        opticsIMRefClockSourceIncomingQLEnable TruthValue,
+        opticsIMRefClockSourceIncomingQLStatus INTEGER,
+				opticsIMRefClockSourceIncomingQL			 INTEGER,
+        opticsIMRefClockSourceProvisionedIncomingSSM	 INTEGER,
+-- End for Incoming QL/SSM   
+        
+        opticsIMRefClockSourceAdminStatus    	INTEGER,
+        opticsIMRefClockSourceOperStatus      INTEGER,
+        opticsIMRefClockSourceAsapIndex				Integer32
+       }
+
+opticsIMRefClockSourceIndex OBJECT-TYPE
+     SYNTAX Unsigned32 
+     MAX-ACCESS not-accessible
+     STATUS current
+     DESCRIPTION
+     "This object defines the interface of the clock source within the node
+     "
+::= { opticsIMRefClockSourceEntry 1 }
+
+opticsIMRefClockSourcePortType OBJECT-TYPE
+     SYNTAX INTEGER 
+     MAX-ACCESS read-write
+     STATUS current
+     DESCRIPTION
+     "This object defines the type of the port, where reference source is derived from
+     line(0) 				 ---- line interface
+     stationClock(1) ---- Station input clock (BITS input clock)
+     1588Clock (2)   ---  reference source from 1588
+     adaptiveRecovedClock (3)  --- adaptive recovered clock from Circuit Emulation card
+     
+     Default 0
+     "
+-- DEFVAL { 1 }
+::= { opticsIMRefClockSourceEntry 2 }
+
+opticsIMRefClockSourceSlotNo OBJECT-TYPE
+     SYNTAX INTEGER 
+     MAX-ACCESS read-write
+     STATUS current
+     DESCRIPTION
+     "This object defines the slot for a line port, where reference source is derived from.
+      
+      It is only valid if refClockSourcePortType ==0 || 3      
+     "
+::= { opticsIMRefClockSourceEntry 3 }
+
+opticsIMRefClockSourcePortNo OBJECT-TYPE
+     SYNTAX Integer32
+     MAX-ACCESS read-write
+     STATUS current
+     DESCRIPTION
+     "This object defines the port, where reference source is derived from.
+      It can be  line interface or station clock input or recovered channel clock.
+      
+      If opticsIMRefClockSourcePortType = 0, then opticsIMRefClockSourcePortNo shall be equal to ifIndex of that line interface
+      If opticsIMRefClockSourcePortType = 1, then opticsIMRefClockSourcePortNo shall be equal to opticsIMRStationClockIndex of that station clock
+      If opticsIMRefClockSourcePortType = 3, then opticsIMRefClockSourcePortNo shall be equal to the no of E1/DS1 channel where the 
+                                     recovered clock comes from.
+     "
+::= { opticsIMRefClockSourceEntry 4 }
+
+
+opticsIMRefClockSourceMonitoring  OBJECT-TYPE
+    SYNTAX     TruthValue 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object allows the timing source to be monitored or not 
+       Default value: FALSE
+       "
+--  DEFVAL { FALSE }
+  ::= { opticsIMRefClockSourceEntry 5 }
+  
+opticsIMRefClockSourceIncomingQLEnable  OBJECT-TYPE
+    SYNTAX     TruthValue 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object allows the enable SSM on that port. 
+       Default value: FALSE
+       
+       It's only applicable to the timing port with SSM capabilities.
+       "
+--  DEFVAL { FALSE }
+  ::= { opticsIMRefClockSourceEntry 6 }  
+  
+opticsIMRefClockSourceIncomingQLStatus  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object indicates the current status of incoming QL on that port. 
+       0: Valid
+       1: Invalid
+       2: Not Supported
+       3: Not Applicable
+       
+       It's only applicable to the timing port with SSM capabilities.
+       "
+  ::= { opticsIMRefClockSourceEntry 7 }
+
+opticsIMRefClockSourceIncomingQL  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object indicates the current value of incoming QL on that port. 
+
+
+       0: Quality Unknown
+       1: PRC
+       2: SSU_A
+       3: SSU_B
+       4: EEC Option 1
+       5: DNU
+       
+       11: PRS
+       12: STU
+       13: ST2
+       14: TNC
+       15: ST3E
+       16: ST3
+       17: SMC
+       18: ST4
+       19: DUS
+       20: PNO
+       
+       30: Unstable
+       31: Not applicable
+       
+       It's only applicable to the timing port with SSM capabilities.
+       "
+  ::= { opticsIMRefClockSourceEntry 8 }
+
+opticsIMRefClockSourceProvisionedIncomingSSM  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object indicates the manually provisioned SSM value for one port. 
+The following values shall be supported if opticsIMGlobalSecEecControlEECOption == 1
+
+       0: AUTO
+       1: PRC
+       2: SSU_A
+       3: SSU_B
+       4: EEC Option 1
+       5: DNU
+The following values shall be supported if opticsIMGlobalSecEecControlEECOption == 2
+       11: PRS
+       12: STU
+       13: ST2
+       14: TNC
+       15: ST3E
+       16: ST3
+       17: SMC
+       18: ST4
+       19: DUS
+       20: PNO
+       
+       It's applicable to any timing port.
+       "
+  ::= { opticsIMRefClockSourceEntry 9 }    
+
+    
+opticsIMRefClockSourceAdminStatus  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object provide one mechanism for the management system to enable or disable one timing source
+      Enable (1)
+      Disable (0) 
+      
+      Default value 0      
+       "
+  ::= { opticsIMRefClockSourceEntry 10 }
+    
+opticsIMRefClockSourceOperStatus OBJECT-TYPE
+     SYNTAX INTEGER 
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+       "The opertional status of the reference source.
+       
+       NORMAL: Clock reference is functioning ok
+       
+       Failed: Clock reference is malfunctioning due to reference failure or SSF. 
+       
+       NC:		Clock reference is not connected to any line interface or station clock
+       "
+::= { opticsIMRefClockSourceEntry 11 }
+
+opticsIMRefClockSourceAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMRefClockSourceEntry 12 }
+
+-- ******************************************************************
+-- Priority setting for reference sources in  system clock process/station clock process
+-- ******************************************************************			
+opticsIMRefClockSourcePriorityTable OBJECT-TYPE
+    SYNTAX    SEQUENCE OF    OpticsIMRefClockSourcePriorityEntry
+    MAX-ACCESS     not-accessible
+    STATUS    current
+    DESCRIPTION
+      "The table defines priority for reference clock sources in system clock process/station clock process"
+   ::= { opticsIMSynchroMibObject 503 }
+
+opticsIMRefClockSourcePriorityEntry OBJECT-TYPE
+    SYNTAX    OpticsIMRefClockSourcePriorityEntry 
+    MAX-ACCESS     not-accessible
+    STATUS    current
+    DESCRIPTION
+      "This conceptual row defines the priority for reference clock sources used in SEC or EEC
+      "
+
+    INDEX { opticsIMRefClockSourceIndex,
+    				opticsIMRefClockSourcePriorityProcessType
+          }
+    ::= { opticsIMRefClockSourcePriorityTable 1 }
+
+OpticsIMRefClockSourcePriorityEntry::= SEQUENCE {
+        opticsIMRefClockSourcePriorityProcessType				 INTEGER,
+        opticsIMRefClockSourcePriorityPriority         INTEGER
+                   
+        }
+opticsIMRefClockSourcePriorityProcessType  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+      "This object is used to identify the clock process that the reference source takes participant in
+        0 ---- System Clock Process
+        1 ---- Station Clock Process
+       "
+  ::= { opticsIMRefClockSourcePriorityEntry 1 }
+
+opticsIMRefClockSourcePriorityPriority  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object defined the priority value for clock synchronization preferences
+       for a node.
+       Default value: 0xFFFF, which means invalid priority
+       "
+--  DEFVAL { 0xFFFF }
+  ::= { opticsIMRefClockSourcePriorityEntry 2 }
+
+-- ******************************************************************
+-- Outgoing QL/SSM mgmt for 
+          -- Ethernet Ports
+          -- Station clock output port
+          -- SDH_SONET ports
+          -- E1/DS1 ports
+-- ******************************************************************
+opticsIMOutgoingClockTable OBJECT-TYPE
+    SYNTAX    SEQUENCE OF    OpticsIMOutgoingClockEntry
+    MAX-ACCESS     not-accessible
+    STATUS    current
+    DESCRIPTION
+      "The table defines the QL for the outgoing clock on one port
+      when SSM is enabled on that port"
+   ::= { opticsIMSynchroMibObject 504 }
+
+opticsIMOutgoingClockEntry OBJECT-TYPE
+    SYNTAX    OpticsIMOutgoingClockEntry 
+    MAX-ACCESS     not-accessible
+    STATUS    current
+    DESCRIPTION
+      "This conceptual row defines the outgoing QL on each port"
+
+    INDEX { opticsIMOutgoingClockPortType, opticsIMOutgoingClockPortNo    				
+          }
+    ::= { opticsIMOutgoingClockTable 1 }
+
+OpticsIMOutgoingClockEntry::= SEQUENCE {
+        opticsIMOutgoingClockPortType									 	 INTEGER,
+        opticsIMOutgoingClockPortNo											 Integer32,
+        opticsIMOutgoingClockQLStatus 					         INTEGER,
+        opticsIMOutgoingClockOutgoingQL           	     INTEGER,
+        opticsIMOutgoingClockForcedOutgoingSSM					 INTEGER
+        }
+opticsIMOutgoingClockPortType  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+      "This object defines the type of the port, where outgoing clock character is provisionedd
+     line(0) 				 ---- line interface
+     stationClock(1) ---- Station output clock (BITS output clock)
+     1588Clock (2)   ---  outgoing clock for 1588
+     
+     
+     Default 0
+        "
+  ::= { opticsIMOutgoingClockEntry 1 }
+
+opticsIMOutgoingClockPortNo  OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+      "This object indicates the port no for the port, where outoging clock is provisioned
+      It is only applicable if opticsIMOutgoingClockPortType == 0 ||1
+      
+      If opticsIMOutgoingClockPortType = 0, then opticsIMOutgoingClockPortNo shall be equal to ifIndex of that line interface
+      If opticsIMOutgoingClockPortType = 1, then opticsIMOutgoingClockPortNo shall be equal to opticsIMStationClockIndex of that station clock
+       
+        "
+  ::= { opticsIMOutgoingClockEntry 2 }
+
+opticsIMOutgoingClockQLStatus OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object indicates the current status of outgoing QL on that port. 
+       0: Normal
+       1: WTR
+       2: Failed
+       3: Not Applicable
+       
+        "
+  ::= { opticsIMOutgoingClockEntry 3 }
+  
+opticsIMOutgoingClockOutgoingQL  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object indicates the current status of ougoing QL on that port. 
+       0: Quality Unknown
+       1: PRC
+       2: SSU_A
+       3: SSU_B
+
+       4: EEC Option 1
+       5: DNU
+
+       11: PRS
+       12: STU
+       13: ST2
+       14: TNC
+       15: ST3E
+       16: ST3
+       17: SMC
+       18: ST4
+       19: DUS
+       20: PNO
+       
+       31: Not applicable
+       
+       It's only applicable to the timing port with SSM capabilities.
+       "
+  ::= { opticsIMOutgoingClockEntry 4 }  
+
+opticsIMOutgoingClockForcedOutgoingSSM  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object indicates the forced outgoing SSM value for one port. 
+The following values shall be supported if opticsIMGlobalSecEecControlEECOption == 1
+	   0: AUTO
+       1: PRC
+       2: SSU_A
+       3: SSU_B
+       4: EEC Option 1
+       5: DNU
+       
+The following values shall be supported if opticsIMGlobalSecEecControlEECOption == 2
+
+       11: PRS
+       12: STU
+       13: ST2
+       14: TNC
+       15: ST3E
+       16: ST3
+       17: SMC
+       18: ST4
+       19: DUS
+       20: PNO
+       
+       100: DISABLED (default, applicable to both EEC option 1 and 2)
+       It's applicable to any timing port.
+       "
+  ::= { opticsIMOutgoingClockEntry 5 } 
+-- ******************************************************************
+-- System Clock Process Object for SDH/SONET SEC or SYNC-E EEC
+-- ******************************************************************			
+opticsIMSystemClockProcessScalarObjects   OBJECT IDENTIFIER ::= { opticsIMSynchroMibObject 505 }
+
+opticsIMSystemClockProcessTimingMode  OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the timing operation mode of the SYNC-E EEC node.
+			 - 0: INT timing mode
+			 - 1: EXT timing mode
+       "
+  DEFVAL { 0 }
+  ::= { opticsIMSystemClockProcessScalarObjects   1 }
+
+opticsIMSystemClockProcessSwitchOperation OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the switch operation commands supported on the SYNC-E clock.
+			 - 0: Automatic switch
+			 - 1: Force switch
+			 - 2: Manual switch
+			 - 4: lockout
+			 - 5: Clear
+       "
+  DEFVAL { 0 }
+  ::= { opticsIMSystemClockProcessScalarObjects 2 }
+
+opticsIMSystemClockProcessSwitchToRefSource OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the reference source to be switched to during
+       manual switch/force switch.
+			 "
+  ::= { opticsIMSystemClockProcessScalarObjects 3 }
+
+opticsIMSystemClockProcessLastOperationStatus OBJECT-TYPE
+    SYNTAX     TruthValue 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define operation status of last switch operation on the SYNC-E EEC node.
+			 - TRUE: Sucessful
+			 - FALSE: Failure
+       "
+  ::= { opticsIMSystemClockProcessScalarObjects 4 }
+
+opticsIMSystemClockProcessRevertiveMode OBJECT-TYPE
+    SYNTAX     TruthValue 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the revertive mode of the SYNC-E EEC node.
+			 - TRUE: Revertive
+			 - FALSE: Non-Revertive
+        Default is FALSE
+       "
+--  DEFVAL { FALSE }
+  ::= { opticsIMSystemClockProcessScalarObjects 5 }
+
+opticsIMSystemClockProcessWtrTimer OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the WTR time in revertive mode of the SYNC-E EEC node, which may be in the range of [0...12 minute].
+      Default value: 5minutes
+			 
+       "
+  DEFVAL { 5 }
+  ::= { opticsIMSystemClockProcessScalarObjects 6 }
+  
+opticsIMSystemClockProcessOperStatus OBJECT-TYPE
+    SYNTAX    INTEGER {
+                        normal(1),
+                        freeRunning(2),
+                        holdover(3)
+                      }
+    MAX-ACCESS read-only
+    STATUS    current
+    DESCRIPTION
+      "The status of the clock.
+
+      - normal
+      Normal operation. The clock is synchronized with one of the clock sources
+      defined in 'nnConfigClockSyncTable'
+
+      - freeRunning
+      The clock is not synchronized with any of the clock sources. The internal 
+      clock is operational.
+
+      - holdover
+      The clock lost synchronization with its references and is holding (i.e. 
+      operating according to) the state of the last synchronization
+
+
+     ."
+    ::= { opticsIMSystemClockProcessScalarObjects 7 }
+
+
+opticsIMSystemClockProcessLockedRefSource OBJECT-TYPE
+    SYNTAX     Unsigned32 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object is used to indicate the reference source the output clock currently locked to when the EEC is in locked clock mode
+			 It shall be equal to the refClocSourceIndex of the locked reference source
+       "
+  ::= { opticsIMSystemClockProcessScalarObjects 8 }
+  
+  opticsIMSystemClockProcessQL OBJECT-TYPE
+    SYNTAX     Unsigned32 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object is used to indicate the QL of the system clock
+       
+       0: Quality Unknown
+       1: PRC
+       2: SSU_A
+       3: SSU_B
+       4: EEC Option 1
+       5: DNU
+       
+       11: PRS
+       12: STU
+       13: ST2
+       14: TNC
+       15: ST3E
+       16: ST3
+       17: SMC
+       18: ST4
+       19: DUS
+       20: PNO
+       
+       31: Not applicable
+       "
+  ::= { opticsIMSystemClockProcessScalarObjects 9 }
+
+-- ******************************************************************
+-- Station Clock Process Object for SDH/SONET SEC or SYNC-E EEC
+-- ******************************************************************			
+opticsIMStationClockProcessScalarObjects   OBJECT IDENTIFIER ::= { opticsIMSynchroMibObject 506 }
+
+opticsIMStationClockProcessOutputSelector  OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to where the station clock output is derived from:
+				-	0: the output from the output from station clock process (Default)
+				-	1: the output from system clock T0
+			Default Value: 0				
+		   "
+-- DEFVAL { 0 }
+  ::= { opticsIMStationClockProcessScalarObjects 1 }
+
+opticsIMStationClockProcessSwitchOperation OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the switch operation commands supported on the SYNC-E clock.
+			 - 0: Automatic switch
+			 - 1: Force switch
+			 - 2: Manual switch
+			 - 4: lockout
+			 - 5: Clear
+			 
+			 Default Value: 0
+       "
+--DEFVAL { 0 }
+  ::= { opticsIMStationClockProcessScalarObjects 2 }
+
+opticsIMStationClockProcessSwitchToRefSource OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the reference source to be switched to during
+       manual switch/force switch.
+			 "
+  ::= { opticsIMStationClockProcessScalarObjects 3 }
+
+opticsIMStationClockProcessLastOperationStatus OBJECT-TYPE
+    SYNTAX     TruthValue 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define operation status of last switch operation on the SYNC-E EEC node.
+			 - TRUE: Sucessful
+			 - FALSE: Failure
+       "
+  ::= { opticsIMStationClockProcessScalarObjects 4 }
+
+opticsIMStationClockProcessRevertiveMode OBJECT-TYPE
+    SYNTAX     TruthValue 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the revertive mode of the SYNC-E EEC node.
+			 - TRUE: Revertive
+			 - FALSE: Non-Revertive
+        Default is FALSE
+       "
+--  DEFVAL { FALSE }
+  ::= { opticsIMStationClockProcessScalarObjects 5 }
+
+opticsIMStationClockProcessWtrTimer OBJECT-TYPE
+    SYNTAX     Integer32 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to define the WTR time in revertive mode of the SYNC-E EEC node, which may be in the range of [0...12 minute].
+      Default value: 5minutes
+			 
+       "
+--DEFVAL { 5 }
+  ::= { opticsIMStationClockProcessScalarObjects 6 }
+
+  
+opticsIMStationClockProcessOperStatus OBJECT-TYPE
+    SYNTAX    INTEGER {
+                        normal(1),
+                        freeRunning(2),
+                        holdover(3)
+                      }
+    MAX-ACCESS read-only
+    STATUS    current
+    DESCRIPTION
+      "The status of the clock.
+
+      - normal
+      Normal operation. The clock is synchronized with one of the clock sources
+      defined in 'nnConfigClockSyncTable'
+
+      - freeRunning
+      The clock is not synchronized with any of the clock sources. The internal 
+      clock is operational.
+
+      - holdover
+      The clock lost synchronization with its references and is holding (i.e. 
+      operating according to) the state of the last synchronization
+
+
+     ."
+
+    ::= { opticsIMStationClockProcessScalarObjects 7 }
+
+
+opticsIMStationClockProcessLockedRefSource OBJECT-TYPE
+    SYNTAX     Unsigned32 
+    MAX-ACCESS read-only
+
+    STATUS     current
+    DESCRIPTION
+      "This object is used to indicate the reference source the output clock currently locked to when the EEC is in locked clock mode
+			 It shall be equal to the opticsIMRefClocSourceIndex of the locked reference source
+       "
+  ::= { opticsIMStationClockProcessScalarObjects 8 }   
+  
+opticsIMStationClockProcessQL OBJECT-TYPE
+    SYNTAX     Unsigned32 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object is used to indicate the QL of the station clock
+       
+       0: Quality Unknown
+       1: PRC
+       2: SSU_A
+       3: SSU_B
+       4: EEC Option 1
+       5: DNU
+       
+       11: PRS
+       12: STU
+       13: ST2
+       14: TNC
+       15: ST3E
+       16: ST3
+       17: SMC
+       18: ST4
+       19: DUS
+       20: PNO
+       
+       31: Not applicable
+       "
+  ::= { opticsIMStationClockProcessScalarObjects 9 }  
+
+-- ******************************************************************
+-- Station Clock Interface Object for SDH/SONET SEC or SYNC-E EEC
+-- ******************************************************************			
+opticsIMStationClockInterfaceTable OBJECT-TYPE
+    SYNTAX    SEQUENCE OF    OpticsIMStationClockInterfaceEntry
+    MAX-ACCESS     not-accessible
+    STATUS    current
+    DESCRIPTION
+      "The table defines station clock interface used in system clock process/station clock process"
+   ::= { opticsIMSynchroMibObject 507 }
+
+opticsIMStationClockInterfaceEntry OBJECT-TYPE
+    SYNTAX    OpticsIMStationClockInterfaceEntry 
+    MAX-ACCESS     not-accessible
+    STATUS    current
+    DESCRIPTION
+      "This conceptual row defines station clock interface used in system clock process/station clock process
+      "
+
+    INDEX { opticsIMStationClockInterfaceIndex    				
+          }
+    ::= { opticsIMStationClockInterfaceTable 1 }
+
+OpticsIMStationClockInterfaceEntry::= SEQUENCE {
+ 		opticsIMStationClockInterfaceIndex							 Unsigned32,
+        opticsIMStationClockInterfaceDirection           INTEGER,
+        opticsIMStationClockInterfaceSignalType					 INTEGER,
+        opticsIMStationClockInterfaceAdminStatus				 INTEGER,
+        opticsIMStationClockInterfaceOperStatus				 	 INTEGER,
+        opticsIMStationClockInterfaceSaBit						INTEGER,
+        opticsIMStationClockInterfaceCRC						INTEGER
+            
+        }
+opticsIMStationClockInterfaceIndex  OBJECT-TYPE
+    SYNTAX     Unsigned32 
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+      "This object is used to identify the station clock interface
+       "
+  ::= { opticsIMStationClockInterfaceEntry 1 }
+
+opticsIMStationClockInterfaceDirection  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object is used to identify the direction of station clock interface
+      	0 - station clock input
+      	1 - station clock output
+       "
+  ::= { opticsIMStationClockInterfaceEntry 2 }
+
+opticsIMStationClockInterfaceSignalType  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to identify the signal type of station clock interface
+      	0 - unframed E1
+      	1 - framed E1
+      	2 - unframed DS1
+      	3 - framed DS1
+      	4 - 2MHZ   
+		5 - 64K+8K +400HZ
+		6 - 6.312MHZ
+       The external product specification defines the values applicability and 
+	   the conditions. 
+	   Default Value: 0 
+	   "
+-- DEFVAL { 0 }  
+  ::= { opticsIMStationClockInterfaceEntry 3 }
+
+opticsIMStationClockInterfaceAdminStatus  OBJECT-TYPE
+
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is used to enable or disable station clock interface
+      Enable (1)
+      Disable (0)
+      
+      Default Value: 0
+      "
+--DEFVAL { 0 }    
+  ::= { opticsIMStationClockInterfaceEntry 4 }
+  
+  opticsIMStationClockInterfaceOperStatus  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+      "This object is used to indicate the current status of station clock interface
+      Normal (1)
+      Disabled (0)
+      
+      Default Value: 0
+      "
+--DEFVAL { 0 }    
+  ::= { opticsIMStationClockInterfaceEntry 5 }   
+   
+opticsIMStationClockInterfaceSaBit  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is only applicable when opticsIMStationClockInterfaceSignalType=framed E1 and is used to identify the SSM bit from one of Sa[4..8] bits
+      	1 - Sa4
+		2 - Sa5
+      	3 - Sa6
+      	4 - Sa7
+      	5 - Sa8   
+	The external product specification defines the values applicability and 
+	   the conditions. 
+	   Default Value: 1 
+	   "
+-- DEFVAL { 1 }  
+  ::= { opticsIMStationClockInterfaceEntry 6 }
+
+opticsIMStationClockInterfaceCRC  OBJECT-TYPE
+    SYNTAX     INTEGER 
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+      "This object is only applicable in framed application and used to identify whether CRC check/generation is enabled for input/output
+      	0 -	Disabled
+		1 - Enabled   
+	 
+	   Default Value: 0 
+	   "
+-- DEFVAL { 0 }  
+  ::= { opticsIMStationClockInterfaceEntry 7 }
+
+
+-- OPTICSIM-SYNCHRO-MC DEFINITIONS ::= BEGIN
+--       IMPORTS
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB;
+
+
+
+-- opticsIMSynchroMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0510130000Z"
+--       ORGANIZATION "Alcatel TND"
+--       CONTACT-INFO "Alcatel TND"
+--       DESCRIPTION 
+--           "Initial Release of Synchronization Module Compliance."
+    
+-- ::= { opticsIMSynchroMCConf 1 }
+
+opticsIMSynchroMCConf       OBJECT IDENTIFIER ::= { opticsimSdhPdhMC 9 }
+opticsIMSynchroMCCompl      OBJECT IDENTIFIER ::= { opticsIMSynchroMCConf 1 }
+opticsIMSynchroMCGroup      OBJECT IDENTIFIER ::= { opticsIMSynchroMCConf 2 }
+
+opticsIMSynchroMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMSynchroMib. "
+
+       MODULE -- opticsIMSynchroMib  
+
+
+MANDATORY-GROUPS { opticsIMSynchroGroup }
+
+::= { opticsIMSynchroMCCompl 1 }
+
+
+
+opticsIMSynchroGroup OBJECT-GROUP
+      OBJECTS { opticsIMSyncRole , 
+                opticsIMSyncOperatingCondition,
+                opticsIMSyncCode,
+                opticsIMCurrentSyncSource,
+		opticsIMSyncQualityLevel, 
+		opticsIMSyncQualityLevelPriority, 
+                opticsIMSyncProtectionGroupType,
+                opticsIMSyncProtectionGroupRevertive,
+                opticsIMSyncProtectionGroupOperationalState,     
+                opticsIMSyncProtectionGroupWTRTime,       
+                opticsIMSyncProtectionUnitSwitchCommand,
+                opticsIMSyncProtectionUnitQualityCriteria,
+                opticsIMSyncProtectionUnitSwitchStatus,
+                opticsIMSyncProtectionUnitAsapIndex,
+   		opticsIMAllowedSyncPhysicalInterfacesSSMMode,         
+   		opticsIMAllowedSyncPhysicalInterfacesQualityLevel
+
+ }
+      STATUS current
+      DESCRIPTION 
+          "This group describes the objects for NE synchronization."
+::= { opticsIMSynchroMCGroup 1 }
+
+END

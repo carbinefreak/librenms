@@ -1,0 +1,3057 @@
+XHAUL-OAM-PM-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+
+    Dot1agCfmMepIdOrZero
+    FROM IEEE8021-CFM-MIB
+
+    InetAddress, InetAddressPrefixLength, InetAddressType, InetPortNumber
+    FROM INET-ADDRESS-MIB
+
+    MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP
+    FROM SNMPv2-CONF
+
+    Counter32, Counter64, Integer32,
+    MODULE-IDENTITY, NOTIFICATION-TYPE,
+    OBJECT-TYPE, Unsigned32
+    FROM SNMPv2-SMI
+
+    DateAndTime, MacAddress, RowStatus, TEXTUAL-CONVENTION, TimeStamp,
+    TruthValue
+    FROM SNMPv2-TC
+
+    svcId FROM XHAUL-SERV-MIB
+
+    TFCName, TItemDescription, TLNamedItemOrEmpty, TNamedItem, TNamedItemOrEmpty, XhaulEnabledDisabled, XhaulEnabledDisabledOrNA, XhaulOperState, TProfile,    XhaulCreateOrigin
+    FROM XHAUL-TC-MIB
+
+xhaulim, xhaulBasicMib 	FROM XHAUL-BASICREG-MIB
+    ;
+
+xhaulOamPmMIBModule  MODULE-IDENTITY
+    LAST-UPDATED "202002170000Z"
+    ORGANIZATION "Nokia"
+    CONTACT-INFO
+            "Nokia Xhaul Support "
+    DESCRIPTION
+        "This document is the SNMP MIB module for the Nokia 			XHAUL implementation of Service OAM Performance Monitoring.
+        "
+    REVISION
+        "202002170000Z"
+    DESCRIPTION
+        "- Removed XhaulOamPmCfgBinNumOrNone Textual-Convention not used
+	    - add xhaulOamPmCfgBinType definition on xhaulOamPmCfgThrDelayTable.
+        "
+
+    REVISION
+        "202001070000Z"
+    DESCRIPTION
+        "Addition of xhaulOamPmCfgTwlRflL2HostPhysicalAddress and xhaulOamPmCfgTwlRflL2HostLinkLocalAddress in xhaulOamPmCfgTwlRflL2Table"
+
+    REVISION
+        "201910240000Z"
+    DESCRIPTION
+        "Added tables for 1731 DM/LM"
+
+    REVISION
+        "201909270000Z"
+    DESCRIPTION
+        "Initial release of the XHAUL-OAM-PM-MIB."
+    ::= { xhaulBasicMib 15 }
+
+-- #############################################################################
+-- Object Identifiers
+-- #############################################################################
+
+xhaulOamPmMIB OBJECT IDENTIFIER ::= { xhaulim 11 }
+
+xhaulOamPmObjs                  OBJECT IDENTIFIER ::= { xhaulOamPmMIB 1 }
+  xhaulOamPmCfgObjs             OBJECT IDENTIFIER ::= { xhaulOamPmObjs 1 }
+ --    xhaulOamPmCfgScalarObjs     OBJECT IDENTIFIER ::= { xhaulOamPmCfgObjs 1 }
+ --    xhaulOamPmTableLastChgObjs  OBJECT IDENTIFIER ::= { xhaulOamPmCfgObjs 2 }
+    xhaulOamPmCfgTableObjs      OBJECT IDENTIFIER ::= { xhaulOamPmCfgObjs 3 }
+  xhaulOamPmStatsObjs           OBJECT IDENTIFIER ::= { xhaulOamPmObjs 2 }
+    xhaulOamPmStatsTableObjs    OBJECT IDENTIFIER ::= { xhaulOamPmStatsObjs 2 }
+
+xhaulOamPmConformance           OBJECT IDENTIFIER ::= { xhaulOamPmMIB 3 }
+  xhaulOamPmCompliances         OBJECT IDENTIFIER ::= { xhaulOamPmConformance 1 }
+  xhaulOamPmObjGroups           OBJECT IDENTIFIER ::= { xhaulOamPmConformance 2 }
+    xhaulOamPmV12v0ObjGroups    OBJECT IDENTIFIER ::= { xhaulOamPmObjGroups 1 }
+  xhaulOamPmNotifGroups         OBJECT IDENTIFIER ::= { xhaulOamPmConformance 3 }
+    xhaulOamPmV12v0NotifGroups  OBJECT IDENTIFIER ::= { xhaulOamPmNotifGroups 1 }
+
+XhaulOamPmBinGroupId              ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmBinGroupId identifies an OAM Performance
+         Monitoring bin group."
+    SYNTAX      Unsigned32 (1..255)
+
+
+XhaulOamPmBinType                 ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type TmnxOamPmBinType specifies the type of an OAM
+         Performance Monitoring bin.
+
+         Values:
+            fd(1)
+                A Frame Delay (FD) bin, as defined in MEF-35.
+            fdr(2)
+                A Frame Delay Range (FDR) bin, as defined in MEF-35.
+            ifdv(3)
+                An Inter-Frame Delay Variation (IFDV) bin, as defined in
+                MEF-35."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.2 'Measurement Bins'"
+    SYNTAX      INTEGER {
+        fd   (1),
+        fdr  (2),
+        ifdv (3)
+    }
+
+XhaulOamPmCfgBinNum               ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmCfgBinNum specifies the bin number of a
+         configurable OAM Performance Monitoring delay bin.
+
+         Bin zero is defined, but it is not configurable."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.2 'Measurement Bins'"
+    SYNTAX      Unsigned32 (1..9)
+
+XhaulOamPmDetectableTxError       ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmDetectableTxError indicates the reason for
+         the inability (if any) to launch test frames for the specified test.
+
+         The code points are as follows.
+         none                (1) - no transmit failure has been detected
+         txPortDown          (2) - the transmit port is operationally down
+         noTxPort            (3) - an egress has not been found
+         ethParentAdminDown  (4) - the parent (e.g. the SAP, SDP, service, or
+            port) of the MEP is administratively down
+         ethNoMepOrAdminDown (5) - the test's MEP is not fully configured or the
+            MEP is administratively down
+         unexpectedError     (6) - transmission failed due to unexpected
+            conditions, such as failed memory allocation, traffic congestion,
+            or failure to obtain the necessary resources
+         noService           (7) - the service associated with this test session
+            was not found
+         serviceAdminDown    (8) - the service associated with this test session
+            is administratively down
+         serviceOperDown     (9) - the service associated with this test session
+            is operationally down
+         noRoute             (10) - there is no IP route to the destination
+            address
+         noInterface         (11) - there is no IP interface that matches the
+            configured forwarding interface
+         noDirectInterface   (12) - there is no appropriate IP interface for
+            bypass-routing to the destination address
+         sourceInterfaceDown (13) - the IP interface associated with the source
+            address is down
+         sourceIpNotLocal    (14) - the source address is not local
+         nextHopIpIsLocal    (15) - the next-hop address is local
+         destMacResolveFail  (16) - unable to resolve the remote-mepid to a
+            unicast layer2 MAC address
+         mplsDmSystemDisable (17) - MPLS-DM disabled at system level
+         lspNotAvailable     (18) - LSP not available (e.g. not configured)
+         lspOperDown         (19) - LSP is operationally down
+         udpReturnIpNotLocal (20) - UDP Return IP address is not local"
+    SYNTAX      INTEGER {
+        none                (1),
+        txPortDown          (2),
+        noTxPort            (3),
+        ethParentAdminDown  (4),
+        ethNoMepOrAdminDown (5),
+        unexpectedError     (6),
+        noService           (7),
+        serviceAdminDown    (8),
+        serviceOperDown     (9),
+        noRoute             (10),
+        noInterface         (11),
+        noDirectInterface   (12),
+        sourceInterfaceDown (13),
+        sourceIpNotLocal    (14),
+        nextHopIpIsLocal    (15),
+        destMacResolveFail  (16),
+        mplsDmSystemDisable (17),
+        lspNotAvailable     (18),
+        lspOperDown         (19),
+        udpReturnIpNotLocal (20)
+    }
+
+XhaulOamPmForwardBackward         ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmForwardBackward specifies the MEF-35
+         traffic flow direction of an OAM-PM loss test.
+
+         The code points are as follows.
+         forward  (1) - refers to the loss of traffic flowing away from the test
+            originator.
+         backward (2) - refers to the loss of traffic flowing toward the test
+            originator."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 8.1 'PM-1: Single-Ended
+         Point-to-Point or Multipoint Delay and Synthetic Loss Measurements'."
+    SYNTAX      INTEGER {
+        forward  (1),
+        backward (2)
+    }
+
+XhaulOamPmForwardBackwardAggr     ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmForwardBackwardAggr specifies the traffic
+         flow direction type of an OAM-PM loss threshold.
+
+         The code points are as follows.
+         forward  (1) - apply the threshold to the counter for traffic flowing
+            away from the test originator.
+         backward (2) - apply the threshold to the counter for traffic flowing
+            toward the test originator.
+         aggregate(3) - apply the threshold to the sum of the forward and
+            backward counters."
+    SYNTAX      INTEGER {
+        forward   (1),
+        backward  (2),
+        aggregate (3)
+    }
+
+XhaulOamPmForwardBackwardTwoWay   ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmForwardBackwardTwoWay specifies the MEF-35
+         traffic flow direction of an OAM-PM delay test.
+
+         The code points are as follows.
+         forward  (1) - refers to the one-way delay of traffic flowing away from
+            the test originator.
+         backward (2) - refers to the one-way delay of traffic flowing toward
+            the test originator.
+         twoWay   (3) - refers to two way delay."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.2 'Measurement Bins'"
+    SYNTAX      INTEGER {
+        forward  (1),
+        backward (2),
+        twoWay   (3)
+    }
+
+XhaulOamPmMeasIntervalDuration    ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmMeasIntervalDuration specifies the duration
+         of an OAM Performance Monitoring measurement interval.
+
+         Values:
+            miRaw(1)
+                A raw measurement interval starts when the associated test
+                starts, and ends when the associated test ends.
+            mi15Minutes(2)
+                A 15 minute measurement interval, as defined in MEF-35 Section
+                9.1.6.
+            mi1Hour(3)
+                A one hour measurement interval.
+            mi1Day(4)
+                A one day measurement interval.
+            mi5Minutes(5)
+                A five minute measurement interval."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.1.6 'Measurement
+         Intervals'"
+    SYNTAX      INTEGER {
+        miRaw       (1),
+        mi15Minutes (2),
+        mi1Hour     (3),
+        mi1Day      (4),
+        mi5Minutes  (5)
+    }
+
+XhaulOamPmCfgMeasIntervalDuration ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmCfgMeasIntervalDuration specifies the
+         duration of a configurable OAM Performance Monitoring measurement
+         interval.
+
+         This TEXTUAL-CONVENTION is the same as XhaulOamPmMeasIntervalDuration,
+         except the 'miRaw(1)' code point is absent here (because raw
+         measurement intervals are not configurable)."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.1.6 'Measurement
+         Intervals'"
+    SYNTAX      INTEGER {
+        mi15Minutes (2),
+        mi1Hour     (3),
+        mi1Day      (4),
+        mi5Minutes  (5)
+    }
+
+XhaulOamPmMplsLspType             ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmMplsLspType specifies the type of LSP to be
+         tested by an OAM-PM MPLS test.
+
+         The code points are as follows.
+         none        (1) - the LSP type is unknown.
+         mplsTpStatic(2) - the LSP was created using Multiprotocol Label
+             Switching Transport Profile (MPLS-TP).
+         rsvp        (3) - The LSP was manually created using the Resource
+             Reservation Protocol (RSVP).
+         rsvpAuto    (4) - The LSP was automatically created using RSVP and an
+             LSP template."
+    REFERENCE
+        "RFC 6374, 'Packet Loss and Delay Measurement for MPLS Networks',
+         September 2011.
+         RFC 6375, 'A Packet Loss and Delay Measurement Profile for MPLS-Based
+         Transport Networks', September 2011."
+    SYNTAX      INTEGER {
+        none         (1),
+        mplsTpStatic (2),
+        rsvp         (3),
+        rsvpAuto     (4)
+    }
+
+XhaulOamPmMplsTestRxStatus        ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmMplsTestRxStatus indicates the most recent
+         receive status for an OAM-PM MPLS-DM test.
+
+         A value less than 256 was copied from the Control Code field of
+         the most recent MPLS-DM response message.  The value indicates
+         whether or not the most recent query message (sent by this node as
+         part of an MPLS-DM test) was processed successfully by the far-end
+         node.
+
+         'none(256)' is a proprietary code point, indicating the receive status
+         is irrelevant or unknown (e.g. the test has not been started).
+
+         'errorTimeout(257)' is a proprietary code point, indicating the most
+         recent receive event for a running test was an internal timeout,
+         rather than the expected receipt of an MPLS-DM response message."
+    REFERENCE
+        "RFC 6374, 'Packet Loss and Delay Measurement for MPLS Networks',
+         September 2011, Section 3.2, 'Delay Measurement Message Format'."
+    SYNTAX      INTEGER {
+        success                         (1),
+        notifDataFormatInvalid          (2),
+        notifInitializationinProgress   (3),
+        notifDataResetOccurred          (4),
+        notifResourceTemporarilyUnavail (5),
+        errorUnspecifiedError           (16),
+        errorUnsupportedVersion         (17),
+        errorUnsupportedControlCode     (18),
+        errorUnsupportedDataFormat      (19),
+        errorAuthenticationFailure      (20),
+        errorInvalidDestinationNodeId   (21),
+        errorConnectionMismatch         (22),
+        errorUnsupportedMandTLVObject   (23),
+        errorUnsupportedQueryInterval   (24),
+        errorAdministrativeBlock        (25),
+        errorResourceUnavailable        (26),
+        errorResourceReleased           (27),
+        errorInvalidMessage             (28),
+        errorProtocolError              (29),
+        none                            (256),
+        errorTimeout                    (257)
+    }
+
+XhaulOamPmSessionType             ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmSessionType specifies the type of an OAM
+         Performance Monitoring session.
+
+         Values:
+            proactive(1)
+                Test the service using a proactive session, as specified in
+                MEF-35 Section 9.1.2.
+            onDemand(2)
+                Test the service using an on-demand session, as specified in
+                MEF-35 Section 9.1.2."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.1.2 'Proactive and
+         On-Demand PM Sessions'"
+    SYNTAX      INTEGER {
+        proactive (1),
+        onDemand  (2)
+    }
+
+XhaulOamPmStrMetric               ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmStrMetric specifies the type of an OAM
+         Performance Monitoring streaming metric.
+
+         Values:
+            fdAvg(1)
+                Average Frame Delay (FD).
+            ifdvAvg(2)
+                Average Inter-Frame Delay Variation (IFDV)."
+    SYNTAX      INTEGER {
+        fdAvg   (1),
+        ifdvAvg (2)
+    }
+
+XhaulOamPmStsIntvlNum             ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmStsIntvlNum specifies the interval number
+         of a Measurement Interval Data Set."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.1 'Measurement Interval
+         Data Sets'"
+    SYNTAX      Unsigned32 (1..4294967295)
+
+XhaulOamPmStsTcaOperState         ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmStsTcaOperState indicates the operational
+         state of the Threshold Crossing Alerts (TCAs) for the specified
+         indices.
+
+         The code points are as follows.  The conditions are evaluated in the
+         order shown.
+         pending(1)
+            'pending(1)' is returned if the threshold configuration for the
+            specified indices changed during the current measurement interval.
+         active(2)
+            If the specified indices have a default clear threshold configured,
+            'active(2)' is returned if the current measurement interval has
+            generated a Raise TCA (i.e. xhaulOamPmThrRaise).
+            If the specified indices have a non-default clear threshold
+            configured, 'active(2)' is returned if the most recent TCA generated
+            was a Raise (i.e. xhaulOamPmThrRaise).
+         notActive(3)
+            'notActive(3)' is returned for all other conditions (e.g.
+            thresholding is not configured for the specified indices)."
+    SYNTAX      INTEGER {
+        pending   (1),
+        active    (2),
+        notActive (3)
+    }
+
+XhaulOamPmTestFamily              ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmTestFamily specifies the type of the
+         service to be tested by an OAM Performance Monitoring test.
+
+         Values:
+            ethernet(1)
+                Test an Ethernet service, as specified in MEF-35 Section 7.
+            ip(2)
+                Test an IP service.
+            mpls(3)
+                Test an MPLS service, as specified by RFC 6374."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 7 'PM Considerations'.
+         RFC 6374, 'Packet Loss and Delay Measurement for MPLS Networks',
+         September 2011."
+    SYNTAX      INTEGER {
+        ethernet (1),
+        ip       (2),
+        mpls     (3)
+    }
+
+XhaulOamPmTestType                ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamPmTestType specifies the type of an OAM
+         Performance Monitoring test.
+
+         Values:
+            dmm(1)
+                An Ethernet Delay Measurement test, as specified in MEF-35
+                Section 10.1.
+            slm(2)
+                An Ethernet Synthetic Loss Measurement test, as specified in
+                MEF-35 Section 10.2.
+            twampLight(3)
+                A TWAMP-Light delay and/or loss test, using the TWAMP-Light
+                protocol defined in RFC 5357, Appendix I.
+            lmm(4)
+                An ETH-LM test, as specified in Y.1731 Section 8.1.
+            mplsDm(5)
+                An MPLS Delay Measurement test, as specified in RFC 6374."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 10.1, 'Single-Ended Delay
+         Function for Delay, Frame Delay Range, and Inter Delay Variation'.
+         MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 10.2, 'Single-Ended Synthetic
+         Loss Function for Frame Loss Ratio (FLR) and Availability'.
+         RFC 5357, 'A Two-Way Active Measurement Protocol (TWAMP)', Appendix I,
+         'TWAMP Light'.
+         ITU-T G.8013/Y.1731, 'OAM functions and mechanisms for Ethernet based
+         networks', 07/2011, Section 8.1 'Frame loss measurement (ETH-LM)'.
+         RFC 6374, 'Packet Loss and Delay Measurement for MPLS Networks',
+         September 2011."
+    SYNTAX      INTEGER {
+        dmm        (1),
+        slm        (2),
+        twampLight (3),
+        lmm        (4),
+        mplsDm     (5)
+    }
+
+
+
+-- #############################################################################
+-- Configuration Tables
+-- #############################################################################
+
+--
+-- OAM Performance Monitoring Session Configuration Table
+--
+
+xhaulOamPmCfgSessTable            OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmCfgSessEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgSessTable contains the configuration information for OAM
+         Performance Monitoring sessions."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.1.2 'Proactive and
+         On-Demand PM Sessions'"
+    ::= { xhaulOamPmCfgTableObjs 3 }
+
+xhaulOamPmCfgSessEntry            OBJECT-TYPE
+    SYNTAX      XhaulOamPmCfgSessEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgSessEntry contains the configuration information for one
+         OAM Performance Monitoring session.
+
+         Rows are created or destroyed by SNMP Set operations on
+         xhaulOamPmCfgSessRowStatus.
+
+         An attempt to change the xhaulOamPmCfgSessBinGroupId value in a row (or
+         an attempt to destroy the row) for a particular session will be
+         rejected if an administratively enabled test (e.g. an SLM test) exists
+         for the session."
+    INDEX       { xhaulOamPmCfgSessName }
+    ::= { xhaulOamPmCfgSessTable 1 }
+
+XhaulOamPmCfgSessEntry            ::= SEQUENCE
+{
+    xhaulOamPmCfgSessName             TNamedItem,
+    xhaulOamPmCfgSessRowStatus        RowStatus,
+    xhaulOamPmCfgSessTestFamily       XhaulOamPmTestFamily,
+    xhaulOamPmCfgSessType             XhaulOamPmSessionType,
+    xhaulOamPmCfgSessDescription      TItemDescription,
+    xhaulOamPmCfgSessOrigin           XhaulCreateOrigin
+}
+
+xhaulOamPmCfgSessName             OBJECT-TYPE
+    SYNTAX      TNamedItem
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessName specifies the name of the session to
+         be configured or read."
+    ::= { xhaulOamPmCfgSessEntry 1 }
+
+xhaulOamPmCfgSessRowStatus        OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessRowStatus specifies the status of the
+         configuration row for the specified session."
+    ::= { xhaulOamPmCfgSessEntry 2 }
+
+xhaulOamPmCfgSessTestFamily       OBJECT-TYPE
+    SYNTAX      XhaulOamPmTestFamily
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessTestFamily specifies the type of service
+         (e.g. 'ethernet(1)') to be tested by the specified session.
+
+         When a session is created, xhaulOamPmCfgSessRowStatus and
+         xhaulOamPmCfgSessTestFamily must be specified in the same SNMP Set PDU.
+
+         After a session is created, xhaulOamPmCfgSessTestFamily cannot be
+         changed."
+    ::= { xhaulOamPmCfgSessEntry 3 }
+
+xhaulOamPmCfgSessType             OBJECT-TYPE
+    SYNTAX      XhaulOamPmSessionType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessType specifies the type (e.g.
+         'onDemand(2)') of the specified session.
+
+         When a session is created, xhaulOamPmCfgSessRowStatus and
+         xhaulOamPmCfgSessType can be specified in the same SNMP Set PDU.  Or,
+         xhaulOamPmCfgSessType can be left at its default value.
+
+         After a session is created, xhaulOamPmCfgSessType cannot be changed."
+    DEFVAL      { proactive }
+    ::= { xhaulOamPmCfgSessEntry 4 }
+
+xhaulOamPmCfgSessDescription      OBJECT-TYPE
+    SYNTAX      TItemDescription
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessDescription specifies the descriptive
+         text for the specified session."
+    DEFVAL      { "" }
+    ::= { xhaulOamPmCfgSessEntry 6 }
+
+xhaulOamPmCfgSessOrigin           OBJECT-TYPE
+    SYNTAX      XhaulCreateOrigin
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessOrigin indicates the mechanism used to
+         create this session."
+    ::= { xhaulOamPmCfgSessEntry 7 }
+
+--
+-- OAM Performance Monitoring Session Ethernet Configuration Table
+--
+
+xhaulOamPmCfgSessEthTable         OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmCfgSessEthEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgSessEthTable contains the Ethernet endpoint configuration
+         information for OAM Performance Monitoring sessions."
+    REFERENCE
+        "ITU-T G.8013/Y.1731, 'OAM functions and mechanisms for Ethernet based
+         networks', 07/2011.
+         MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.4 'MEP Placement'."
+    ::= { xhaulOamPmCfgTableObjs 4 }
+
+xhaulOamPmCfgSessEthEntry         OBJECT-TYPE
+    SYNTAX      XhaulOamPmCfgSessEthEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgSessEthEntry contains the Ethernet endpoint configuration
+         information for one OAM Performance Monitoring session.
+
+         A row is created when a xhaulOamPmCfgSessTable row is created with
+         xhaulOamPmCfgSessTestFamily = 'ethernet(1)'.
+
+         A row is destroyed when a xhaulOamPmCfgSessTable row with
+         xhaulOamPmCfgSessTestFamily = 'ethernet(1)' is destroyed.
+
+         An attempt to change a value in a row for a particular session will be
+         rejected if an administratively enabled test (e.g. an SLM test) exists
+         for the session."
+    INDEX       { xhaulOamPmCfgSessName }
+    ::= { xhaulOamPmCfgSessEthTable 1 }
+
+XhaulOamPmCfgSessEthEntry         ::= SEQUENCE
+{
+    xhaulOamPmCfgSessEthSrcMepId      Dot1agCfmMepIdOrZero,
+    xhaulOamPmCfgSessEthSrcMdIndex    Unsigned32,
+    xhaulOamPmCfgSessEthSrcMaIndex    Unsigned32,
+    xhaulOamPmCfgSessEthPriority      Unsigned32,
+    xhaulOamPmCfgSessEthDestMacAddr   MacAddress,
+    xhaulOamPmCfgSessEthRemoteMepId   Dot1agCfmMepIdOrZero,
+    xhaulOamPmCfgSessEthSrcMdName     TLNamedItemOrEmpty,
+    xhaulOamPmCfgSessEthSrcMaName     TLNamedItemOrEmpty
+}
+
+xhaulOamPmCfgSessEthSrcMepId      OBJECT-TYPE
+    SYNTAX      Dot1agCfmMepIdOrZero
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessEthSrcMepId specifies the source Ethernet
+         Maintenance association End Point (MEP) identifier to be used by the
+         specified session.
+
+         Zero indicates a value has not been configured."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgSessEthEntry 1 }
+
+xhaulOamPmCfgSessEthSrcMdIndex    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessEthSrcMdIndex specifies the source
+         Ethernet Maintenance Domain (MD) index to be used by the specified
+         session.
+
+         The source domain can be specified using xhaulOamPmCfgSessEthSrcMdName
+         or xhaulOamPmCfgSessEthSrcMdIndex (not both).
+         xhaulOamPmCfgSessEthSrcMdName is the preferred object for specifying
+         the source domain.
+
+         One of xhaulOamPmCfgSessEthSrcMdName and xhaulOamPmCfgSessEthSrcMdIndex
+         should be assigned a non-default value. Otherwise, an attempt to start
+         any test belonging to the session will fail.
+
+         If specified, xhaulOamPmCfgSessEthSrcMdIndex should match a domain
+         created using XHAUL-IEEE8021-CFM-MIB::xhaulDot1agCfmMdMgmtRowStatus.
+         Otherwise, the session's tests will fail.
+
+         An attempt to change XHAUL-SYSTEM-MIB::xhaulSysMgmtIfWriteMode.0 away
+         from 'classic(1)' is blocked if any xhaulOamPmCfgSessEthSrcMdIndex has
+         a non-default value.
+
+         Zero indicates a value has not been configured."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgSessEthEntry 2 }
+
+xhaulOamPmCfgSessEthSrcMaIndex    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessEthSrcMaIndex specifies the source
+         Ethernet Maintenance Association (MA) index to be used by the
+         specified session.
+
+         The source association can be specified using
+         xhaulOamPmCfgSessEthSrcMaName or xhaulOamPmCfgSessEthSrcMaIndex (not
+         both).  xhaulOamPmCfgSessEthSrcMaName is the preferred object for
+         specifying the source association.
+
+         One of xhaulOamPmCfgSessEthSrcMaName and xhaulOamPmCfgSessEthSrcMaIndex
+         should be assigned a non-default value. Otherwise, an attempt to start
+         any test belonging to the session will fail.
+
+         If specified, xhaulOamPmCfgSessEthSrcMaIndex should match an
+         association created using
+         XHAUL-IEEE8021-CFM-MIB::xhaulDot1agCfmMaMgmtRowStatus. Otherwise, the
+         session's tests will fail.
+
+         An attempt to change XHAUL-SYSTEM-MIB::xhaulSysMgmtIfWriteMode.0 away
+         from 'classic(1)' is blocked if any xhaulOamPmCfgSessEthSrcMaIndex has
+         a non-default value.
+
+         Zero indicates a value has not been configured."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgSessEthEntry 3 }
+
+xhaulOamPmCfgSessEthPriority      OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..7)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessEthPriority specifies the value to be
+         copied into the priority field when launching a test PDU for the
+         specified session.
+
+         The priority value also selects the forwarding class used to queue the
+         launched test PDU on egress.  The mapping between forwarding class
+         names and priority numbers is provided by XHAUL-QOS-MIB::tFCValue."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgSessEthEntry 4 }
+
+xhaulOamPmCfgSessEthDestMacAddr   OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessEthDestMacAddr specifies the destination
+         MAC address for the specified session.
+
+         A non-zero destination MAC address is required in each test frame sent
+         by each test belonging to the specified session.  The destination MAC
+         address can be specified directly (using this object), or indirectly
+         (using xhaulOamPmCfgSessEthRemoteMepId).
+
+         Exactly one of xhaulOamPmCfgSessEthDestMacAddr and
+         xhaulOamPmCfgSessEthRemoteMepId must be assigned a non-default value."
+    DEFVAL      { '000000000000'H }
+    ::= { xhaulOamPmCfgSessEthEntry 5 }
+
+xhaulOamPmCfgSessEthRemoteMepId   OBJECT-TYPE
+    SYNTAX      Dot1agCfmMepIdOrZero
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessEthRemoteMepId specifies the remote
+         Ethernet Maintenance association End Point (MEP) identifier to be used
+         by the specified session.
+
+         Zero indicates a value has not been configured.
+
+         A non-zero destination MAC address is required in each test frame sent
+         by each test belonging to the specified session.  The destination MAC
+         address can be specified directly (using
+         xhaulOamPmCfgSessEthDestMacAddr), or indirectly (using this object).
+
+         Exactly one of xhaulOamPmCfgSessEthDestMacAddr and
+         xhaulOamPmCfgSessEthRemoteMepId must be assigned a non-default value.
+
+         Using xhaulOamPmCfgSessEthRemoteMepId (instead of
+         xhaulOamPmCfgSessEthDestMacAddr) has the following advantage: if the
+         hardware hosting a test's far end is replaced (meaning a new
+         destination MAC address is present), the test does not need to be
+         reconfigured."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgSessEthEntry 6 }
+
+xhaulOamPmCfgSessEthSrcMdName     OBJECT-TYPE
+    SYNTAX      TLNamedItemOrEmpty
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessEthSrcMdName specifies the name of the
+         source Ethernet Maintenance Domain (MD) to be used by the specified
+         session.
+
+         The source domain can be specified using xhaulOamPmCfgSessEthSrcMdName
+         or xhaulOamPmCfgSessEthSrcMdIndex (not both).
+         xhaulOamPmCfgSessEthSrcMdName is the preferred object for specifying
+         the source domain.
+
+         One of xhaulOamPmCfgSessEthSrcMdName and xhaulOamPmCfgSessEthSrcMdIndex
+         should be assigned a non-default value. Otherwise, an attempt to start
+         any test belonging to the session will fail.
+
+         If specified, xhaulOamPmCfgSessEthSrcMdName should match a name
+         configured using
+         XHAUL-IEEE8021-CFM-MIB::xhaulDot1agCfmMdMgmtAdminName.  Otherwise, the
+         session's tests will fail.
+
+         An empty string indicates a name has not been configured."
+    DEFVAL      { "" }
+    ::= { xhaulOamPmCfgSessEthEntry 7 }
+
+xhaulOamPmCfgSessEthSrcMaName     OBJECT-TYPE
+    SYNTAX      TLNamedItemOrEmpty
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgSessEthSrcMaName specifies the name of the
+         source Ethernet Maintenance Association (MA) to be used by the
+         specified session.
+
+         The source association can be specified using
+         xhaulOamPmCfgSessEthSrcMaName or xhaulOamPmCfgSessEthSrcMaIndex (not
+         both).  xhaulOamPmCfgSessEthSrcMaName is the preferred object for
+         specifying the source association.
+
+         One of xhaulOamPmCfgSessEthSrcMaName and xhaulOamPmCfgSessEthSrcMaIndex
+         should be assigned a non-default value. Otherwise, an attempt to start
+         any test belonging to the session will fail.
+
+         If specified, xhaulOamPmCfgSessEthSrcMaName should match a name
+         configured using
+         XHAUL-IEEE8021-CFM-MIB::xhaulDot1agCfmMaMgmtAdminName. Otherwise, the
+         session's tests will fail.
+
+         An empty string indicates a name has not been configured."
+    DEFVAL      { "" }
+    ::= { xhaulOamPmCfgSessEthEntry 8 }
+
+--
+-- OAM Performance Monitoring Delay Measures Configuration Table
+--
+
+xhaulOamPmCfgDelayDmmTable        OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmCfgDelayDmmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgDelayDmmTable contains the configuration information for
+         OAM Performance Monitoring Delay Measurement Message (DMM) tests."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 7.1 'Frame Delay
+         Measurements'"
+    ::= { xhaulOamPmCfgTableObjs 5 }
+
+xhaulOamPmCfgDelayDmmEntry        OBJECT-TYPE
+    SYNTAX      XhaulOamPmCfgDelayDmmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgDelayDmmEntry contains the configuration information for
+         one OAM Performance Monitoring Delay Measurement Message (DMM) test.
+
+         Rows are created or destroyed by SNMP Set operations on
+         xhaulOamPmCfgDelayDmmRowStatus.
+
+         An attempt to change any value in a row (except
+         xhaulOamPmCfgDelayDmmAdminStatus and xhaulOamPmCfgDelayDmmOnDmndStatus)
+         will be rejected if xhaulOamPmCfgDelayDmmAdminStatus is 'enabled(1)'."
+    INDEX       { xhaulOamPmCfgSessName }
+    ::= { xhaulOamPmCfgDelayDmmTable 1 }
+
+XhaulOamPmCfgDelayDmmEntry        ::= SEQUENCE
+{
+    xhaulOamPmCfgDelayDmmRowStatus    RowStatus,
+    xhaulOamPmCfgDelayDmmAdminStatus  XhaulEnabledDisabled,
+    xhaulOamPmCfgDelayDmmOnDmndStatus XhaulEnabledDisabledOrNA,
+    xhaulOamPmCfgDelayDmmTestId       Unsigned32,
+    xhaulOamPmCfgDelayDmmInterval     Unsigned32,
+    xhaulOamPmCfgDelayDmmDataTlvSize  Unsigned32,
+    xhaulOamPmCfgDelayDmmTestDuration Unsigned32,
+    xhaulOamPmCfgDelayDmmRunTimeLeft  Unsigned32
+}
+
+xhaulOamPmCfgDelayDmmRowStatus    OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgDelayDmmRowStatus specifies the status of the
+         configuration row for the specified session's DMM test.
+
+         An attempt to create a row for a session with
+         xhaulOamPmCfgSessTestFamily other than 'ethernet(1)' will be rejected."
+    ::= { xhaulOamPmCfgDelayDmmEntry 1 }
+
+xhaulOamPmCfgDelayDmmAdminStatus  OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabled
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgDelayDmmAdminStatus specifies whether or not
+         the specified session's DMM test is administratively enabled.
+
+         If the session type (xhaulOamPmCfgSessType) is 'proactive(1)', setting
+         xhaulOamPmCfgDelayDmmAdminStatus to 'enabled(1)'/'disabled(2)'
+         starts/stops the test.
+
+         If the session type is 'onDemand(2)', see the DESCRIPTION clause for
+         xhaulOamPmCfgDelayDmmOnDmndStatus for information on starting/stopping
+         the test.
+
+         An attempt to set this object to 'enabled(1)' will be rejected if the
+         xhaulOamPmCfgSessEthTable row for the specified session has incomplete
+         endpoint information for the test (e.g. if
+         xhaulOamPmCfgSessEthDestMacAddr is the all-zeroes MAC address)."
+    DEFVAL      { disabled }
+    ::= { xhaulOamPmCfgDelayDmmEntry 2 }
+
+xhaulOamPmCfgDelayDmmOnDmndStatus OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabledOrNA
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgDelayDmmOnDmndStatus specifies the status of
+         the on-demand DMM test for the specified session.
+
+         Values:
+            'enabled(1)'
+                Set by an SNMP manager to start an on-demand DMM test.  The test
+                will start if xhaulOamPmCfgDelayDmmAdminStatus is 'enabled(1)'.
+            'disabled(2)'
+                Set by an SNMP manager to stop an on-demand DMM test.
+                Set by the agent to indicate an on-demand DMM test has stopped
+                running because the configured period for the test (i.e.
+                xhaulOamPmCfgDelayDmmTestDuration) has ended.
+                Set by the agent for an on-demand DMM test when
+                xhaulOamPmCfgDelayDmmAdminStatus is set to 'disabled(2)'.
+            'notApplicable(3)'
+                This code point is the only acceptable value for a proactive
+                DMM test.  An attempt to set this code point for an on-demand
+                DMM test will be rejected.
+
+         The default value is 'disabled(2)' for an on-demand DMM test, and
+         'notApplicable(3)' for a proactive DMM test."
+    ::= { xhaulOamPmCfgDelayDmmEntry 3 }
+
+xhaulOamPmCfgDelayDmmTestId       OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..2147483647)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgDelayDmmTestId specifies the test identifier
+         for the specified session's DMM test.
+
+         When a DMM test is created, xhaulOamPmCfgDelayDmmRowStatus and
+         xhaulOamPmCfgDelayDmmTestId must be specified in the same SNMP Set PDU.
+
+         When a Y.1731 DMM PDU is being built, the test identifier is copied
+         into the PDU's Test ID TLV.
+
+         An attempt to add a duplicate test identifier to this table will be
+         rejected.
+
+         Test identifier values larger than 2147483647 are reserved for
+         internal use."
+    REFERENCE
+        "ITU-T G.8013/Y.1731, 'OAM functions and mechanisms for Ethernet based
+         networks', 07/2011, Figure 9.14-3, 'Test ID TLV format', and Section
+         9.15, 'DMM PDU'."
+    ::= { xhaulOamPmCfgDelayDmmEntry 4 }
+
+xhaulOamPmCfgDelayDmmInterval     OBJECT-TYPE
+    SYNTAX      Unsigned32 (100 | 1000 | 10000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgDelayDmmInterval specifies the elapsed time
+         between transmission of Y.1731 DMM PDUs for the specified session's
+         DMM test."
+    DEFVAL      { 1000 }
+    ::= { xhaulOamPmCfgDelayDmmEntry 5 }
+
+xhaulOamPmCfgDelayDmmDataTlvSize  OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 3..2000)
+    UNITS       "octets"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgDelayDmmDataTlvSize specifies the amount of
+         padding to be added to each launched Y.1731 DMM PDU for the specified
+         session's DMM test.
+
+         Zero specifies that a Data TLV should not be added to each launched
+         Y.1731 DMM PDU.
+
+         A value larger than zero specifies the total size (including the
+         header) of the Data TLV added to each launched Y.1731 DMM PDU."
+    REFERENCE
+        "ITU-T G.8013/Y.1731, 'OAM functions and mechanisms for Ethernet based
+         networks', 07/2011, Figure 9.3-3, 'Data TLV format', and Section
+         9.15, 'DMM PDU'."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgDelayDmmEntry 6 }
+
+xhaulOamPmCfgDelayDmmTestDuration OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..86400)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgDelayDmmTestDuration specifies the test
+         duration for the specified session's DMM test.
+
+         Zero specifies a test which runs until it is manually stopped.
+
+         An attempt to set a non-zero value will be rejected if
+         xhaulOamPmCfgSessType is 'proactive(1)'."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgDelayDmmEntry 7 }
+
+xhaulOamPmCfgDelayDmmRunTimeLeft  OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..86400)
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgDelayDmmRunTimeLeft indicates the run time
+         remaining for the specified session's DMM test.
+
+         For example, suppose a DMM test has the following configuration:
+
+         xhaulOamPmCfgSessType   xhaulOamPmCfgDelayDmmTestDuration
+         --------------------   --------------------------------
+         'onDemand(2)'          1000 (seconds)
+
+         Then, when the DMM test is started (see
+         xhaulOamPmCfgDelayDmmOnDmndStatus), xhaulOamPmCfgDelayDmmRunTimeLeft is
+         initialized to 1000 seconds.  After a minute,
+         xhaulOamPmCfgDelayDmmRunTimeLeft is 940 seconds.
+
+         If xhaulOamPmCfgSessType is 'proactive(1)', zero is always returned
+         (because a proactive test runs until it is manually stopped).
+
+         If xhaulOamPmCfgSessType is 'onDemand(2)' and the test is stopped (see
+         xhaulOamPmCfgDelayDmmOnDmndStatus), zero is returned (because the test
+         is not running)."
+    ::= { xhaulOamPmCfgDelayDmmEntry 8 }
+
+--
+-- OAM Performance Monitoring Loss Synthetic Measure Configuration Table
+--
+
+xhaulOamPmCfgLossSlmTable         OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmCfgLossSlmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgLossSlmTable contains the configuration information for
+         OAM Performance Monitoring Synthetic Loss Message (SLM) tests."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 7.2 'Frame Loss
+         Measurements'"
+    ::= { xhaulOamPmCfgTableObjs 6 }
+
+xhaulOamPmCfgLossSlmEntry         OBJECT-TYPE
+    SYNTAX      XhaulOamPmCfgLossSlmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgLossSlmEntry contains the configuration information for
+         one OAM Performance Monitoring Synthetic Loss Message (SLM) test.
+
+         Rows are created or destroyed by SNMP Set operations on
+         xhaulOamPmCfgLossSlmRowStatus.
+
+         An attempt to change any value in a row (except
+         xhaulOamPmCfgLossSlmAdminStatus and xhaulOamPmCfgLossSlmOnDmndStatus)
+         will be rejected if xhaulOamPmCfgLossSlmAdminStatus is 'enabled(1)'.
+
+         The following objects must all be set together in one SNMP Set PDU:
+            xhaulOamPmCfgLossSlmChliThreshold,
+            xhaulOamPmCfgLossSlmConsecDeltaTs,
+            xhaulOamPmCfgLossSlmInterval, and
+            xhaulOamPmCfgLossSlmTxFrmsPerDelT."
+    INDEX       { xhaulOamPmCfgSessName }
+    ::= { xhaulOamPmCfgLossSlmTable 1 }
+
+XhaulOamPmCfgLossSlmEntry         ::= SEQUENCE
+{
+    xhaulOamPmCfgLossSlmRowStatus     RowStatus,
+    xhaulOamPmCfgLossSlmAdminStatus   XhaulEnabledDisabled,
+    xhaulOamPmCfgLossSlmOnDmndStatus  XhaulEnabledDisabledOrNA,
+    xhaulOamPmCfgLossSlmTestId        Unsigned32,
+    xhaulOamPmCfgLossSlmInterval      Unsigned32,
+    xhaulOamPmCfgLossSlmDataTlvSize   Unsigned32,
+    xhaulOamPmCfgLossSlmTestDuration  Unsigned32,
+    xhaulOamPmCfgLossSlmRunTimeLeft   Unsigned32
+}
+
+xhaulOamPmCfgLossSlmRowStatus     OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgLossSlmRowStatus specifies the status of the
+         configuration row for the specified session's SLM test.
+
+         An attempt to create a row for a session with
+         xhaulOamPmCfgSessTestFamily other than 'ethernet(1)' will be rejected."
+    ::= { xhaulOamPmCfgLossSlmEntry 1 }
+
+xhaulOamPmCfgLossSlmAdminStatus   OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabled
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgLossSlmAdminStatus specifies whether or not
+         the specified session's SLM test is administratively enabled.
+
+         If the session type (xhaulOamPmCfgSessType) is 'proactive(1)', setting
+         xhaulOamPmCfgLossSlmAdminStatus to 'enabled(1)'/'disabled(2)'
+         starts/stops the test.
+
+         If the session type is 'onDemand(2)', see the DESCRIPTION clause for
+         xhaulOamPmCfgLossSlmOnDmndStatus for information on starting/stopping
+         the test.
+
+         An attempt to set this object to 'enabled(1)' will be rejected if the
+         xhaulOamPmCfgSessEthTable row for the specified session has incomplete
+         endpoint information for the test (e.g. if
+         xhaulOamPmCfgSessEthDestMacAddr is the all-zeroes MAC address)."
+    DEFVAL      { disabled }
+    ::= { xhaulOamPmCfgLossSlmEntry 2 }
+
+xhaulOamPmCfgLossSlmOnDmndStatus  OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabledOrNA
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgLossSlmOnDmndStatus specifies the status of
+         the on-demand SLM test for the specified session.
+
+         Values:
+            'enabled(1)'
+                Set by an SNMP manager to start an on-demand SLM test.  The test
+                will start if xhaulOamPmCfgLossSlmAdminStatus is 'enabled(1)'.
+            'disabled(2)'
+                Set by an SNMP manager to stop an on-demand SLM test.
+                Set by the agent to indicate an on-demand SLM test has stopped
+                running because the configured period for the test (i.e.
+                xhaulOamPmCfgLossSlmTestDuration) has ended.
+                Set by the agent for an on-demand SLM test when
+                xhaulOamPmCfgLossSlmAdminStatus is set to 'disabled(2)'.
+            'notApplicable(3)'
+                This code point is the only acceptable value for a proactive SLM
+                test.  An attempt to set this code point for an on-demand SLM
+                test will be rejected.
+
+         The default value is 'disabled(2)' for an on-demand SLM test, and
+         'notApplicable(3)' for a proactive SLM test."
+    ::= { xhaulOamPmCfgLossSlmEntry 3 }
+
+xhaulOamPmCfgLossSlmTestId        OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..2147483647)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgLossSlmTestId specifies the test identifier
+         for the specified session's SLM test.
+
+         When an SLM test is created, xhaulOamPmCfgLossSlmRowStatus and
+         xhaulOamPmCfgLossSlmTestId must be specified in the same SNMP Set PDU.
+
+         When a Y.1731 SLM PDU is being built, the test identifier is copied
+         into the PDU's Test ID field.
+
+         An attempt to add a duplicate test identifier to this table will be
+         rejected.
+
+         Test identifier values larger than 2147483647 are reserved for
+         internal use."
+    REFERENCE
+        "ITU-T G.8013/Y.1731, 'OAM functions and mechanisms for Ethernet based
+         networks', 07/2011, Section 9.22, 'SLM PDU'."
+    ::= { xhaulOamPmCfgLossSlmEntry 4 }
+
+xhaulOamPmCfgLossSlmInterval      OBJECT-TYPE
+    SYNTAX      Unsigned32 (100 | 1000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgLossSlmInterval specifies the elapsed time
+         between transmission of Y.1731 SLM PDUs for the specified session's
+         SLM test."
+    DEFVAL      { 100 }
+    ::= { xhaulOamPmCfgLossSlmEntry 5 }
+
+xhaulOamPmCfgLossSlmDataTlvSize   OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 3..2000)
+    UNITS       "octets"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgLossSlmDataTlvSize specifies the amount of
+         padding to be added to each launched Y.1731 SLM PDU for the specified
+         session's SLM test.
+
+         Zero specifies that a Data TLV should not be added to each launched
+         Y.1731 SLM PDU.
+
+         A value larger than zero specifies the total size (including the
+         header) of the Data TLV added to each launched Y.1731 SLM PDU."
+    REFERENCE
+        "ITU-T G.8013/Y.1731, 'OAM functions and mechanisms for Ethernet based
+         networks', 07/2011, Figure 9.3-3, 'Data TLV format', and Section
+         9.22, 'SLM PDU'."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgLossSlmEntry 6 }
+
+xhaulOamPmCfgLossSlmTestDuration  OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..86400)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgLossSlmTestDuration specifies the test
+         duration for the specified session's SLM test.
+
+         Zero specifies a test which runs until it is manually stopped.
+
+         An attempt to set a non-zero value will be rejected if
+         xhaulOamPmCfgSessType is 'proactive(1)'."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgLossSlmEntry 11 }
+
+xhaulOamPmCfgLossSlmRunTimeLeft   OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..86400)
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgLossSlmRunTimeLeft indicates the run time
+         remaining for the specified session's SLM test.
+
+         For example, suppose an SLM test has the following configuration:
+
+         xhaulOamPmCfgSessType   xhaulOamPmCfgLossSlmTestDuration
+         --------------------   --------------------------------
+         'onDemand(2)'          1000 (seconds)
+
+         Then, when the SLM test is started (see
+         xhaulOamPmCfgLossSlmOnDmndStatus), xhaulOamPmCfgLossSlmRunTimeLeft is
+         initialized to 1000 seconds.  After a minute,
+         xhaulOamPmCfgLossSlmRunTimeLeft is 940 seconds.
+
+         If xhaulOamPmCfgSessType is 'proactive(1)', zero is always returned
+         (because a proactive test runs until it is manually stopped).
+
+         If xhaulOamPmCfgSessType is 'onDemand(2)' and the test is stopped (see
+         xhaulOamPmCfgLossSlmOnDmndStatus), zero is returned (because the test
+         is not running)."
+    ::= { xhaulOamPmCfgLossSlmEntry 12 }
+
+
+--
+-- OAM Performance Monitoring Measures Intervals Configuration Table
+--
+
+xhaulOamPmCfgMeasIntvlTable       OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmCfgMeasIntvlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgMeasIntvlTable contains the configuration information for
+         OAM Performance Monitoring measurement intervals."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.1.6, 'Measurement
+         Intervals'"
+    ::= { xhaulOamPmCfgTableObjs 7 }
+
+xhaulOamPmCfgMeasIntvlEntry       OBJECT-TYPE
+    SYNTAX      XhaulOamPmCfgMeasIntvlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgMeasIntvlEntry contains the configuration information for
+         the OAM Performance Monitoring measurement interval associated with
+         the specified session and measurement interval duration.
+
+         Rows are created or destroyed by SNMP Set operations on
+         xhaulOamPmCfgMeasIntvlRowStatus."
+    INDEX       {
+        xhaulOamPmCfgSessName,
+        xhaulOamPmCfgMeasIntvlDuration
+    }
+    ::= { xhaulOamPmCfgMeasIntvlTable 1 }
+
+XhaulOamPmCfgMeasIntvlEntry       ::= SEQUENCE
+{
+    xhaulOamPmCfgMeasIntvlDuration    XhaulOamPmCfgMeasIntervalDuration,
+    xhaulOamPmCfgMeasIntvlRowStatus   RowStatus,
+    xhaulOamPmCfgMeasIntvlAccntPolicy Unsigned32,
+    xhaulOamPmCfgMeasIntvlsStored     Unsigned32,
+    xhaulOamPmCfgMeasIntvlBoundaryTyp INTEGER,
+    xhaulOamPmCfgMeasIntvlClockOffset Unsigned32,
+    xhaulOamPmCfgMeasIntvlDelayTCAs   XhaulEnabledDisabled,
+    xhaulOamPmCfgMeasIntvlLossTCAs    XhaulEnabledDisabled,
+    xhaulOamPmCfgMeasIntvlTCAs        XhaulEnabledDisabled
+}
+
+xhaulOamPmCfgMeasIntvlDuration    OBJECT-TYPE
+    SYNTAX      XhaulOamPmCfgMeasIntervalDuration
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgMeasIntvlDuration specifies the duration of
+         the measurement interval (e.g. 'mi15Minutes(2)') to be read or
+         configured."
+    ::= { xhaulOamPmCfgMeasIntvlEntry 1 }
+
+xhaulOamPmCfgMeasIntvlRowStatus   OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgMeasIntvlRowStatus specifies the status of
+         the configuration row for the specified session and measurement
+         interval duration."
+    ::= { xhaulOamPmCfgMeasIntvlEntry 2 }
+
+xhaulOamPmCfgMeasIntvlAccntPolicy OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 1..99)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgMeasIntvlAccntPolicy specifies the accounting
+         policy for the specified session and measurement interval duration.
+
+         Zero specifies that the specified session and measurement interval
+         duration has no associated accounting policy."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgMeasIntvlEntry 3 }
+
+xhaulOamPmCfgMeasIntvlsStored     OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..96)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgMeasIntvlsStored specifies the maximum number
+         of historical measurement intervals which can be read using SNMP Get
+         operations.
+
+         For example, suppose xhaulOamPmCfgMeasIntvlsStored is 32 in the row
+         indexed by {'mySess1', 'mi15Minutes(2)'}.  Suppose 'mySess1' has a DMM
+         test which has been running for at least 8 hours (i.e. 15
+         minutes/interval * 32 intervals).  Then, the number of SNMP accessible
+         15 minute intervals for the test is shown in the following table.
+
+         Test State  Number of SNMP Accessible 15 Minute Intervals
+         ----------  -----------------------------------------------------------
+         running     33 (i.e. 32 historical intervals, and the current interval)
+         stopped     32 (i.e. 32 historical intervals)
+
+         At the moment when a test is stopped, the current interval becomes the
+         newest historical interval.  If that makes the total number of
+         historical intervals larger than xhaulOamPmCfgMeasIntvlsStored, the
+         oldest historical interval is made SNMP inaccessible.
+
+         In a typical configuration, older statistics are recorded in a local
+         file (see xhaulOamPmCfgMeasIntvlAccntPolicy).  Statistics in the file
+         are not SNMP accessible.
+
+         The range and default of xhaulOamPmCfgMeasIntvlsStored varies with the
+         row's measurement interval duration index value, as follows.
+
+         xhaulOamPmCfgMeasIntvlDuration Intvls Stored Range Intvls Stored Default
+         ----------------------------- ------------------- ---------------------
+         'mi5Minutes(5)'                             1..96                    32
+         'mi15Minutes(2)'                            1..96                    32
+         'mi1Hour(3)'                                1..24                     8
+         'mi1Day(4)'                                  1..1                     1
+
+         The following limit is enforced per session (where 'S' is the session
+         name):
+            xhaulOamPmCfgMeasIntvlsStored.S.mi5Minutes(5) +
+            xhaulOamPmCfgMeasIntvlsStored.S.mi15Minutes(2) <= 96."
+    ::= { xhaulOamPmCfgMeasIntvlEntry 4 }
+
+xhaulOamPmCfgMeasIntvlBoundaryTyp OBJECT-TYPE
+    SYNTAX      INTEGER {
+        clockAligned (1),
+        testRelative (2)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgMeasIntvlBoundaryTyp specifies whether or not
+         the start of each measurement interval is aligned to the wall clock.
+
+         Values:
+            clockAligned(1)
+                For example, if the specified xhaulOamPmCfgMeasIntvlDuration is
+                'mi1Day(4)', the first measurement interval for the test will
+                start at midnight (UTC).  See the DESCRIPTION clause for
+                xhaulOamPmCfgMeasIntvlClockOffset for additional information.
+            testRelative(2)
+                The first measurement interval for the test will start when the
+                test starts."
+    DEFVAL      { clockAligned }
+    ::= { xhaulOamPmCfgMeasIntvlEntry 5 }
+
+xhaulOamPmCfgMeasIntvlClockOffset OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..86399)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgMeasIntvlClockOffset specifies the offset (in
+         seconds) for the start of a measurement interval.
+
+         For example, the following set of values will result in each one day
+         measurement interval for the specified session starting 6 seconds
+         after midnight (UTC).
+
+         Object                            Value
+         --------------------------------  -----------------
+         xhaulOamPmCfgMeasIntvlDuration     'mi1Day(4)'
+         xhaulOamPmCfgMeasIntvlBoundaryTyp  'clockAligned(1)'
+         xhaulOamPmCfgMeasIntvlClockOffset  6
+
+         This value must be less than xhaulOamPmCfgMeasIntvlDuration (expressed
+         in seconds).  For example, if xhaulOamPmCfgMeasIntvlDuration is
+         'mi15Minutes(2)' (i.e. 900 seconds), this value must be in the range
+         0..899.
+
+         An attempt to set this object to a non-zero value when
+         xhaulOamPmCfgMeasIntvlBoundaryTyp is 'testRelative(2)' will be
+         rejected."
+    DEFVAL      { 0 }
+    ::= { xhaulOamPmCfgMeasIntvlEntry 6 }
+
+xhaulOamPmCfgMeasIntvlDelayTCAs   OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabled
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgMeasIntvlDelayTCAs specifies the
+         administrative state of delay Threshold Crossing Alerts (TCAs) for
+         this measurement interval.
+
+         Delay TCAs are administratively enabled if both
+         xhaulOamPmCfgMeasIntvlDelayTCAs and xhaulOamPmCfgMeasIntvlTCAs are
+         'enabled(1)'.
+
+         Delay TCAs are configured using xhaulOamPmCfgThrDelayTable."
+    DEFVAL      { disabled }
+    ::= { xhaulOamPmCfgMeasIntvlEntry 7 }
+
+xhaulOamPmCfgMeasIntvlLossTCAs    OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabled
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgMeasIntvlLossTCAs specifies the
+         administrative state of loss Threshold Crossing Alerts (TCAs) for this
+         measurement interval.
+
+         Loss TCAs are administratively enabled if both
+         xhaulOamPmCfgMeasIntvlLossTCAs and xhaulOamPmCfgMeasIntvlTCAs are
+         'enabled(1)'.
+
+         Loss TCAs are configured using xhaulOamPmCfgThrLossFwBwTable and
+         xhaulOamPmCfgThrLossFwBwAgTable."
+    DEFVAL      { disabled }
+    ::= { xhaulOamPmCfgMeasIntvlEntry 8 }
+
+xhaulOamPmCfgMeasIntvlTCAs        OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabled
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgMeasIntvlTCAs specifies the administrative
+         state of Threshold Crossing Alerts (TCAs) for this measurement
+         interval.
+
+         Delay TCAs are administratively enabled if both
+         xhaulOamPmCfgMeasIntvlDelayTCAs and xhaulOamPmCfgMeasIntvlTCAs are
+         'enabled(1)'.
+
+         Loss TCAs are administratively enabled if both
+         xhaulOamPmCfgMeasIntvlLossTCAs and xhaulOamPmCfgMeasIntvlTCAs are
+         'enabled(1)'."
+    DEFVAL      { disabled }
+    ::= { xhaulOamPmCfgMeasIntvlEntry 9 }
+
+
+--
+-- OAM Performance Monitoring TWAMP-Light Reflector Configuration Table
+--
+xhaulOamPmCfgTwlRflTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF XhaulOamPmCfgTwlRflEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+"xhaulOamPmCfgTwlRflTable contains the configuration information for OAM
+Performance Monitoring TWAMP-Light (Two-Way Active Measurement
+Protocol, Light) reflectors.
+A TWAMP-Light reflector responds to TWAMP-Test frames."
+REFERENCE
+"RFC 5357, 'A Two-Way Active Measurement Protocol (TWAMP)', Appendix I,
+'TWAMP Light'."
+    ::= { xhaulOamPmCfgTableObjs 10 }
+
+xhaulOamPmCfgTwlRflEntry OBJECT-TYPE
+    SYNTAX XhaulOamPmCfgTwlRflEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+"xhaulOamPmCfgTwlRflEntry contains the configuration information for the
+OAM Performance Monitoring TWAMP-Light reflector for the virtual
+router specified by the given service identifier.
+Service identifier zero specifies the Base virtual router (i.e. the
+virtual router with TIMETRA-VRTR-MIB::vRtrName = 'Base').
+A service identifier larger than zero must be the service identifier
+of a VPRN service (i.e. a service with TIMETRA-SERV-MIB::svcType =
+'vprn(4)').
+Rows are created or destroyed by SNMP Set operations on
+xhaulOamPmCfgTwlRflRowStatus.
+A row indexed by a VPRN service identifier is destroyed when the VPRN
+service is destroyed."
+INDEX { svcId }
+    ::= { xhaulOamPmCfgTwlRflTable 1 }
+
+XhaulOamPmCfgTwlRflEntry          ::= SEQUENCE {
+    xhaulOamPmCfgTwlRflRowStatus      RowStatus,
+    xhaulOamPmCfgTwlRflAdminStatus    XhaulEnabledDisabled,
+    xhaulOamPmCfgTwlRflDescription    TItemDescription,
+    xhaulOamPmCfgTwlRflListenUdpPort  Unsigned32
+}
+
+xhaulOamPmCfgTwlRflRowStatus      OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflRowStatus specifies the status of the
+         configuration row for the TWAMP-Light reflector for the virtual router
+         specified by the given service identifier.
+
+         When a reflector is created, xhaulOamPmCfgTwlRflRowStatus and
+         xhaulOamPmCfgTwlRflListenUdpPort must be specified in the same SNMP Set
+         PDU."
+    ::= { xhaulOamPmCfgTwlRflEntry 1 }
+
+xhaulOamPmCfgTwlRflAdminStatus    OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabled
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflAdminStatus specifies whether or not the
+         specified TWAMP-Light reflector is administratively enabled.
+
+         xhaulOamPmCfgTwlRflListenUdpPort cannot be changed while
+         xhaulOamPmCfgTwlRflAdminStatus is 'enabled(1)'."
+    DEFVAL { disabled }
+    ::= { xhaulOamPmCfgTwlRflEntry 2 }
+
+xhaulOamPmCfgTwlRflDescription    OBJECT-TYPE
+    SYNTAX      TItemDescription
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflDescription specifies the descriptive
+         text for the specified TWAMP-Light reflector."
+    DEFVAL { "" }
+    ::= { xhaulOamPmCfgTwlRflEntry 3 }
+
+xhaulOamPmCfgTwlRflListenUdpPort OBJECT-TYPE
+    SYNTAX Unsigned32 (862 | 1024..65535)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflListenUdpPort specifies the UDP port on
+which the specified TWAMP-Light reflector listens for TWAMP PDUs.
+When a reflector is created, xhaulOamPmCfgTwlRflRowStatus and
+xhaulOamPmCfgTwlRflListenUdpPort must be specified in the same SNMP Set
+PDU.
+xhaulOamPmCfgTwlRflListenUdpPort cannot be changed while
+xhaulOamPmCfgTwlRflAdminStatus is 'enabled(1)'.
+The valid range is 862|64364..64373. A wider range appears in the
+SYNTAX clause (above), for backward compatibility.
+IANA has standardized the use of UDP port 862 for TWAMP Control
+services."
+REFERENCE
+"IANA Service Name and Transport Protocol Port Number Registry,
+2017-12-29, https://www.iana.org/assignments/
+service-names-port-numbers/ service-names-port-numbers.xhtml."
+::= { xhaulOamPmCfgTwlRflEntry 4 }
+
+--
+-- OAM Performance Monitoring TWAMP-Light Reflector Prefix Configuration Table
+--
+xhaulOamPmCfgTwlRflPfxTable       OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmCfgTwlRflPfxEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgTwlRflPfxTable contains the configuration information for
+         OAM Performance Monitoring TWAMP-Light (Two-Way Active Measurement
+         Protocol, Light) reflector prefixes.
+
+         The set of prefixes configured for a TWAMP-Light reflector defines a
+         set of valid source addresses for the reflector.  When the reflector is
+         validating an incoming TWAMP-Test PDU, the PDU is rejected (and
+         counted) if its source address is invalid."
+    REFERENCE
+        "RFC 5357, 'A Two-Way Active Measurement Protocol (TWAMP)', Appendix I,
+        'TWAMP Light'."
+    ::= { xhaulOamPmCfgTableObjs 11 }
+
+xhaulOamPmCfgTwlRflPfxEntry       OBJECT-TYPE
+    SYNTAX      XhaulOamPmCfgTwlRflPfxEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgTwlRflPfxEntry contains the configuration information for
+         the OAM Performance Monitoring TWAMP-Light reflector prefix specified
+         by the indices.
+
+         Rows are created or destroyed by SNMP Set operations on
+         xhaulOamPmCfgTwlRflPfxRowStatus.
+
+         Rows are destroyed when the corresponding xhaulOamPmCfgTwlRflTable row
+         is destroyed."
+    INDEX {
+        svcId,
+        xhaulOamPmCfgTwlRflPfxPrefixType,
+        xhaulOamPmCfgTwlRflPfxPrefix,
+        xhaulOamPmCfgTwlRflPfxPrefixLen
+    }
+    ::= { xhaulOamPmCfgTwlRflPfxTable 1 }
+
+XhaulOamPmCfgTwlRflPfxEntry       ::= SEQUENCE {
+    xhaulOamPmCfgTwlRflPfxPrefixType  InetAddressType,
+    xhaulOamPmCfgTwlRflPfxPrefix      InetAddress,
+    xhaulOamPmCfgTwlRflPfxPrefixLen   InetAddressPrefixLength,
+    xhaulOamPmCfgTwlRflPfxRowStatus   RowStatus,
+    xhaulOamPmCfgTwlRflPfxDescription TItemDescription
+}
+
+xhaulOamPmCfgTwlRflPfxPrefixType  OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflPfxPrefixType specifies the prefix type
+         of xhaulOamPmCfgTwlRflPfxPrefix."
+    ::= { xhaulOamPmCfgTwlRflPfxEntry 1 }
+
+xhaulOamPmCfgTwlRflPfxPrefix OBJECT-TYPE
+    SYNTAX InetAddress (SIZE (4|16))
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflPfxPrefix (in combination with
+xhaulOamPmCfgTwlRflPfxPrefixType and xhaulOamPmCfgTwlRflPfxPrefixLen)
+specifies a valid source prefix for the TWAMP-Light reflector
+specified by the given service identifier.
+A TWAMP-Test PDU with an invalid source address (i.e. a source address
+which matches none of the prefixes configured against the reflector)
+will be counted and dropped by the reflector. Therefore, if no
+prefixes are configured against a reflector, the reflector will drop
+and count all incoming PDUs.
+Configuring the prefix 0.0.0.0/0 instructs the reflector to accept the
+source address in each incoming IPv4 TWAMP-Test PDU.
+Configuring the prefix 0::0/0 instructs the reflector to accept the
+source address in each incoming IPv6 TWAMP-Test PDU."
+::= { xhaulOamPmCfgTwlRflPfxEntry 2 }
+
+xhaulOamPmCfgTwlRflPfxPrefixLen   OBJECT-TYPE
+    SYNTAX      InetAddressPrefixLength (0..128)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflPfxPrefixLen (in combination with
+         xhaulOamPmCfgTwlRflPfxPrefixType and xhaulOamPmCfgTwlRflPfxPrefix)
+         specifies a valid source prefix for the TWAMP-Light reflector specified
+         by the given service identifier."
+    ::= { xhaulOamPmCfgTwlRflPfxEntry 3 }
+
+xhaulOamPmCfgTwlRflPfxRowStatus   OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflPfxRowStatus specifies the status of the
+         configuration row for the specified TWAMP-Light reflector prefix.
+
+         An attempt to create a row will be rejected if there is no row with the
+         same svcId in xhaulOamPmCfgTwlRflTable."
+    ::= { xhaulOamPmCfgTwlRflPfxEntry 4 }
+
+xhaulOamPmCfgTwlRflPfxDescription OBJECT-TYPE
+    SYNTAX      TItemDescription
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflPfxDescription specifies the descriptive
+         text for the specified TWAMP-Light reflector prefix."
+    DEFVAL { "" }
+    ::= { xhaulOamPmCfgTwlRflPfxEntry 5 }
+
+--
+-- OAM Performance Monitoring TWAMP-Light Reflector Configuration Table for L2 services
+--
+xhaulOamPmCfgTwlRflL2Table OBJECT-TYPE
+    SYNTAX SEQUENCE OF XhaulOamPmCfgTwlRflL2Entry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+"xhaulOamPmCfgTwlRflL2Table contains the configuration information for OAM
+Performance Monitoring TWAMP-Light (Two-Way Active Measurement
+Protocol, Light) reflectors for L2 services.
+A TWAMP-Light reflector responds to TWAMP-Test frames."
+REFERENCE
+"RFC 5357, 'A Two-Way Active Measurement Protocol (TWAMP)', Appendix I,
+'TWAMP Light'."
+    ::= { xhaulOamPmCfgTableObjs 19 }
+
+xhaulOamPmCfgTwlRflL2Entry OBJECT-TYPE
+SYNTAX XhaulOamPmCfgTwlRflL2Entry
+MAX-ACCESS not-accessible
+STATUS current
+DESCRIPTION
+"xhaulOamPmCfgTwlRflL2Entry contains the configuration information for the
+OAM Performance Monitoring TWAMP-Light reflector related to the L2 service 
+specified by the given VLAN tag. An entry for this VLAN tag must be already 
+present in dot1qVlanStaticTable.
+Rows are created or destroyed by SNMP Set operations on
+xhaulOamPmCfgTwlRflL2RowStatus.
+A row indexed by a VLAN tag is destroyed when the VLAN tag is 
+removed from the VLAN table."
+INDEX { xhaulOamPmCfgTwlRflL2VlanTag }
+::= { xhaulOamPmCfgTwlRflL2Table 1 }
+
+XhaulOamPmCfgTwlRflL2Entry ::= SEQUENCE
+{
+xhaulOamPmCfgTwlRflL2VlanTag Integer32,
+xhaulOamPmCfgTwlRflL2RowStatus RowStatus,
+xhaulOamPmCfgTwlRflL2AdminStatus XhaulEnabledDisabled,
+xhaulOamPmCfgTwlRflL2Description TItemDescription,
+xhaulOamPmCfgTwlRflL2ListenUdpPort Unsigned32,
+xhaulOamPmCfgTwlRflL2HostPrefixType InetAddressType,
+xhaulOamPmCfgTwlRflL2HostPrefix InetAddress,
+xhaulOamPmCfgTwlRflL2HostPrefixLength InetAddressPrefixLength,
+xhaulOamPmCfgTwlRflL2DefGateway InetAddress,
+xhaulOamPmCfgTwlRflL2HostPhysicalAddress MacAddress,
+xhaulOamPmCfgTwlRflL2HostLinkLocalAddress InetAddress
+}
+
+xhaulOamPmCfgTwlRflL2VlanTag OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflL2VlanTag specifies the Vlan tag identifing the L2 service."
+    ::= { xhaulOamPmCfgTwlRflL2Entry 1 }
+
+xhaulOamPmCfgTwlRflL2RowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflL2RowStatus specifies the status of the
+configuration row for the TWAMP-Light reflector related to the L2 service 
+specified by the given VLAN tag.
+When a reflector is created, xhaulOamPmCfgTwlRflL2RowStatus and
+xhaulOamPmCfgTwlRflL2ListenUdpPort must be specified in the same SNMP Set
+PDU."
+::= { xhaulOamPmCfgTwlRflL2Entry 2 }
+
+xhaulOamPmCfgTwlRflL2AdminStatus OBJECT-TYPE
+    SYNTAX XhaulEnabledDisabled
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflL2AdminStatus specifies whether or not
+the specified TWAMP-Light reflector is administratively enabled.
+xhaulOamPmCfgTwlRflL2ListenUdpPort cannot be changed while
+xhaulOamPmCfgTwlRflL2AdminStatus is 'enabled(1)'."
+DEFVAL { disabled }
+::= { xhaulOamPmCfgTwlRflL2Entry 3 }
+
+xhaulOamPmCfgTwlRflL2Description OBJECT-TYPE
+SYNTAX TItemDescription
+MAX-ACCESS read-create
+STATUS current
+DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflL2Description specifies the descriptive
+text for the specified TWAMP-Light reflector."
+DEFVAL { "" }
+::= { xhaulOamPmCfgTwlRflL2Entry 4 }
+
+xhaulOamPmCfgTwlRflL2ListenUdpPort OBJECT-TYPE
+    SYNTAX Unsigned32 (862 | 1024..65535)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflL2ListenUdpPort specifies the UDP port on
+which the specified TWAMP-Light reflector listens for TWAMP PDUs.
+When a reflector is created, xhaulOamPmCfgTwlRflL2RowStatus and
+xhaulOamPmCfgTwlRflL2ListenUdpPort must be specified in the same SNMP Set
+PDU.
+xhaulOamPmCfgTwlRflL2ListenUdpPort cannot be changed while
+xhaulOamPmCfgTwlRflL2AdminStatus is 'enabled(1)'.
+The valid range is 862|64364..64373. A wider range appears in the
+SYNTAX clause (above), for backward compatibility.
+IANA has standardized the use of UDP port 862 for TWAMP Control
+services."
+REFERENCE
+"IANA Service Name and Transport Protocol Port Number Registry,
+2017-12-29, https://www.iana.org/assignments/
+service-names-port-numbers/ service-names-port-numbers.xhtml."
+::= { xhaulOamPmCfgTwlRflL2Entry 5 }
+
+xhaulOamPmCfgTwlRflL2HostPrefixType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflL2HostPrefixType specifies 
+         the prefix type of xhaulOamPmCfgTwlRflL2HostPrefix."
+    DEFVAL { unknown }
+    ::= { xhaulOamPmCfgTwlRflL2Entry 6 }
+
+xhaulOamPmCfgTwlRflL2HostPrefix OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflL2HostPrefix specifies, in combination with
+         xhaulOamPmCfgTwlRflL2PrefixType and xhaulOamPmCfgTwlRflL2PrefixLen,
+         the prefix of the host IP interface belonging to the broadcast domain of the 
+         VLAN tag defined in xhaulOamPmCfgTwlRflL2VlanTag."
+    ::= { xhaulOamPmCfgTwlRflL2Entry 7 }
+
+xhaulOamPmCfgTwlRflL2HostPrefixLength OBJECT-TYPE
+    SYNTAX InetAddressPrefixLength
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "The value of xhaulOamPmCfgTwlRflL2HostPrefixLength specifies, in combination with
+         xhaulOamPmCfgTwlRflL2PrefixType and xhaulOamPmCfgTwlRflL2Prefix,
+         the prefix of the host IP interface belonging to the broadcast domain of the 
+         VLAN tag defined in xhaulOamPmCfgTwlRflL2VlanTag."
+    ::= { xhaulOamPmCfgTwlRflL2Entry 8 }
+
+xhaulOamPmCfgTwlRflL2DefGateway OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "The value of xhaulOamPmCfgTwlRflL2DefGateway specifies the IP address of the default gateway."
+    ::= { xhaulOamPmCfgTwlRflL2Entry 9 }
+
+xhaulOamPmCfgTwlRflL2HostPhysicalAddress OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The Host IP interface's address at its protocol sub-layer. This object normally contains a MAC address. The
+         interface's media-specific MIB must define the bit and byte ordering
+         and the format of the value of this object."
+    DEFVAL { '000000000000'H }
+    ::= { xhaulOamPmCfgTwlRflL2Entry 10 }
+
+
+xhaulOamPmCfgTwlRflL2HostLinkLocalAddress OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(0|20))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTwlRflL2HostLinkLocalAddress indicates the link local address of the Host IP interface."
+    ::= { xhaulOamPmCfgTwlRflL2Entry 11 }
+
+
+--
+-- OAM Performance Monitoring TWAMP-Light Reflector Prefix Configuration Table for L2 services
+--
+xhaulOamPmCfgTwlRflPfxL2Table OBJECT-TYPE
+    SYNTAX SEQUENCE OF XhaulOamPmCfgTwlRflPfxL2Entry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"xhaulOamPmCfgTwlRflPfxL2Table contains the configuration information for
+	OAM Performance Monitoring TWAMP-Light (Two-Way Active Measurement
+	Protocol, Light) reflector prefixes.
+	The set of prefixes configured for a TWAMP-Light reflector defines a
+	set of valid source addresses for the reflector. When the reflector is
+	validating an incoming TWAMP-Test PDU, the PDU is rejected (and
+	counted) if its source address is invalid."
+     REFERENCE
+	"RFC 5357, 'A Two-Way Active Measurement Protocol (TWAMP)', Appendix I,
+	'TWAMP Light'."
+    ::= { xhaulOamPmCfgTableObjs 20 }
+
+xhaulOamPmCfgTwlRflPfxL2Entry OBJECT-TYPE
+     SYNTAX XhaulOamPmCfgTwlRflPfxL2Entry
+     MAX-ACCESS not-accessible
+     STATUS current
+     DESCRIPTION
+	"xhaulOamPmCfgTwlRflPfxL2Entry contains the configuration information for
+	the OAM Performance Monitoring TWAMP-Light reflector prefix specified
+	by the indices.
+	Rows are created or destroyed by SNMP Set operations on
+	xhaulOamPmCfgTwlRflPfxL2RowStatus.
+	Rows are destroyed when the corresponding xhaulOamPmCfgTwlRflTable row
+	is destroyed."
+     INDEX {
+	xhaulOamPmCfgTwlRflL2VlanTag,
+	xhaulOamPmCfgTwlRflPfxL2PrefixType,
+	xhaulOamPmCfgTwlRflPfxL2Prefix,
+	xhaulOamPmCfgTwlRflPfxL2PrefixLen
+	}
+      ::= { xhaulOamPmCfgTwlRflPfxL2Table 1 }
+
+XhaulOamPmCfgTwlRflPfxL2Entry ::= SEQUENCE
+      { 
+	xhaulOamPmCfgTwlRflPfxL2PrefixType InetAddressType,
+	xhaulOamPmCfgTwlRflPfxL2Prefix InetAddress,
+	xhaulOamPmCfgTwlRflPfxL2PrefixLen InetAddressPrefixLength,
+	xhaulOamPmCfgTwlRflPfxL2RowStatus RowStatus,
+	xhaulOamPmCfgTwlRflPfxL2Description TItemDescription
+       }
+
+xhaulOamPmCfgTwlRflPfxL2PrefixType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflPfxL2PrefixType specifies the prefix type
+of xhaulOamPmCfgTwlRflPfxL2Prefix."
+::= { xhaulOamPmCfgTwlRflPfxL2Entry 1 }
+
+xhaulOamPmCfgTwlRflPfxL2Prefix OBJECT-TYPE
+    SYNTAX InetAddress (SIZE (4|16))
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflPfxL2Prefix (in combination with
+xhaulOamPmCfgTwlRflPfxL2PrefixType and xhaulOamPmCfgTwlRflPfxL2PrefixLen)
+specifies a valid source prefix for the TWAMP-Light reflector
+specified by the given service identifier.
+A TWAMP-Test PDU with an invalid source address (i.e. a source address
+which matches none of the prefixes configured against the reflector)
+will be counted and dropped by the reflector. Therefore, if no
+prefixes are configured against a reflector, the reflector will drop
+and count all incoming PDUs.
+Configuring the prefix 0.0.0.0/0 instructs the reflector to accept the
+source address in each incoming IPv4 TWAMP-Test PDU.
+Configuring the prefix 0::0/0 instructs the reflector to accept the
+source address in each incoming IPv6 TWAMP-Test PDU."
+::= { xhaulOamPmCfgTwlRflPfxL2Entry 2 }
+
+xhaulOamPmCfgTwlRflPfxL2PrefixLen OBJECT-TYPE
+    SYNTAX InetAddressPrefixLength (0..128)
+    UNITS "bits"
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflPfxL2PrefixLen (in combination with
+xhaulOamPmCfgTwlRflPfxL2PrefixType and xhaulOamPmCfgTwlRflPfxL2Prefix)
+specifies a valid source prefix for the TWAMP-Light reflector
+specified by the given service identifier."
+::= { xhaulOamPmCfgTwlRflPfxL2Entry 3 }
+
+xhaulOamPmCfgTwlRflPfxL2RowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflPfxL2RowStatus specifies the status of
+the configuration row for the specified TWAMP-Light reflector prefix.
+An attempt to create a row will be rejected if there is no row with
+the same svcId in xhaulOamPmCfgTwlRflTable."
+::= { xhaulOamPmCfgTwlRflPfxL2Entry 4 }
+
+xhaulOamPmCfgTwlRflPfxL2Description OBJECT-TYPE
+    SYNTAX TItemDescription
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmCfgTwlRflPfxL2Description specifies the
+descriptive text for the specified TWAMP-Light reflector prefix."
+DEFVAL { "" }
+::= { xhaulOamPmCfgTwlRflPfxL2Entry 5 }
+
+--
+-- OAM Performance Monitoring Loss Thresholds Configuration Table
+--
+
+xhaulOamPmCfgThrLossFwBwTable     OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmCfgThrLossFwBwEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgThrLossFwBwTable contains configured thresholds for OAM
+         Performance Monitoring loss TCAs.  The subset of the loss thresholds
+         that are only configurable in the forward and backward directions is
+         configured using this table."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 10.2, 'Single-Ended Synthetic
+         Loss Function for Frame Loss Ratio (FLR) and Availability'."
+    ::= { xhaulOamPmCfgTableObjs 13 }
+
+xhaulOamPmCfgThrLossFwBwEntry     OBJECT-TYPE
+    SYNTAX      XhaulOamPmCfgThrLossFwBwEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgThrLossFwBwEntry contains the configured thresholds for the
+         forward or backward direction of one OAM-PM loss test.  For example, a
+         row may contain the configurable thresholds for the forward direction
+         for the SLM test belonging to OAM-PM session OAM_PM_Eth_session_1.
+
+         The agent creates/destroys two rows (forward and backward) in this table for
+         each OAM-PM loss test created/destroyed.  A manager creates a loss test
+         using:
+            xhaulOamPmCfgLossLmmRowStatus,
+            xhaulOamPmCfgLossSlmRowStatus, or
+            xhaulOamPmCfgTwampLtRowStatus."
+    INDEX       {
+        xhaulOamPmCfgSessName,
+	   xhaulOamPmCfgMeasIntvlDuration,
+        xhaulOamPmCfgTestType,
+        xhaulOamPmCfgForwardBackward
+    }
+    ::= { xhaulOamPmCfgThrLossFwBwTable 1 }
+
+XhaulOamPmCfgThrLossFwBwEntry     ::= SEQUENCE
+{
+    xhaulOamPmCfgTestType             XhaulOamPmTestType,
+    xhaulOamPmCfgForwardBackward      XhaulOamPmForwardBackward,
+    xhaulOamPmCfgThrLossAvgFlrRaise   Integer32,
+    xhaulOamPmCfgThrLossAvgFlrClear   Integer32
+}
+
+xhaulOamPmCfgTestType             OBJECT-TYPE
+    SYNTAX      XhaulOamPmTestType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgTestType specifies the test type index of the
+         row.
+
+         The test types supporting loss thresholds are 'slm(2)',
+         'twampLight(3)', and 'lmm(4)'."
+    ::= { xhaulOamPmCfgThrLossFwBwEntry 1 }
+
+xhaulOamPmCfgForwardBackward      OBJECT-TYPE
+    SYNTAX      XhaulOamPmForwardBackward
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgForwardBackward specifies the direction index
+         of the row."
+    ::= { xhaulOamPmCfgThrLossFwBwEntry 2 }
+
+xhaulOamPmCfgThrLossAvgFlrRaise   OBJECT-TYPE
+    SYNTAX      Integer32 (-1 | 1..100000)
+    UNITS       "milli-percent"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgThrLossAvgFlrRaise specifies the raise
+         threshold for the average Frame Loss Ratio (FLR).
+
+         Depending on the specified indices, xhaulOamPmCfgThrLossAvgFlrRaise is
+         the raise threshold for:
+            xhaulOamPmStsLossSlmAvgFlrFwd,
+            xhaulOamPmStsLossSlmAvgFlrBwd,
+            xhaulOamPmStsLossLmmAvgFlrFwd,
+            xhaulOamPmStsLossLmmAvgFlrBwd,
+            xhaulOamPmStsLossTwlAvgFlrFwd, or
+            xhaulOamPmStsLossTwlAvgFlrBwd.
+
+         For example, suppose:
+         1.  OAM-PM loss TCAs are enabled for the 'mi15minutes(2)' measurement
+         interval of the OAM-PM session OAM_PM_Eth_session_1 (using
+         xhaulOamPmCfgMeasIntvlLossTCAs and xhaulOamPmCfgMeasIntvlTCAs).
+         2.  xhaulOamPmCfgThrLossAvgFlrRaise is set to 5000 (i.e. 5.000%) for the
+         indices {OAM_PM_Eth_session_1, 'slm(2)', 'forward(1)'}.
+         3.  At the end of a 15 minute interval belonging to
+         OAM_PM_Eth_session_1's SLM test, the average FLR (i.e.
+         xhaulOamPmStsLossSlmAvgFlrFwd) is 5000 (i.e. 5.000%) or more.
+         4.  Generating an average FLR Raise TCA is allowed (e.g. the most
+         recent average FLR TCA for the specified indices was a Clear).
+
+         Then, the agent generates an average FLR Raise TCA (using
+         xhaulOamPmThrRaise) at the end of the 15-minute interval, for the
+         forward direction.
+
+         Negative one specifies that average FLR thresholding is disabled for
+         the specified indices (i.e. the agent will not generate a Raise TCA, or a
+         Clear TCA).
+
+         xhaulOamPmCfgThrLossAvgFlrRaise must be greater than
+         xhaulOamPmCfgThrLossAvgFlrClear.  Exception: the combination
+         xhaulOamPmCfgThrLossAvgFlrRaise=-1 and xhaulOamPmCfgThrLossAvgFlrClear=-1
+         is supported.
+
+         xhaulOamPmCfgThrLossAvgFlrRaise and xhaulOamPmCfgThrLossAvgFlrClear must
+         be set in the same SNMP Set PDU."
+    DEFVAL      { -1 }
+    ::= { xhaulOamPmCfgThrLossFwBwEntry 3 }
+
+xhaulOamPmCfgThrLossAvgFlrClear   OBJECT-TYPE
+    SYNTAX      Integer32 (-1 | 0..99999)
+    UNITS       "milli-percent"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgThrLossAvgFlrClear specifies the clear
+         threshold for the average Frame Loss Ratio (FLR).
+
+         Depending on the specified indices, xhaulOamPmCfgThrLossAvgFlrClear is
+         the clear threshold for:
+            xhaulOamPmStsLossSlmAvgFlrFwd,
+            xhaulOamPmStsLossSlmAvgFlrBwd,
+            xhaulOamPmStsLossLmmAvgFlrFwd,
+            xhaulOamPmStsLossLmmAvgFlrBwd,
+            xhaulOamPmStsLossTwlAvgFlrFwd, or
+            xhaulOamPmStsLossTwlAvgFlrBwd.
+
+         For example, suppose:
+         1.  OAM-PM loss TCAs are enabled for the 'mi15minutes(2)' measurement
+         interval of the OAM-PM session OAM_PM_Eth_session_1 (using
+         xhaulOamPmCfgMeasIntvlLossTCAs and xhaulOamPmCfgMeasIntvlTCAs).
+         2.  xhaulOamPmCfgThrLossAvgFlrClear is set to 4000 (i.e. 4.000%) for the
+         indices {OAM_PM_Eth_session_1, 'slm(2)', 'forward(1)'}.
+         3.  A previous 15 minute interval belonging to OAM_PM_Eth_session_1's
+         SLM test generated an average FLR Raise TCA for the forward direction
+         (see xhaulOamPmCfgThrLossAvgFlrRaise).  The TCA has not been cleared.
+         4.  The just-closed 15-minute interval has an average forward FLR for
+         the forward direction (i.e. xhaulOamPmStsLossSlmAvgFlrFwd) of 4000 (i.e.
+         4.000%), or less.
+
+         Then, the agent generates an average FLR Clear TCA (using
+         xhaulOamPmThrClear) at the end of the 15-minute interval, for the
+         forward direction.
+
+         If xhaulOamPmCfgThrLossAvgFlrRaise > 0 AND
+         xhaulOamPmCfgThrLossAvgFlrClear >= 0, average FLR Clear TCAs can be
+         generated for the specified indices.  In this case, the maximum number
+         of average FLR TCAs that will be generated for the specified indices
+         across (for example) two 15 minute intervals is two: Raise and Clear.
+
+         If xhaulOamPmCfgThrLossAvgFlrRaise > 0 AND
+         xhaulOamPmCfgThrLossAvgFlrClear = -1, no average FLR Clear TCAs
+         will be generated for the specified indices.  In this case, the maximum
+         number of average FLR TCAs that will be generated for the specified
+         indices across (for example) two 15 minute intervals is two: Raise and
+         Raise.
+
+         xhaulOamPmCfgThrLossAvgFlrRaise must be greater than
+         xhaulOamPmCfgThrLossAvgFlrClear.  Exception: the combination
+         xhaulOamPmCfgThrLossAvgFlrRaise=-1 and xhaulOamPmCfgThrLossAvgFlrClear=-1
+         is supported.
+
+         xhaulOamPmCfgThrLossAvgFlrClear and xhaulOamPmCfgThrLossAvgFlrClear must
+         be set in the same SNMP Set PDU."
+    DEFVAL      { -1 }
+    ::= { xhaulOamPmCfgThrLossFwBwEntry 4 }
+
+--
+-- OAM Performance Monitoring Delay Threshols Configuration Table
+--
+
+xhaulOamPmCfgThrDelayTable        OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmCfgThrDelayEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgThrDelayTable contains threshold configuration for OAM
+         Performance Monitoring delay TCAs."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.2 'Measurement Bins'"
+    ::= { xhaulOamPmCfgTableObjs 15 }
+
+xhaulOamPmCfgThrDelayEntry        OBJECT-TYPE
+    SYNTAX      XhaulOamPmCfgThrDelayEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmCfgThrDelayEntry contains the threshold configuration for one
+         OAM-PM bin group, bin type, and direction.
+
+         For example, a row may contain the threshold configuration for bin
+         group 255, bin type 'ifdv(3)', and direction 'twoWay(3)'.
+
+         The agent creates/destroys nine rows (i.e. {'fd(1)', 'fdr(2)', 'ifdv(3)'} x
+         {'forward(1)', 'backward(2)', 'twoWay(3)'}) when an OAM-PM bin group is
+         created/destroyed.  A manager creates/destroys an OAM-PM bin group
+         using xhaulOamPmCfgBinGroupRowStatus.
+
+         The objects in this table cannot be changed from the default value
+         when the index value xhaulOamPmCfgBinGroupId is 1."
+    INDEX       {
+        xhaulOamPmCfgSessName,
+	  xhaulOamPmCfgMeasIntvlDuration,
+        xhaulOamPmCfgBinType,
+        xhaulOamPmCfgForwardBackward2Way
+    }
+    ::= { xhaulOamPmCfgThrDelayTable 1 }
+
+XhaulOamPmCfgThrDelayEntry        ::= SEQUENCE
+{
+    xhaulOamPmCfgBinType			XhaulOamPmBinType,
+xhaulOamPmCfgForwardBackward2Way  XhaulOamPmForwardBackwardTwoWay,
+    xhaulOamPmCfgThrDelayRaise        Integer32,
+    xhaulOamPmCfgThrDelayClear        Integer32
+}
+
+xhaulOamPmCfgBinType              OBJECT-TYPE
+    SYNTAX      XhaulOamPmBinType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgBinType specifies the type of the bin to be
+         configured or read."
+    ::= { xhaulOamPmCfgThrDelayEntry 1 }
+
+xhaulOamPmCfgForwardBackward2Way  OBJECT-TYPE
+    SYNTAX      XhaulOamPmForwardBackwardTwoWay
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgForwardBackward2Way specifies the direction
+         of the row to be configured or read."
+    ::= { xhaulOamPmCfgThrDelayEntry 2 }
+
+xhaulOamPmCfgThrDelayRaise        OBJECT-TYPE
+    SYNTAX      Integer32 (-1 | 1..864000)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgThrDelayRaise specifies the OAM-PM raise
+         threshold for excessive delay.
+
+         For example, suppose:
+         1.  xhaulOamPmCfgThrDelayRaise=1000 and xhaulOamPmCfgThrDelayLowestBin=7
+         for the index values 255, 'ifdv(3)', 'twoWay(3)'.
+         2.  Bin group 255 has been configured with 10 Inter-Frame Delay
+         Variation (IFDV) bins (numbered 0..9), using
+         xhaulOamPmCfgBinGroupIfdvBinCount.
+         3.  The OAM-PM session 'oamPmSession1' is configured to use bin group
+         255 (using xhaulOamPmCfgSessBinGroupId).
+         4.  OAM-PM delay TCAs are enabled for the measurement interval with
+         indices 'oamPmSession1', 'mi15Minutes(2)' (using
+         xhaulOamPmCfgMeasIntvlDelayTCAs and xhaulOamPmCfgMeasIntvlTCAs).
+         5.  During a 15 minute interval belonging to a DMM test which belongs
+         to 'oamPmSession1', the following inequality becomes true (where only
+         the last two indices of the object are shown, and the last index is a
+         bin number):
+            xhaulOamPmStsDelayDmmBin2wyCount.ifdv(3).7 +
+            xhaulOamPmStsDelayDmmBin2wyCount.ifdv(3).8 +
+            xhaulOamPmStsDelayDmmBin2wyCount.ifdv(3).9 >= 1000
+
+         Then, a delay Raise TCA (using xhaulOamPmThrRaise) will be generated
+         immediately.
+
+         The TCA suppression and configuration rules for
+         xhaulOamPmCfgThrDelayRaise and xhaulOamPmCfgThrDelayClear are the same
+         as the rules for xhaulOamPmCfgThrLossChliRaise and
+         xhaulOamPmCfgThrLossChliClear.
+
+         The upper bound of this object is the maximum number of DMM PDUs (or
+         TWAMP-Test PDUs) which can be sent in the longest supported (i.e. 24
+         hour) measurement interval."
+    DEFVAL      { -1 }
+    ::= { xhaulOamPmCfgThrDelayEntry 3 }
+
+xhaulOamPmCfgThrDelayClear        OBJECT-TYPE
+    SYNTAX      Integer32 (-1 | 0..863999)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmCfgThrDelayClear specifies the OAM-PM clear
+         threshold for excessive delay.
+
+         For example, suppose:
+         1.  xhaulOamPmCfgThrDelayClear=900 and xhaulOamPmCfgThrDelayLowestBin=7
+         for the index values 255, 'ifdv(3)', 'twoWay(3)'.
+         2.  Bin group 255 has been configured with 10 Inter-Frame Delay
+         Variation (IFDV) bins (numbered 0..9), using
+         xhaulOamPmCfgBinGroupIfdvBinCount.
+         3.  The OAM-PM session 'oamPmSession1' is configured to use bin group
+         255 (using xhaulOamPmCfgSessBinGroupId).
+         4.  OAM-PM delay TCAs are enabled for the measurement interval with
+         indices 'oamPmSession1', 'mi15Minutes(2)' (using
+         xhaulOamPmCfgMeasIntvlDelayTCAs and xhaulOamPmCfgMeasIntvlTCAs).
+         5.  At the end of a 15 minute interval belonging to a DMM test which
+         belongs to 'oamPmSession1', the following inequality is true (where
+         only the last two indices of the object are shown, and the last index
+         is a bin number):
+            xhaulOamPmStsDelayDmmBin2wyCount.ifdv(3).7 +
+            xhaulOamPmStsDelayDmmBin2wyCount.ifdv(3).8 +
+            xhaulOamPmStsDelayDmmBin2wyCount.ifdv(3).9 <= 900
+         6. Generating a delay Clear TCA is allowed (i.e. the most recent delay
+            TCA for the specified indices was a Raise).
+
+         Then, a delay Clear TCA (using xhaulOamPmThrClear) will be generated.
+
+         The TCA suppression and configuration rules for
+         xhaulOamPmCfgThrDelayRaise and xhaulOamPmCfgThrDelayClear are the same
+         as the rules for xhaulOamPmCfgThrLossChliRaise and
+         xhaulOamPmCfgThrLossChliClear."
+    DEFVAL      { -1 }
+    ::= { xhaulOamPmCfgThrDelayEntry 4 }
+
+
+-- #############################################################################
+-- Statistics Scalars
+-- #############################################################################
+
+-- #############################################################################
+-- Statistics Tables
+-- #############################################################################
+
+xhaulOamPmStsBaseTable            OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmStsBaseEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmStsBaseTable contains the base statistics for OAM
+         Performance Monitoring Measurement Interval Data Sets.  The statistics
+         in this table are common to all test types (e.g. DMM and SLM tests)."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.1 'Measurement Interval
+         Data Sets'"
+    ::= { xhaulOamPmStatsTableObjs 1 }
+
+xhaulOamPmStsBaseEntry            OBJECT-TYPE
+    SYNTAX      XhaulOamPmStsBaseEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmStsBaseEntry contains the base statistics for one OAM
+         Performance Monitoring Measurement Interval Data Set.
+
+         Rows are created in this table when a test is started (e.g. using
+         xhaulOamPmCfgDelayDmmAdminStatus and xhaulOamPmCfgDelayDmmOnDmndStatus).
+         At that time, a row for the current interval (with the index value
+         xhaulOamPmStsIntvlNum=1) is created for each row with a matching session
+         name in xhaulOamPmCfgMeasIntvlTable.  In addition, a row is created in
+         this table for the test's 'miRaw(1)' interval.
+
+         After that, the timed creation and destruction of rows in this table
+         is explained using the following example.
+
+         Suppose the configured number of intervals to be retained is as
+         follows (where index columns are underlined with octothorpes, and
+         'xhaulOamPm' is abbreviated as '_'):
+
+         _CfgSessName  _CfgMeasIntvlDuration  _CfgMeasIntvlsStored
+         ############  #####################  --------------------
+         'mySess1'     'mi15Minutes(2)'                          3
+
+         Suppose statistics collection started at t = 0 (minutes).
+
+         Suppose the following rows exist in xhaulOamPmStsBaseTable at t = 59
+         (minutes):
+
+         _CfgSessName  _StsBaseTestType  _StsIntvlDuration  _StsIntvlNum
+         ############  ################  #################  ############
+         'mySess1'     'dmm(1)'          'mi15Minutes(2)'              1
+         'mySess1'     'dmm(1)'          'mi15Minutes(2)'              2
+         'mySess1'     'dmm(1)'          'mi15Minutes(2)'              3
+         'mySess1'     'dmm(1)'          'mi15Minutes(2)'              4
+
+         The interval numbers are assigned as follows:
+             1 - the historical interval ended at t = 15 minutes
+             2 - the historical interval ended at t = 30 minutes
+             3 - the historical interval ended at t = 45 minutes
+             4 - the current interval
+
+         Then, after the next 15 minute interval ends (e.g. at t = 61 minutes),
+         the following rows will exist:
+
+         _CfgSessName  _StsBaseTestType  _StsIntvlDuration  _StsIntvlNum
+         ############  ################  #################  ############
+         'mySess1'     'dmm(1)'          'mi15Minutes(2)'              2
+         'mySess1'     'dmm(1)'          'mi15Minutes(2)'              3
+         'mySess1'     'dmm(1)'          'mi15Minutes(2)'              4
+         'mySess1'     'dmm(1)'          'mi15Minutes(2)'              5
+
+         The interval numbers are assigned as follows:
+             2 - the historical interval ended at t = 30 minutes
+             3 - the historical interval ended at t = 45 minutes
+             4 - the historical interval ended at t = 60 minutes
+             5 - the current interval
+
+         The row with interval number 1 was destroyed, because
+         xhaulOamPmCfgMeasIntvlsStored=3 specifies that at most three historical
+         intervals be retained.
+
+         Rows are also destroyed in this table when the corresponding
+         xhaulOamPmCfgMeasIntvlTable row is destroyed.
+
+         When the index value xhaulOamPmStsMeasIntvlDuration is 'miRaw(1)', only
+         one interval is available (i.e. xhaulOamPmStsIntvlNum = 1).
+
+         When a test is running, the measurement interval data set for a test's
+         'miRaw(1)' measurement interval duration can be cleared using
+         TIMETRA-CLEAR-MIB::xhaulClearAction and xhaulClearParams.  The change to
+         the objects in the specified row is as follows.
+
+         Object                        Change on Clear Operation
+         ----------------------------  --------------------------------------
+         xhaulOamPmStsBaseOperStatus    No change
+         xhaulOamPmStsBaseSuspect       Set to 'true(1)'
+         xhaulOamPmStsBaseStartTime     Set to UTC time of the clear operation
+         xhaulOamPmStsBaseElapsedTime   Set to zero
+         xhaulOamPmStsBaseTestFramesTx  Set to zero
+         xhaulOamPmStsBaseTestFramesRx  Set to zero
+
+         Measurement interval data sets for  measurement interval durations
+         other than 'miRaw(1)' cannot be cleared."
+    INDEX       {
+        xhaulOamPmCfgSessName,
+        xhaulOamPmStsBaseTestType,
+        xhaulOamPmStsMeasIntvlDuration,
+        xhaulOamPmStsIntvlNum
+    }
+    ::= { xhaulOamPmStsBaseTable 1 }
+
+XhaulOamPmStsBaseEntry            ::= SEQUENCE
+{
+    xhaulOamPmStsBaseTestType         XhaulOamPmTestType,
+    xhaulOamPmStsMeasIntvlDuration    XhaulOamPmMeasIntervalDuration,
+    xhaulOamPmStsIntvlNum             XhaulOamPmStsIntvlNum,
+    xhaulOamPmStsBaseOperStatus       INTEGER,
+    xhaulOamPmStsBaseSuspect          TruthValue,
+    xhaulOamPmStsBaseStartTime        DateAndTime,
+    xhaulOamPmStsBaseElapsedTime      Unsigned32,
+    xhaulOamPmStsBaseTestFramesTx     Unsigned32,
+    xhaulOamPmStsBaseTestFramesRx     Unsigned32
+}
+
+xhaulOamPmStsBaseTestType         OBJECT-TYPE
+    SYNTAX      XhaulOamPmTestType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsBaseTestType specifies the type of test for
+         which statistics are to be read (e.g. 'dmm(1)')."
+    ::= { xhaulOamPmStsBaseEntry 1 }
+
+xhaulOamPmStsMeasIntvlDuration    OBJECT-TYPE
+    SYNTAX      XhaulOamPmMeasIntervalDuration
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsMeasIntvlDuration specifies the duration of
+         the interval of the statistics to be read (e.g. 'mi15Minutes(2)')."
+    ::= { xhaulOamPmStsBaseEntry 2 }
+
+xhaulOamPmStsIntvlNum             OBJECT-TYPE
+    SYNTAX      XhaulOamPmStsIntvlNum
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsIntvlNum specifies the interval number of the
+         statistics to be read.
+
+         The system's creation and destruction of interval numbers is described
+         in the xhaulOamPmStsBaseEntry DESCRIPTION clause."
+    ::= { xhaulOamPmStsBaseEntry 3 }
+
+xhaulOamPmStsBaseOperStatus       OBJECT-TYPE
+    SYNTAX      INTEGER {
+        inProgress (1),
+        completed  (2)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsBaseOperStatus indicates the operational
+         status of the specified measurement interval data set.
+
+         If the interval is historical and the operational status is
+         'inProgress(1)', the interval is closing (i.e. waiting for a response
+         for the final test request sent)."
+    ::= { xhaulOamPmStsBaseEntry 4 }
+
+xhaulOamPmStsBaseSuspect          OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsBaseSuspect indicates whether or not the
+         specified measurement interval data set contains suspect information."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.4, 'Measurement Interval
+         Status'."
+    ::= { xhaulOamPmStsBaseEntry 5 }
+
+xhaulOamPmStsBaseStartTime        OBJECT-TYPE
+    SYNTAX      DateAndTime (SIZE (8))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsBaseStartTime indicates the start time (in
+         UTC) of the specified measurement interval data set."
+    ::= { xhaulOamPmStsBaseEntry 6 }
+
+xhaulOamPmStsBaseElapsedTime      OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsBaseElapsedTime indicates the time elapsed
+         since data collection started for the specified measurement interval
+         data set."
+    ::= { xhaulOamPmStsBaseEntry 7 }
+
+xhaulOamPmStsBaseTestFramesTx     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "frames"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsBaseTestFramesTx indicates the number of test
+         frames sent for the specified measurement interval data set."
+    ::= { xhaulOamPmStsBaseEntry 8 }
+
+xhaulOamPmStsBaseTestFramesRx     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "frames"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsBaseTestFramesRx indicates the number of test
+         frames received for the specified measurement interval data set."
+    ::= { xhaulOamPmStsBaseEntry 9 }
+
+
+xhaulOamPmStsLossSlmTable         OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmStsLossSlmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmStsLossSlmTable contains the frame loss statistics for OAM
+         Performance Monitoring SLM (Synthetic Loss Measurement) tests."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 10.2, 'Single-Ended Synthetic
+         Loss Function for Frame Loss Ratio (FLR) and Availability'."
+    ::= { xhaulOamPmStatsTableObjs 3 }
+
+xhaulOamPmStsLossSlmEntry         OBJECT-TYPE
+    SYNTAX      XhaulOamPmStsLossSlmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmStsLossSlmEntry contains the SLM test statistics for one OAM
+         Performance Monitoring Measurement Interval Data Set.
+
+         A row is created in this table when a xhaulOamPmStsBaseTable row is
+         created with xhaulOamPmStsBaseTestType = 'slm(2)'.
+
+         A row is destroyed in this table when the corresponding
+         xhaulOamPmStsBaseTable row is destroyed.
+
+         When a test is running, the SLM statistics for a test's raw (i.e.
+         'miRaw(1)') measurement interval duration can be cleared using
+         TIMETRA-CLEAR-MIB::xhaulClearAction and xhaulClearParams.  A successful
+         clear operation zeros all the raw SLM statistics for the specified
+         session."
+    INDEX       {
+        xhaulOamPmCfgSessName,
+        xhaulOamPmStsMeasIntvlDuration,
+        xhaulOamPmStsIntvlNum
+    }
+    ::= { xhaulOamPmStsLossSlmTable 1 }
+
+XhaulOamPmStsLossSlmEntry         ::= SEQUENCE
+{
+    xhaulOamPmStsLossSlmTxFwd         Unsigned32,
+    xhaulOamPmStsLossSlmRxFwd         Unsigned32,
+    xhaulOamPmStsLossSlmTxBwd         Unsigned32,
+    xhaulOamPmStsLossSlmRxBwd         Unsigned32,
+    xhaulOamPmStsLossSlmAvgFlrFwd     Unsigned32,
+    xhaulOamPmStsLossSlmAvgFlrBwd     Unsigned32
+}
+
+xhaulOamPmStsLossSlmTxFwd         OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "SLM frames"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsLossSlmTxFwd indicates the number of SLM
+         request frames transmitted in the forward direction for the specified
+         measurement interval data set.
+
+         A frame is counted if the SLM Availability state is Available at
+         transmit time (as specified in MEF-35 Section 9.2.5).
+
+         A simple count of the frames transmitted for the test is available in
+         xhaulOamPmStsBaseTestFramesTx."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.5, 'Measurement Behavior
+         During Periods of Unavailability and Maintenance Intervals'"
+    ::= { xhaulOamPmStsLossSlmEntry 1 }
+
+xhaulOamPmStsLossSlmRxFwd         OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "SLM frames"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsLossSlmRxFwd indicates the number of SLM
+         request frames received in the forward direction for the specified
+         measurement interval data set.
+
+         A frame is counted if the SLM Availability state is Available at
+         receive time (as specified in MEF-35 Section 9.2.5).
+
+         A simple count of the frames received for the test is available in
+         xhaulOamPmStsBaseTestFramesRx."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.5, 'Measurement Behavior
+         During Periods of Unavailability and Maintenance Intervals'"
+    ::= { xhaulOamPmStsLossSlmEntry 2 }
+
+xhaulOamPmStsLossSlmTxBwd         OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "SLR frames"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsLossSlmTxBwd indicates the number of SLR
+         reply frames transmitted in the backward direction for the specified
+         measurement interval data set.
+
+         A frame is counted if the SLM Availability state is Available at
+         transmit time (as specified in MEF-35 Section 9.2.5).
+
+         A simple count of the frames transmitted for the test is available in
+         xhaulOamPmStsBaseTestFramesTx."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.5, 'Measurement Behavior
+         During Periods of Unavailability and Maintenance Intervals'"
+    ::= { xhaulOamPmStsLossSlmEntry 3 }
+
+xhaulOamPmStsLossSlmRxBwd         OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "SLR frames"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsLossSlmRxBwd indicates the number of SLR
+         reply frames received in the backward direction for the specified
+         measurement interval data set.
+
+         A frame is counted if the SLM Availability state is Available at
+         receive time (as specified in MEF-35 Section 9.2.5).
+
+         A simple count of the frames received for the test is available in
+         xhaulOamPmStsBaseTestFramesRx."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 9.2.5, 'Measurement Behavior
+         During Periods of Unavailability and Maintenance Intervals'"
+    ::= { xhaulOamPmStsLossSlmEntry 4 }
+
+xhaulOamPmStsLossSlmAvgFlrFwd     OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..100000)
+    UNITS       "milli-percent"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsLossSlmAvgFlrFwd indicates the average Frame
+         Loss Ratio (FLR) in the forward direction for the specified
+         measurement interval data set."
+    ::= { xhaulOamPmStsLossSlmEntry 19 }
+
+xhaulOamPmStsLossSlmAvgFlrBwd     OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..100000)
+    UNITS       "milli-percent"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsLossSlmAvgFlrBwd indicates the average Frame
+         Loss Ratio (FLR) in the backward direction for the specified
+         measurement interval data set."
+    ::= { xhaulOamPmStsLossSlmEntry 22 }
+
+
+
+xhaulOamPmStsDelayDmmTable        OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmStsDelayDmmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmStsDelayDmmTable contains the summarized DMM (Delay
+         Measurement Message) statistics for OAM Performance Monitoring
+         Measurement Interval Data Sets."
+    REFERENCE
+        "MEF-35, 'Service OAM Performance Monitoring Implementation Agreement',
+         Metro Ethernet Forum, April 2012, Section 10.1, 'Single-Ended Delay
+         Function for Delay, Frame Delay Range, and Inter Delay Variation'."
+    ::= { xhaulOamPmStatsTableObjs 4 }
+
+xhaulOamPmStsDelayDmmEntry        OBJECT-TYPE
+    SYNTAX      XhaulOamPmStsDelayDmmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmStsDelayDmmEntry contains the summarized DMM (Delay
+         Measurement Message) statistics for one OAM Performance Monitoring
+         Measurement Interval Data Set.
+
+         When a row is created in xhaulOamPmStsBaseTable with
+         xhaulOamPmStsBaseTestType = 'dmm(1)', three rows are created in this
+         table.  The three rows have the following values in the
+         xhaulOamPmCfgBinType index column: 'fd(1)', 'fdr(2)', and 'ifdv(3)'.
+
+         Rows are destroyed in this table when the corresponding
+         xhaulOamPmStsBaseTable row is destroyed.
+
+         When a test is running, the DMM statistics for a test's raw (i.e.
+         'miRaw(1)') measurement interval duration can be cleared using
+         TIMETRA-CLEAR-MIB::xhaulClearAction and xhaulClearParams.  A successful
+         clear operation zeros all the raw DMM statistics for the specified
+         session."
+    INDEX       {
+        xhaulOamPmCfgSessName,
+        xhaulOamPmStsMeasIntvlDuration,
+        xhaulOamPmStsIntvlNum,
+        xhaulOamPmCfgBinType
+    }
+    ::= { xhaulOamPmStsDelayDmmTable 1 }
+
+XhaulOamPmStsDelayDmmEntry        ::= SEQUENCE
+{
+    xhaulOamPmStsDelayDmmFwdMin       Unsigned32,
+    xhaulOamPmStsDelayDmmFwdMax       Unsigned32,
+    xhaulOamPmStsDelayDmmFwdAvg       Unsigned32,
+    xhaulOamPmStsDelayDmmBwdMin       Unsigned32,
+    xhaulOamPmStsDelayDmmBwdMax       Unsigned32,
+    xhaulOamPmStsDelayDmmBwdAvg       Unsigned32,
+    xhaulOamPmStsDelayDmm2wyMin       Unsigned32,
+    xhaulOamPmStsDelayDmm2wyMax       Unsigned32,
+    xhaulOamPmStsDelayDmm2wyAvg       Unsigned32
+}
+
+xhaulOamPmStsDelayDmmFwdMin       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsDelayDmmFwdMin indicates the minimum delay in
+         the forward direction for the specified session, interval duration
+         (e.g. 'mi15Minutes(2)'), interval number, and bin type (e.g. 'fd(1)')."
+    ::= { xhaulOamPmStsDelayDmmEntry 1 }
+
+xhaulOamPmStsDelayDmmFwdMax       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsDelayDmmFwdMax indicates the maximum delay in
+         the forward direction for the specified session, interval duration
+         (e.g. 'mi15Minutes(2)'), interval number, and bin type (e.g. 'fd(1)')."
+    ::= { xhaulOamPmStsDelayDmmEntry 2 }
+
+xhaulOamPmStsDelayDmmFwdAvg       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsDelayDmmFwdAvg indicates the average delay in
+         the forward direction for the specified session, interval duration
+         (e.g. 'mi15Minutes(2)'), interval number, and bin type (e.g. 'fd(1)')."
+    ::= { xhaulOamPmStsDelayDmmEntry 3 }
+
+xhaulOamPmStsDelayDmmBwdMin       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsDelayDmmBwdMin indicates the minimum delay in
+         the backward direction for the specified session, interval duration
+         (e.g. 'mi15Minutes(2)'), interval number, and bin type (e.g. 'fd(1)')."
+    ::= { xhaulOamPmStsDelayDmmEntry 4 }
+
+xhaulOamPmStsDelayDmmBwdMax       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsDelayDmmBwdMax indicates the maximum delay in
+         the backward direction for the specified session, interval duration
+         (e.g. 'mi15Minutes(2)'), interval number, and bin type (e.g. 'fd(1)')."
+    ::= { xhaulOamPmStsDelayDmmEntry 5 }
+
+xhaulOamPmStsDelayDmmBwdAvg       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsDelayDmmBwdAvg indicates the average delay in
+         the backward direction for the specified session, interval duration
+         (e.g. 'mi15Minutes(2)'), interval number, and bin type (e.g. 'fd(1)')."
+    ::= { xhaulOamPmStsDelayDmmEntry 6 }
+
+xhaulOamPmStsDelayDmm2wyMin       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsDelayDmm2wyMin indicates the minimum two-way
+         delay for the specified session, interval duration (e.g.
+         'mi15Minutes(2)'), interval number, and bin type (e.g. 'fd(1)')."
+    ::= { xhaulOamPmStsDelayDmmEntry 7 }
+
+xhaulOamPmStsDelayDmm2wyMax       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsDelayDmm2wyMax indicates the maximum two-way
+         delay for the specified session, interval duration (e.g.
+         'mi15Minutes(2)'), interval number, and bin type (e.g. 'fd(1)')."
+    ::= { xhaulOamPmStsDelayDmmEntry 8 }
+
+xhaulOamPmStsDelayDmm2wyAvg       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsDelayDmm2wyAvg indicates the average two-way
+         delay for the specified session, interval duration (e.g.
+         'mi15Minutes(2)'), interval number, and bin type (e.g. 'fd(1)')."
+    ::= { xhaulOamPmStsDelayDmmEntry 9 }
+
+--
+-- OAM Performance Monitoring Statistics TWAMP-Light Reflector Table
+--
+xhaulOamPmStsTwlRflTable          OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPmStsTwlRflEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmStsTwlRflTable contains the statistics for OAM Performance
+         Monitoring TWAMP-Light reflectors."
+    ::= { xhaulOamPmStatsTableObjs 6 }
+
+xhaulOamPmStsTwlRflEntry          OBJECT-TYPE
+    SYNTAX      XhaulOamPmStsTwlRflEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "xhaulOamPmStsTwlRflEntry contains the statistics for the specified OAM
+         Performance Monitoring TWAMP-Light reflector.
+
+         The agent creates a row in this table when a corresponding row is created in
+         xhaulOamPmCfgTwlRflTable.
+
+         The agent destroys a row in this table when a corresponding row is destroyed
+         in xhaulOamPmCfgTwlRflTable.
+
+         The encoding of the index is explained in the DESCRIPTION clause for
+         xhaulOamPmCfgTwlRflEntry."
+    AUGMENTS { xhaulOamPmCfgTwlRflEntry }
+    ::= { xhaulOamPmStsTwlRflTable 1 }
+
+XhaulOamPmStsTwlRflEntry          ::= SEQUENCE {
+    xhaulOamPmStsTwlRflUpTime         Unsigned32,
+    xhaulOamPmStsTwlRflFramesRx       Unsigned32,
+    xhaulOamPmStsTwlRflFramesTx       Unsigned32
+}
+
+xhaulOamPmStsTwlRflUpTime         OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsTwlRflUpTime indicates the time elapsed since
+         the most recent transition of the reflector's administrative status to
+         'enabled(1)'.
+
+         Zero is returned if the reflector's administrative status is
+         'disabled(2)'."
+    ::= { xhaulOamPmStsTwlRflEntry 1 }
+
+xhaulOamPmStsTwlRflFramesRx       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsTwlRflFramesRx indicates the number of
+         TWAMP-Test frames received by the specified reflector."
+    ::= { xhaulOamPmStsTwlRflEntry 2 }
+
+xhaulOamPmStsTwlRflFramesTx       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPmStsTwlRflFramesTx indicates the number of
+         TWAMP-Test frames transmitted by the specified reflector."
+    ::= { xhaulOamPmStsTwlRflEntry 3 }
+
+
+--
+-- OAM Performance Monitoring Statistics TWAMP-Light Reflector Table for L2 services
+--
+
+xhaulOamPmStsTwlRflL2Table OBJECT-TYPE
+    SYNTAX SEQUENCE OF XhaulOamPmStsTwlRflL2Entry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"xhaulOamPmStsTwlRflL2Table contains the statistics for OAM Performance
+	Monitoring TWAMP-Light reflectors for L2 services."
+    ::= { xhaulOamPmStatsTableObjs 19 }
+
+xhaulOamPmStsTwlRflL2Entry OBJECT-TYPE
+     SYNTAX XhaulOamPmStsTwlRflL2Entry
+     MAX-ACCESS not-accessible
+     STATUS current
+     DESCRIPTION
+	"xhaulOamPmStsTwlRflL2Entry contains the statistics for the specified OAM
+	Performance Monitoring TWAMP-Light reflector.
+	A row in this table is created when the corresponding row is created
+	in xhaulOamPmCfgTwlRflTable.
+	A row in this table is destroyed when the corresponding row is
+	destroyed in xhaulOamPmCfgTwlRflTable.
+	The encoding of the index is explained in the DESCRIPTION clause for
+	xhaulOamPmCfgTwlRflEntry."
+     AUGMENTS { xhaulOamPmCfgTwlRflEntry }
+     ::= { xhaulOamPmStsTwlRflL2Table 1 }
+XhaulOamPmStsTwlRflL2Entry ::= SEQUENCE
+     {
+	xhaulOamPmStsTwlRflL2UpTime Unsigned32,
+	xhaulOamPmStsTwlRflL2FramesRx Unsigned32,
+	xhaulOamPmStsTwlRflL2FramesTx Unsigned32
+     }
+
+xhaulOamPmStsTwlRflL2UpTime OBJECT-TYPE
+    SYNTAX Unsigned32
+    UNITS "seconds"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"The value of xhaulOamPmStsTwlRflL2UpTime indicates the time elapsed since
+	the most recent transition of the reflector's administrative status to
+	'enabled(1)'.
+	Zero is returned if the reflector's administrative status is 'disabled(2)'."
+    ::= { xhaulOamPmStsTwlRflL2Entry 1 }
+
+xhaulOamPmStsTwlRflL2FramesRx OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"The value of xhaulOamPmStsTwlRflL2FramesRx indicates the number of 
+ 	TWAMP-Test frames received by the specified reflector."
+    ::= { xhaulOamPmStsTwlRflL2Entry 2 }
+
+xhaulOamPmStsTwlRflL2FramesTx OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+"The value of xhaulOamPmStsTwlRflL2FramesTx indicates the number of
+TWAMP-Test frames transmitted by the specified reflector."
+::= { xhaulOamPmStsTwlRflL2Entry 3 }
+
+
+-- #############################################################################
+-- accessible-for-notify Objects
+-- #############################################################################
+
+-- #############################################################################
+-- Notifications
+-- #############################################################################
+
+-- #############################################################################
+-- Module Compliance Statements
+-- #############################################################################
+-- #############################################################################
+-- Object Group Statements
+-- #############################################################################
+
+-- #############################################################################
+-- Notification Group Statements
+-- #############################################################################
+
+END

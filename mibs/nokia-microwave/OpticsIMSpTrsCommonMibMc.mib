@@ -1,0 +1,2350 @@
+OPTICSIM-TRS-COMMON-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+       Integer32, Unsigned32 FROM SNMPv2-SMI
+       TruthValue, TimeInterval, TimeStamp, DisplayString, RowStatus, TEXTUAL-CONVENTION FROM SNMPv2-TC
+       ifIndex FROM IF-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP FROM SNMPv2-CONF
+       tsdimEventObjectClassIdentifier, tsdimEventObjectInstanceIdentifier,
+       tsdimEventNotificationId, tsdimEventTime, tsdimAlarmSeverity,
+       tsdimAlarmSpecProblem, opticsIMAdditionalText, opticsIMAlarmType FROM TSDIM-SUPPORT-MIB
+       opticsimSdhPdhMib, opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB
+       TsdimOperationalState FROM TSDIM-SNMP-TC;
+
+ opticsIMTrsCommonMib MODULE-IDENTITY
+
+
+       LAST-UPDATED "0904230000Z"
+       ORGANIZATION "Alcatel TND"
+       CONTACT-INFO "Alcatel TND"
+       DESCRIPTION 
+                "Added the value 'none' to e1pPITTPClockSource and ds1pPITTPClockSource  "
+
+       REVISION "0808070000Z"
+       DESCRIPTION 
+                "The opticsIME1pPITTPTable has been modified adding the following attributes:
+                 - e1pPPITTPClockSource
+                 - e1pPPITTPClockCapability
+                 - e1pPPITTPDs0ChanIndexNext
+                 - e1pPPITTPBoundleNumber
+                 - e1pPPITTPEncapsType
+
+                 The opticsIMDs1pPITTPTable has been modified adding the following attributes:
+                 - ds1pPPITTPClockSource
+                 - ds1pPPITTPClockCapability
+                 - ds1pPPITTPDs0ChanIndexNext
+                 - ds1pPPITTPBoundleNumber
+                 - ds1pPPITTPEncapsType
+
+                 The opticsIMTrsDS0Mngt branch has been added including the following object:
+                 - opticsIMDS0ChanGroupTable
+
+                 S. Winslow:
+                 - Fixed inconsistent OBJECT-GROUP name (opticsIMAllowedDs1LineLengthsGroup, 
+                                                         opticsIMAllowedDs3LineLengthsGroup)
+"
+
+       REVISION "0710110000Z"
+       DESCRIPTION
+                "The columnar object TimeSlotTMN has been added to opticsIME1pPITTPTable"
+
+       REVISION "0510270000Z"
+       DESCRIPTION
+                "The columnar object xxCrossConnectIdentifier has been added to opticsIME1pPITTPTable, 
+                 opticsIMDs1pPITTPTable, opticsIME3pPITTPTable, opticsIMDs3pPITTPTable "
+
+       REVISION "0504070000Z"
+       DESCRIPTION
+                "For each alarm notification (raise and clear) the following objects have been added:
+                - opticsIMAdditionalText
+                - opticsIMAlarmType"
+
+       REVISION "0410150000Z"
+       DESCRIPTION
+                "Added opticsIMAllowedDs3LineLengthsTable and ds3pPITTPLineLength columnar object on
+                 opticsIMDs3pPITTPTable ."
+
+       REVISION "0409300000Z"
+       DESCRIPTION
+                "Added e1pPITTPPseudoRandSeqInsertion columnar object
+                 on OpticsIME1pPITTPEntry  and e3pPITTPPseudoRandSeqInsertion columnar object on
+                 OpticsIME3pPITTPEntry.
+                Added ds3pPITTPInputBridgeEnabled columnar objet on opticsIMDs3pPITTPEntry.
+                Deprecated index berMeasureMonitoredSignal on opticsIMBERMeasuresTable."
+
+       REVISION "0406150000Z"
+       DESCRIPTION
+                " In opticsIMTrsCommonMib: added new columnar objects in OpticsIMDs3pPITTPEntry,
+                  in OpticsIMDs3PathTTPEntry, in OpticsIMDs1pPITTPEntry, in OpticsIMDs1PathTTPEntry,
+                  in OpticsIME1pPITTPEntry and in OpticsIME1PathTTPEntry 
+                  for AIS management (signal type and insertion enable, timing), Parity Violation Monitoring 
+                  Removing and idle signal insertion both for single and for all lines;
+                  added new index in opticsIMBERMeasuresTable (opticsIMBERMeasureMonitoringType)."
+
+       REVISION "0404300000Z"
+       DESCRIPTION
+                "Added opticsIMAllowedDs1LineLengthTable and changed the behaviour of
+                 OpticsIMDs1pPILineLength  textual-convention"
+
+       REVISION "0310100000Z"
+       DESCRIPTION
+                "Removal of opticsIMGMAUTTPBidTable. "
+
+       REVISION "0303140000Z"
+       DESCRIPTION
+                "Addition of BER Measures table. "
+
+       REVISION "0303140000Z"
+       DESCRIPTION
+                "Addition of RAI insertion table, line length object in ds1pPITTPTable, line code and line length  
+                 scalar objects, deletion of PDH tributaries unidirectional tables, regrouping of PDH 
+                 tributaries tables. LAPD fail and URU traps moved in tsdimSnmpNEMib. "
+
+       REVISION "0211050000Z"
+       DESCRIPTION
+                "Addition of PDH tributaries unidirectional TPs objects. "
+
+       REVISION "0207240000Z"
+       DESCRIPTION
+                "Added the Ds1TTPBidLineCoding columnar object."
+
+       REVISION "0205100000Z"
+       DESCRIPTION
+                "Added the tables e1PathTTPBid, ds1PathTTPBid, e3PathTTPBid, ds3PathTTPBid. Updated 
+                  the already existing tables."
+
+       REVISION "0201250000Z"
+       DESCRIPTION
+                "Initial Release of Common SDH/PDH TRS MIB."
+
+ ::= {  opticsimSdhPdhMib 3}
+
+
+opticsIMTrsCommonMibObject      OBJECT IDENTIFIER ::= { opticsIMTrsCommonMib 1 }
+
+opticsIMTrsE1Mngt           OBJECT IDENTIFIER ::= { opticsIMTrsCommonMibObject 2 }
+opticsIMTrsDs1Mngt         OBJECT IDENTIFIER ::= { opticsIMTrsCommonMibObject 3 }
+opticsIMTrsE3Mngt           OBJECT IDENTIFIER ::= { opticsIMTrsCommonMibObject 4 }
+opticsIMTrsDs3Mngt         OBJECT IDENTIFIER ::= { opticsIMTrsCommonMibObject 5 }
+
+
+OpticsIMPdhFrameStatus ::= TEXTUAL-CONVENTION
+     STATUS current
+     DESCRIPTION
+       " This object contains the information whether a CRC indication is detected on a PDH signal when 
+          the processing of a framed signal is activated."
+     SYNTAX  TruthValue
+
+OpticsIMDs1pPILineLength ::= TEXTUAL-CONVENTION
+STATUS current
+     DESCRIPTION
+       " This object contains the identifier of the range of the lengths where the length of the ds1 line is
+          included . 
+         The identifier must be included in one of the entries of the opticsIMAllowedLineLengthsTable.
+         It provides information for Line Build Out (LBO) circuitry."
+     SYNTAX  Integer32
+
+OpticsIMDs3pPILineLength ::= TEXTUAL-CONVENTION
+STATUS current
+     DESCRIPTION
+       " This object contains the identifier of the range of the lengths where the length of the ds3 line is
+          included . 
+         The identifier must be included in one of the entries of the opticsIMAllowedDs3LineLengthsTable.
+         It provides information for Line Build Out (LBO) circuitry."
+     SYNTAX  Integer32
+
+OpticsIMDs3ParityViolationMonitoringRemoving ::= TEXTUAL-CONVENTION
+STATUS  current
+     DESCRIPTION
+       "This object specifies whether the Parity Violation Monitoring Removing (PVMR)
+       is enabled.
+       The true value enables correction of DS3 Parity Errors.
+       The false value disables correction of DS3 Parity Errors: 
+       DS3 Parity Errors are not removed and are passed on to next section."
+     SYNTAX  TruthValue
+
+ OpticsIMDs3AISSignalType ::= TEXTUAL-CONVENTION
+STATUS  current
+     DESCRIPTION
+       "This object specifies the type of AIS signal to be inserted for Ds3 signal in framed mode.
+         In unframed mode the AIS signal type is not configurable by manager (AIS signal type is allOnes)."
+     SYNTAX  INTEGER {
+          allOnes  (1),
+          blueSignal  (2)
+          }
+
+ OpticsIMDs1E1AISSignalType ::= TEXTUAL-CONVENTION
+STATUS  current
+     DESCRIPTION
+       "This object specifies the type of AIS signal to be inserted for Ds1 and E1 signal."
+     SYNTAX  INTEGER {
+          allOnes  (1),
+          allZeroes  (2)
+          }
+
+ OpticsIMPseudoRandSeqInsertion ::= TEXTUAL-CONVENTION
+STATUS  current
+     DESCRIPTION
+       "This object specifies whether the insertion of pseudoRandom pattern on tributary x is 
+        allowed (‘on’ value) or not (‘off’ value). The insertion has to be allowed only if the tributary x is
+        not disabled (operationalState)"
+     SYNTAX  INTEGER {
+          on  (1),
+          off  (2)
+          }
+
+OpticsIMAISInsertion ::= TEXTUAL-CONVENTION
+STATUS  current
+     DESCRIPTION
+       "This object specifies whether the AIS (Alarm Indication Signal) insertion is allowed.
+       The true value enables the AIS insertion."
+     SYNTAX  TruthValue
+
+OpticsIMDs3AISSignalTiming ::= TEXTUAL-CONVENTION
+     STATUS  current
+     DESCRIPTION
+        " This object is used to specify two time (t1-t2): the t1 time is the time within to insert an AIS when
+          an alarm occurs; the t2 time is the time to remove the AIS after the alarm has cleared."
+     SYNTAX  INTEGER {
+          ms3-3  (1),
+          ms10-350  (2)
+          }
+
+ OpticsIMDs3IdleInsertion ::= TEXTUAL-CONVENTION
+     STATUS  current
+DESCRIPTION
+       "This object specifies whether the idle signal has to be insert.
+       The true value enables the idle signal insertion."
+     SYNTAX  TruthValue
+
+ OpticsIMDs3IdleDetection ::= TEXTUAL-CONVENTION
+     STATUS  current
+DESCRIPTION
+       "This object specifies whether the idle signal is inserted."
+     SYNTAX  TruthValue
+
+OpticsIMDs0ChannelList ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION 
+		"A list of ds0 timeslots on a DS1 line.
+		
+		            The list is specified as an OCTET STRING in which each ds0
+		            timeslot is represented by a single bit, where  timeslots 1
+		            through 8 are represented by the bits in the first octet,
+		            timeslots 9 through 16 by the bits in the second octet,
+		            etc.  In each octet, the lowest numbered timeslot is
+		            represented by the most significant bit, and the highest
+		            numbered timeslot by the least significant bit.  A timeslot
+		            is present in the list when its bit is 1, and absent
+		            when its bit is 0. 
+		
+		            If the OCTET STRING value has more bits than required to 
+		            represent the timeslots on a DS1, then the extra bits 
+		            are ignored."
+	SYNTAX  OCTET STRING (SIZE(0..4))
+
+
+OpticsIMDs1E1ClockSource ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION 
+		"The OpticsIMDs1E1ClockSource data type is an enumerated type
+		         that indicates the clock for transmitted data on a DS3 or DS1 channel.
+		         loopTimed(1)     - The clock is recovered from the line's receive
+		                            data stream
+		         nodeTimed(2)     - The clock is internal
+		         adaptive(4)      - The clock is adaptively recovered from the rate at
+		                            which data is received and not from the physical
+		                            layer.
+		         differential(8)  - The clock is recovered from differential RTP
+		                            timestamp header."
+	SYNTAX  INTEGER {
+		loopTimed (1),
+		nodeTimed (2),
+		adaptive (4),
+		differential (8),
+                none (0)
+	}
+
+
+OpticsIMDs1E1IdleCycleFlags ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION 
+		"The OpticsIMDs1E1IdleCycleFlags data type is an enumerated integer that 
+		         indicates the value that the DS3/DS1 port/channel or a DS0 channel
+		         group transmits during idle cycle.
+		
+		         The value of 'none' is applicable to an ATM port/channel only,
+		         which transmits idle cells and not octets defined by the below values.
+		 
+		         If the value is set to 'flags', a value of 0x7E is used.
+		         If the value is set to 'ones', a value of 0xFF is used."
+	SYNTAX  INTEGER {
+		none (0),
+		flags (1),
+		ones (2)
+	}
+
+
+opticsIMGMAUTTPBidTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMGMAUTTPBidEntry
+     MAX-ACCESS					not-accessible
+     STATUS							deprecated
+     DESCRIPTION
+          "This table contains the information related to the termination and to the origination of generic 
+           physical interfaces for data applications. "
+::= { opticsIMTrsCommonMibObject 1 }
+
+opticsIMGMAUTTPBidEntry OBJECT-TYPE
+     SYNTAX						OpticsIMGMAUTTPBidEntry
+     MAX-ACCESS				not-accessible
+     STATUS						deprecated
+     DESCRIPTION
+          " An entry of the gMAUTTPBidTable. Each entry corresponds to a generic data physical interface."
+     INDEX  { ifIndex }
+::= { opticsIMGMAUTTPBidTable 1 }  
+
+OpticsIMGMAUTTPBidEntry ::= SEQUENCE {
+  gMAUTTPBidInterfaceType								INTEGER,
+  gMAUTTPBidMediaStatus									INTEGER,
+  gMAUTTPBidAutoNegotiationConf						INTEGER,
+  gMAUTTPBidAutoNegotiationRate						INTEGER,
+  gMAUTTPBidAutoNegotiationFlowDirectionality		INTEGER,
+  gMAUTTPBidAutoNegotiationFlowControlActive		TruthValue,
+  gMAUTTPBidAutoNegotiationCurrentStatus			INTEGER,
+  gMAUTTPBidAutoNegotiationRemoteSignalling		TruthValue,
+  gMAUTTPBidAutoNegotiationRemoteStatus			INTEGER,
+  gMAUTTPBidManualConfRate								INTEGER,
+  gMAUTTPBidManualConfFlowDirectionality			INTEGER,
+  gMAUTTPBidOperationalState								TsdimOperationalState,
+  gMAUTTPBidAsapIndex									Integer32
+  }
+
+gMAUTTPBidInterfaceType OBJECT-TYPE
+     SYNTAX INTEGER {
+   s1000BaseSX  (1),
+   s1000BaseLX  (2),
+   s1000BaseCX  (3),
+   s100BaseTX  (4),
+   s100BaseFX  (5),
+   unknown   (6),
+   s10BaseT  (7)
+   }
+     MAX-ACCESS			read-only
+     STATUS					deprecated
+     DESCRIPTION
+       " The value of this  object indicates the physical interface supported."
+::= { opticsIMGMAUTTPBidEntry 1 }
+
+gMAUTTPBidMediaStatus OBJECT-TYPE
+     SYNTAX INTEGER {
+   available  (1),
+   initializing (2),
+   lossOfSignal  (3),
+   offLine  (4),
+   autoNegotiationError  (5),
+   remoteFault  (6)
+   }
+     MAX-ACCESS			read-only
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to indicate the availability status of the MAU media."
+::= { opticsIMGMAUTTPBidEntry 2 }
+
+gMAUTTPBidAutoNegotiationConf OBJECT-TYPE
+     SYNTAX INTEGER {
+   enabled  (1),
+   disabled  (2)
+   }
+     MAX-ACCESS			read-write
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to configure the auto-negotiation. In case enabled value is selected the auto-
+         negotiation is enabled and the bit rate (10/100 Mbit/s) and the directionality (half/full duplex) are 
+         automatically detected. 
+         In case disabled value is selected the auto-negotiation is disabled (manual configuration) and the 
+         operator has to specify the bit rate (10/100 Mbit/s) and the directionality (half/full duplex)."
+::= { opticsIMGMAUTTPBidEntry 3 } 
+
+gMAUTTPBidAutoNegotiationRate OBJECT-TYPE
+     SYNTAX INTEGER {
+   	eth10BaseT   (1),
+   	eth100BaseTX  (2)
+   }
+     MAX-ACCESS			read-write
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to configure the rate parameter for the auto-negotiation process. This parameter  
+          is effective only if autoNegotiation process is enabled."
+::= { opticsIMGMAUTTPBidEntry 4 } 
+
+gMAUTTPBidAutoNegotiationFlowDirectionality OBJECT-TYPE
+     SYNTAX INTEGER {
+   halfDuplex  (1),
+   fullDuplex  (2)
+   }
+     MAX-ACCESS			read-write
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to configure the directionality parameter for the auto-negotiation process. This 
+         parameter is effective only if autoNegotiation process is enabled."
+::= { opticsIMGMAUTTPBidEntry 5 } 
+
+gMAUTTPBidAutoNegotiationFlowControlActive OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-write
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to configure the flow control parameter for the auto-negotiation process. This 
+         parameter is effective only if autoNegotiation process is enabled."
+::= { opticsIMGMAUTTPBidEntry 6 } 
+
+gMAUTTPBidAutoNegotiationCurrentStatus OBJECT-TYPE
+     SYNTAX 	INTEGER {
+   completedOK  (1),
+completedKO  (2),
+          configuring  (3),
+          deactivated  (4),
+          parallelDetectFail  (5),
+          other  (6)
+   }
+     MAX-ACCESS			read-only
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to indicate the current status of the auto-negotiation. "
+::= { opticsIMGMAUTTPBidEntry 7 }
+
+gMAUTTPBidAutoNegotiationRemoteSignalling OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-only
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to indicate if the remote peer is operating the auto-negotiation."
+::= { opticsIMGMAUTTPBidEntry 8 } 
+
+gMAUTTPBidAutoNegotiationRemoteStatus OBJECT-TYPE
+     SYNTAX INTEGER {
+          otherOrUnknown  (1),
+          e10BaseTHD  (2),
+          e10BaseTFD  (3),
+          e100BaseTxHD  (4),
+          e100BaseTxFD  (5)
+          }
+     MAX-ACCESS			read-only
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to report information about the parameters negotiable by the remote node. The 
+          value otherOrUnknown is raised in abnormal condition of the autonegotiation process , this value i
+          is also assumed as default until the autonegotiation process finishes."
+::= { opticsIMGMAUTTPBidEntry 9 } 
+
+gMAUTTPBidManualConfRate OBJECT-TYPE
+     SYNTAX INTEGER {
+          eth10BaseT  (1),
+          eth100BaseTX  (2)
+          }
+     MAX-ACCESS			read-write
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to configure in a manual way the rate parameter of the interface. This object is 
+         used only if the auto-negotiation is not available or disabled."
+::= { opticsIMGMAUTTPBidEntry 10 } 
+
+gMAUTTPBidManualConfFlowDirectionality OBJECT-TYPE
+     SYNTAX 	INTEGER {
+          halfDuplex   (1),
+          fullDuplex   (2)
+          }
+     MAX-ACCESS			read-write
+     STATUS					deprecated
+     DESCRIPTION
+       " This object is used to configure in a manual way the directionality parameter of the interface. This 
+         object is used only if the auto-negotiation is not available or disabled."
+::= { opticsIMGMAUTTPBidEntry 11 } 
+
+
+gMAUTTPBidOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					deprecated
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMGMAUTTPBidEntry 12 }
+
+gMAUTTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					deprecated
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMGMAUTTPBidEntry 13 }
+
+
+
+
+opticsIME1pPITTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIME1pPITTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of the 2 Mbit/s PDH trails. "
+::= { opticsIMTrsE1Mngt 1 }
+
+opticsIME1pPITTPEntry OBJECT-TYPE
+     SYNTAX						OpticsIME1pPITTPEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the e1pPITTPTable. Each entry corresponds to a 2 Mbit/s PDH trail. "
+     INDEX  { ifIndex }
+::= { opticsIME1pPITTPTable 1 }   
+
+OpticsIME1pPITTPEntry ::= SEQUENCE {
+   e1pPITTPSignalMode                               INTEGER,
+   e1pPITTPFrameStatus                              OpticsIMPdhFrameStatus,
+   e1pPITTPOperationalState                         TsdimOperationalState,
+   e1pPITTPAsapIndex                                Integer32,
+   e1pPITTPAISSignalType                            OpticsIMDs1E1AISSignalType,
+   e1pPITTPAISInsertion                             OpticsIMAISInsertion,
+   e1pPITTPPseudoRandSeqInsertion                   OpticsIMPseudoRandSeqInsertion,
+   e1pPITTPCrossConnectIdentifier                   Integer32,
+   e1pPITTPTimeSlotTMN                              INTEGER,
+   e1pPITTPClockSource                              OpticsIMDs1E1ClockSource,
+   e1pPITTPDs0ChanIndexNext                         Integer32,
+   e1pPITTPBundleNumber                             Integer32,
+   e1pPITTPEncapsType                               INTEGER
+   }
+
+e1pPITTPSignalMode OBJECT-TYPE
+     SYNTAX  INTEGER {
+          unframed  (1),
+          framed  (2),
+          framedIsdnPra  (3),
+          disabled  (4)
+          }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object contains the modality to manage the E1 PDH signal. If the framed mode is selected 
+          then the processing of a framed signal is provisioned and the detection of the LOF and RDI 
+          defects is enabled. 
+          If the unframed mode is selected  the reception of an unframed signal is assumed. 
+          When the associated physical port is not used the object has to be set to disabled mode."
+::= { opticsIME1pPITTPEntry 1 }
+
+e1pPITTPFrameStatus OBJECT-TYPE
+     SYNTAX					OpticsIMPdhFrameStatus
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIME1pPITTPEntry 2 }
+
+e1pPITTPOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIME1pPITTPEntry 3 }
+
+e1pPITTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIME1pPITTPEntry 4 }
+
+e1pPITTPAISSignalType OBJECT-TYPE
+     SYNTAX OpticsIMDs1E1AISSignalType
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIME1pPITTPEntry 5}
+
+e1pPITTPAISInsertion OBJECT-TYPE
+     SYNTAX OpticsIMAISInsertion
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIME1pPITTPEntry 6}
+
+e1pPITTPPseudoRandSeqInsertion OBJECT-TYPE
+     SYNTAX OpticsIMPseudoRandSeqInsertion
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIME1pPITTPEntry 7}
+
+e1pPITTPCrossConnectIdentifier  OBJECT-TYPE
+     SYNTAX Integer32 (0..2147483647)
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+        "This object allows to identify the cross-connection in which the e1 port is involved.
+         It is automatically set by the agent when the e1 port is cross-connected. Its value is the one 
+         that identify the cross-connection index (opticsIMCrossConnectIndex object of the 
+         opticsIMCrossConnectTable).
+         The value of the connection identifier is the same for all the objects making part of the same cross-
+         connection.
+         The value '0' indicates that the e1 port is not involved in any cross-connection."
+::= { opticsIME1pPITTPEntry 8}
+
+e1pPITTPTimeSlotTMN  OBJECT-TYPE
+     SYNTAX INTEGER (-1|1..31)
+     MAX-ACCESS read-write 
+     STATUS current
+     DESCRIPTION
+        "This object allows to define the time slot used for TMN transport on this e1 port.
+         The '-1' value indicates that this e1 port is not used to transport the TMN signal.
+         The '0' value is not a valide value for time slot to transport TMN signal. "
+     DEFVAL { -1 }
+::= { opticsIME1pPITTPEntry 9}
+
+e1pPITTPClockSource  OBJECT-TYPE
+	SYNTAX     OpticsIMDs1E1ClockSource
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"opticsIMIfClockSource configures the clock for transmitted data from
+		         either the internal clock ('nodeTimed'), or from a clock recovered
+		         from the line's receive data stream ('loopTimed'), or recovered
+		         adaptively from the rate at which the data that is received and not
+		         from the physical layer ('adaptive'), or recovered from the
+		         differential timestamp in the RTP header ('differential').
+		"
+	DEFVAL  { nodeTimed }
+	::= { opticsIME1pPITTPEntry 10 }
+
+e1pPITTPDs0ChanIndexNext  OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION 
+		"This object contains an appropriate value to be used for 
+				ds0ChanGroupIndex when creating entries in
+				the opticsIMDS0ChanGroupTable.
+				The value 0 indicates that no unassigned entries are 
+				available.
+				To obtain the ds0ChanGroupIndex value for a
+				new entry, the manager issues a management protocol
+				retrieval operation to obtain the current value of this 
+				object.  After each retrieval, the agent should modify 
+				the value to the next unassigned index."
+	::= { opticsIME1pPITTPEntry 11 }
+
+e1pPITTPBundleNumber  OBJECT-TYPE
+	SYNTAX     Integer32 (0..1280)
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION 
+		"opticsIMIfBundleNumber identifies the bundle for which this port is
+		         a member. If this port is not a member of any bundle, the value of
+		         opticsIMIfBundleNumber will be zero."
+	::= { opticsIME1pPITTPEntry 12 }
+
+e1pPITTPEncapsType  OBJECT-TYPE
+	SYNTAX     INTEGER {
+		cesUnstructured (1),
+		cesStructured (2),
+		atm (3),
+		atmIma (4)
+	}
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"The type of encapsulation protocol configured on this interface. 
+		Possible values are 'cesUnstructured', 'cesStructured', 'atm' and 'atmIma'.
+		encapsType is constrained by the signalMode value based on the following rules:
+		signalMode = 'unframed' --> ' encapsType = 'cesUnstructured'
+		signalMode = 'framed'     --> ' encapsType = 'cesUnstructured' | 'cesStructured' | 'atm'
+		"
+	::= { opticsIME1pPITTPEntry 13 }
+
+--
+
+opticsIME1PathTTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIME1PathTTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of 2 the Mbit/s paths. "
+::= { opticsIMTrsE1Mngt 2 }
+
+opticsIME1PathTTPEntry OBJECT-TYPE
+     SYNTAX					OpticsIME1PathTTPEntry
+     MAX-ACCESS			not-accessible
+     STATUS					current
+     DESCRIPTION
+          " An entry of the e1PathTTPTable. Each entry corresponds to a 2 Mbit/s path. The signal 
+             processing mode of each entry is the same of the associated entry in the e1pPITTPTable.
+            The same thing for AIS signal type."
+     INDEX  { ifIndex }
+::= { opticsIME1PathTTPTable 1 } 
+
+OpticsIME1PathTTPEntry ::= SEQUENCE {
+   e1PathTTPFrameStatus                   OpticsIMPdhFrameStatus,
+   e1PathTTPOperationalState             TsdimOperationalState,
+   e1PathTTPAsapIndex                        Integer32,
+   e1PathTTPAISInsertion                     OpticsIMAISInsertion
+   }
+
+e1PathTTPFrameStatus OBJECT-TYPE
+     SYNTAX					OpticsIMPdhFrameStatus
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIME1PathTTPEntry 1 }
+
+e1PathTTPOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIME1PathTTPEntry 2 }
+
+e1PathTTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIME1PathTTPEntry 3 }
+
+e1PathTTPAISInsertion OBJECT-TYPE
+     SYNTAX                      OpticsIMAISInsertion
+     MAX-ACCESS             read-write 
+     STATUS                      current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIME1PathTTPEntry 4}
+
+opticsIMDs1pPITTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMDs1pPITTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of the 1,5 Mbit/s PDH trails. "
+::= { opticsIMTrsDs1Mngt 1 }
+
+opticsIMDs1pPITTPEntry OBJECT-TYPE
+     SYNTAX						OpticsIMDs1pPITTPEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the ds1pPITTPTable. Each entry corresponds to a 1,5 Mbit/s PDH trail. "
+     INDEX  { ifIndex }
+::= { opticsIMDs1pPITTPTable 1 }   
+
+OpticsIMDs1pPITTPEntry ::= SEQUENCE {
+   ds1pPITTPSignalMode               INTEGER,
+   ds1pPITTPLineCoding                 INTEGER,
+   ds1pPITTPLineLength                 OpticsIMDs1pPILineLength,
+   ds1pPITTPOperationalState           TsdimOperationalState,
+   ds1pPITTPAsapIndex                  Integer32,
+   ds1pPITTPAISSignalType              OpticsIMDs1E1AISSignalType,
+   ds1pPITTPAISInsertion               OpticsIMAISInsertion,
+   ds1pPITTPCrossConnectIdentifier     Integer32, 
+   ds1pPITTPClockSource                OpticsIMDs1E1ClockSource,
+   ds1pPITTPDs0ChanIndexNext           Integer32,
+   ds1pPITTPBundleNumber               Integer32,
+   ds1pPITTPEncapsType                 INTEGER
+}
+
+ds1pPITTPSignalMode OBJECT-TYPE
+     SYNTAX  INTEGER {
+          unframed  (1),
+          framed12MF  (2),
+          framed24MF (3),
+          disabled  (4)
+          }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object contains the modality to manage the DS1 PDH signal. Two different modes are 
+         selectable for a framed signal: 12-frame multiframe or 24-frame multiframe.
+         If one of these framed modes is selected then the processing of a framed signal is provisioned and 
+         the detection of the LOF defect is enabled. 
+         If the value unframed is selected the reception of an unframed signal is assumed. 
+         When the associated physical port is not used the object has to be set to disabled mode. "
+::= { opticsIMDs1pPITTPEntry 1 }
+
+ds1pPITTPLineCoding OBJECT-TYPE
+     SYNTAX  INTEGER {
+          ami  (1),
+          b8zs  (2) 
+          }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object defines the line coding used on DS1 interface."
+::= { opticsIMDs1pPITTPEntry 2 }
+
+ds1pPITTPLineLength OBJECT-TYPE
+     SYNTAX					OpticsIMDs1pPILineLength
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "See Textual Conventions."
+::= { opticsIMDs1pPITTPEntry 3 }
+
+ds1pPITTPOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMDs1pPITTPEntry 4 }
+
+ds1pPITTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMDs1pPITTPEntry 5 }
+
+ds1pPITTPAISSignalType OBJECT-TYPE
+     SYNTAX OpticsIMDs1E1AISSignalType
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs1pPITTPEntry 6}
+
+ds1pPITTPAISInsertion OBJECT-TYPE
+     SYNTAX OpticsIMAISInsertion
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs1pPITTPEntry 7}
+
+ds1pPITTPCrossConnectIdentifier  OBJECT-TYPE
+     SYNTAX Integer32 (0..2147483647)
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+        "This object allows to identify the cross-connection in which the ds1 port is involved.
+         It is automatically set by the agent when the ds1 port is cross-connected. Its value is the one 
+         that identify the cross-connection index (opticsIMCrossConnectIndex object of the 
+         opticsIMCrossConnectTable).
+         The value of the connection identifier is the same for all the objects making part of the same cross-
+         connection.
+         The value '0' indicates that the ds1 port is not involved in any cross-connection."
+::= { opticsIMDs1pPITTPEntry 8}
+
+ds1pPITTPClockSource  OBJECT-TYPE
+	SYNTAX     OpticsIMDs1E1ClockSource
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"ds1pPITTPClockSource  configures the clock for transmitted data from
+		         either the internal clock ('nodeTimed'), or from a clock recovered
+		         from the line's receive data stream ('loopTimed'), or recovered
+		         adaptively from the rate at which the data that is received and not
+		         from the physical layer ('adaptive'), or recovered from the
+		         differential timestamp in the RTP header ('differential').
+		"
+	DEFVAL  { loopTimed }
+	::= { opticsIMDs1pPITTPEntry 9 }
+
+ds1pPITTPDs0ChanIndexNext  OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION 
+		"This object contains an appropriate value to be used for 
+				ds0ChanGroupIndex when creating entries in
+				the opticsIMDS0ChanGroupTable.
+				The value 0 indicates that no unassigned entries are 
+				available.
+				To obtain the ds0ChanGroupIndex value for a
+				new entry, the manager issues a management protocol
+				retrieval operation to obtain the current value of this 
+				object.  After each retrieval, the agent should modify 
+				the value to the next unassigned index."
+	::= { opticsIMDs1pPITTPEntry 10 }
+
+ds1pPITTPBundleNumber  OBJECT-TYPE
+	SYNTAX     Integer32 (0..1280)
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION 
+		"ds1pPITTPBundleNumber identifies the bundle for which this port is
+		         a member. If this port is not a member of any bundle, the value of
+		         ds1pPITTPBundleNumber will be zero."
+	::= { opticsIMDs1pPITTPEntry 11 }
+
+ds1pPITTPEncapsType  OBJECT-TYPE
+	SYNTAX     INTEGER {
+		cesUnstructured (1),
+		cesStructured (2),
+		atm (3),
+		atmIma (4)
+	}
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"The type of encapsulation protocol configured on this interface. 
+		Possible values are 'cesUnstructured', 'cesStructured', 'atm' and 'atmIma'.
+		encapsType is constrained by the signalMode value based on the following rules:
+		signalMode = 'unframed' --> ' encapsType = 'cesUnstructured'
+		signalMode = 'framed'     --> ' encapsType = 'cesUnstructured' | 'cesStructured' | 'atm'
+		"
+	::= { opticsIMDs1pPITTPEntry 12 }
+
+--
+
+opticsIMDs1PathTTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMDs1PathTTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of the 1,5 Mbit/s paths. "
+::= { opticsIMTrsDs1Mngt 2 }
+
+opticsIMDs1PathTTPEntry OBJECT-TYPE
+     SYNTAX					OpticsIMDs1PathTTPEntry
+     MAX-ACCESS			not-accessible
+     STATUS					current
+     DESCRIPTION
+          " An entry of the ds1PathTTPTable. Each entry corresponds to a 1,5 Mbit/s path . The signal 
+             processing mode of each entry is the same of the associated entry in the ds1pPITTPTable. 
+            The same thing for AIS signal type."
+     INDEX  { ifIndex }
+::= { opticsIMDs1PathTTPTable 1 } 
+
+OpticsIMDs1PathTTPEntry ::= SEQUENCE {
+   ds1PathTTPOperationalState              TsdimOperationalState,
+   ds1PathTTPAsapIndex                        Integer32,
+   ds1PathTTPAISInsertion                     OpticsIMAISInsertion
+   }
+
+ds1PathTTPOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMDs1PathTTPEntry 1 }
+
+ds1PathTTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMDs1PathTTPEntry 2 }
+
+ds1PathTTPAISInsertion OBJECT-TYPE
+     SYNTAX OpticsIMAISInsertion
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs1PathTTPEntry 3}
+
+
+
+opticsIMAllowedDs1LineLengthsTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMAllowedDs1LineLengthsEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the list of allowed ranges of lengths of the ds1 lines."
+::= { opticsIMTrsDs1Mngt 3 }
+
+opticsIMAllowedDs1LineLengthsEntry OBJECT-TYPE
+     SYNTAX						OpticsIMAllowedDs1LineLengthsEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the opticsIMAllowedDs1LineLengthsTable. Each entry corresponds to a range of ds1
+            lines lengths. "
+     INDEX  {allowedDs1LineLengthIndex }
+::= { opticsIMAllowedDs1LineLengthsTable 1 }   
+
+OpticsIMAllowedDs1LineLengthsEntry ::= SEQUENCE {
+          allowedDs1LineLengthIndex           OpticsIMDs1pPILineLength,
+          allowedDs1LineLengthMin              Integer32,
+          allowedDs1LineLengthMax             Integer32,
+          allowedDs1LineLengthId                 OpticsIMDs1pPILineLength
+
+}
+
+allowedDs1LineLengthIndex OBJECT-TYPE
+     SYNTAX 					OpticsIMDs1pPILineLength
+     MAX-ACCESS			not-accessible
+     STATUS					current
+     DESCRIPTION
+       " This object contains the identifier of a range of ds1 lines lengths."
+::= { opticsIMAllowedDs1LineLengthsEntry 1 }
+
+allowedDs1LineLengthMin OBJECT-TYPE
+     SYNTAX 					Integer32
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " This object contains the minimum value allowed for the length of the ds1 line expressed in feet. "
+::= { opticsIMAllowedDs1LineLengthsEntry 2 }
+
+allowedDs1LineLengthMax OBJECT-TYPE
+     SYNTAX 					Integer32
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " This object contains the maximum value allowed for the length of the ds1 line expressed in feet. "
+::= { opticsIMAllowedDs1LineLengthsEntry 3 }
+
+allowedDs1LineLengthId OBJECT-TYPE
+     SYNTAX 					OpticsIMDs1pPILineLength
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " This object contains the identifier of a range of ds1 lines lengths. It contains the same value of
+         allowedDs1LineLengthIndex  but it’s readable by the user."
+::= { opticsIMAllowedDs1LineLengthsEntry 4 }
+
+
+
+opticsIME3pPITTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIME3pPITTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of the 34 Mbit/s PDH trails. "
+::= { opticsIMTrsE3Mngt 1 }
+
+opticsIME3pPITTPEntry OBJECT-TYPE
+     SYNTAX					OpticsIME3pPITTPEntry
+     MAX-ACCESS			not-accessible
+     STATUS					current
+     DESCRIPTION
+          " An entry of the e3pPITTPTable. Each entry corresponds to a 34 Mbit/s PDH trail. "
+     INDEX  { ifIndex }
+::= { opticsIME3pPITTPTable 1 }  
+
+OpticsIME3pPITTPEntry ::= SEQUENCE {
+   e3pPITTPSignalMode                  INTEGER,
+   e3pPITTPOperationalState            TsdimOperationalState,
+   e3pPITTPAsapIndex                   Integer32,
+   e3pPITTPPseudoRandSeqInsertion      OpticsIMPseudoRandSeqInsertion,
+   e3pPITTPCrossConnectIdentifier      Integer32 
+   }
+
+e3pPITTPSignalMode OBJECT-TYPE
+     SYNTAX  INTEGER {
+          unframed  (1),
+          framedG751  (2),
+          framedG753  (3),
+          disabled (4)
+          }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object contains the modality to manage the E3 PDH signal. Two different modes are 
+          selectable for a framed signal: G.751 or G.753. If one of these framed modes is selected then the
+          processing of a framed signal is provisioned and the detection of the LOF defect is enabled. 
+          If the unframed mode is selected the reception of an unframed signal is assumed. 
+          When the associated physical port is not used the object has to be set to disabled mode."
+::= { opticsIME3pPITTPEntry 1 }
+
+e3pPITTPOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIME3pPITTPEntry 2 }
+
+e3pPITTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIME3pPITTPEntry 3 }
+
+e3pPITTPPseudoRandSeqInsertion OBJECT-TYPE
+     SYNTAX OpticsIMPseudoRandSeqInsertion
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIME3pPITTPEntry 4}
+
+e3pPITTPCrossConnectIdentifier  OBJECT-TYPE
+     SYNTAX Integer32 (0..2147483647)
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+        "This object allows to identify the cross-connection in which the e3 port is involved.
+         It is automatically set by the agent when the e3 port is cross-connected. Its value is the one 
+         that identify the cross-connection index (opticsIMCrossConnectIndex object of the 
+         opticsIMCrossConnectTable).
+         The value of the connection identifier is the same for all the objects making part of the same cross-
+         connection.
+         The value '0' indicates that the e3 port is not involved in any cross-connection."
+::= { opticsIME3pPITTPEntry 5}
+
+
+
+opticsIME3PathTTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIME3PathTTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of the 34 Mbit/s paths. "
+::= { opticsIMTrsE3Mngt 2 }
+
+opticsIME3PathTTPEntry OBJECT-TYPE
+     SYNTAX					OpticsIME3PathTTPEntry
+     MAX-ACCESS			not-accessible
+     STATUS					current
+     DESCRIPTION
+          " An entry of the e3PathTTPTable. Each entry corresponds to a 34 Mbit/s path. The signal 
+             processing mode of each entry is the same of the associated entry in the e3pPITTPTable.  "
+     INDEX  { ifIndex }
+::= { opticsIME3PathTTPTable 1 } 
+
+OpticsIME3PathTTPEntry ::= SEQUENCE {
+   e3PathTTPOperationalState		TsdimOperationalState,
+   e3PathTTPAsapIndex				Integer32
+   }
+
+e3PathTTPOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIME3PathTTPEntry 1 }
+
+e3PathTTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIME3PathTTPEntry 2 }
+
+
+
+opticsIMDs3pPITTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMDs3pPITTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of the 45 Mbit/s PDH trails. "
+::= { opticsIMTrsDs3Mngt 1 }
+
+opticsIMDs3pPITTPEntry OBJECT-TYPE
+     SYNTAX					OpticsIMDs3pPITTPEntry
+     MAX-ACCESS			not-accessible
+     STATUS					current
+     DESCRIPTION
+          " An entry of the ds3pPITTPTable. Each entry corresponds to a  45 Mbit/s PDH trail. "
+     INDEX  { ifIndex }
+::= { opticsIMDs3pPITTPTable 1 } 
+
+OpticsIMDs3pPITTPEntry ::= SEQUENCE {
+   ds3pPITTPSignalMode                             INTEGER,
+   ds3pPITTPOperationalState                       TsdimOperationalState,
+   ds3pPITTPAsapIndex                              Integer32,
+   ds3pPITTPParityViolationMonitoringRemoving      OpticsIMDs3ParityViolationMonitoringRemoving,
+   ds3pPITTPAISSignalType                          OpticsIMDs3AISSignalType,
+   ds3pPITTPAISInsertion                           OpticsIMAISInsertion,
+   ds3pPITTPAISSignalTiming                        OpticsIMDs3AISSignalTiming,
+   ds3pPITTPIdleInsertion                          OpticsIMDs3IdleInsertion,
+   ds3pPITTPIdleDetection                          OpticsIMDs3IdleDetection,
+   ds3pPITTPInputBridgeEnabled                     INTEGER,
+   ds3pPITTPLineLength                             OpticsIMDs3pPILineLength,
+   ds3pPITTPCrossConnectIdentifier                 Integer32 
+}
+
+ds3pPITTPSignalMode OBJECT-TYPE
+     SYNTAX  INTEGER {
+          unframed  (1),
+          framed  (2),
+          disabled  (3)
+          }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object contains the modality to manage the DS3 PDH signal. If the framed mode is selected 
+          then the processing of a framed signal is provisioned and the detection of the LOF and RDI 
+          defects is enabled. 
+          If the unframed mode is selected the reception of an unframed signal is assumed. 
+          When the associated physical port is not used the object has to be set to disabled mode."
+::= { opticsIMDs3pPITTPEntry 1 }
+
+ds3pPITTPOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMDs3pPITTPEntry 2 }
+
+ds3pPITTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMDs3pPITTPEntry  3}
+
+ds3pPITTPParityViolationMonitoringRemoving OBJECT-TYPE
+     SYNTAX OpticsIMDs3ParityViolationMonitoringRemoving
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs3pPITTPEntry  4}
+
+ds3pPITTPAISSignalType OBJECT-TYPE
+     SYNTAX OpticsIMDs3AISSignalType
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs3pPITTPEntry  5}
+
+ds3pPITTPAISInsertion OBJECT-TYPE
+     SYNTAX OpticsIMAISInsertion
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs3pPITTPEntry  6}
+
+ds3pPITTPAISSignalTiming OBJECT-TYPE
+     SYNTAX OpticsIMDs3AISSignalTiming
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs3pPITTPEntry  7}
+
+ds3pPITTPIdleInsertion OBJECT-TYPE
+     SYNTAX OpticsIMDs3IdleInsertion
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs3pPITTPEntry  8}
+
+ds3pPITTPIdleDetection OBJECT-TYPE
+     SYNTAX OpticsIMDs3IdleDetection
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs3pPITTPEntry  9}
+
+ds3pPITTPInputBridgeEnabled OBJECT-TYPE
+     SYNTAX  INTEGER {
+          notApplicable  (1),
+          enabled  (2),
+          disabled  (3)
+          }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object indicates if this DS3 line is selected to bridge (‘enabled’ value) an other DS3 line
+         (equipment dependent).
+          The ‘notApplicable’ value is used to indicate that a DS3 line not support the bridge (or is used as
+          input to bridge"
+::= { opticsIMDs3pPITTPEntry 10 }
+
+ds3pPITTPLineLength OBJECT-TYPE
+     SYNTAX					OpticsIMDs3pPILineLength
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "See Textual Conventions."
+::= { opticsIMDs3pPITTPEntry 11 }
+
+ds3pPITTPCrossConnectIdentifier  OBJECT-TYPE
+     SYNTAX Integer32 (0..2147483647)
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+        "This object allows to identify the cross-connection in which the ds3 port is involved.
+         It is automatically set by the agent when the ds3 port is cross-connected. Its value is the one 
+         that identify the cross-connection index (opticsIMCrossConnectIndex object of the 
+         opticsIMCrossConnectTable).
+         The value of the connection identifier is the same for all the objects making part of the same cross-
+         connection.
+         The value '0' indicates that the ds3 port is not involved in any cross-connection."
+::= { opticsIMDs3pPITTPEntry 12}
+
+opticsIMDs3PathTTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMDs3PathTTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of the 45 Mbit/s paths. "
+::= { opticsIMTrsDs3Mngt 2 }
+
+opticsIMDs3PathTTPEntry OBJECT-TYPE
+     SYNTAX					OpticsIMDs3PathTTPEntry
+     MAX-ACCESS			not-accessible
+     STATUS					current
+     DESCRIPTION
+          " An entry of the ds3PathTTPTable. Each entry corresponds to a 45 Mbit/s path. The signal 
+            processing mode of each entry is the same of the associated entry in the ds3pPITTPTable.
+            The same thing for AIS signal type and the timing to insert/remove AIS signal."
+     INDEX  { ifIndex }
+::= { opticsIMDs3PathTTPTable 1 } 
+
+OpticsIMDs3PathTTPEntry ::= SEQUENCE {
+   ds3PathTTPOperationalState                                TsdimOperationalState,
+   ds3PathTTPAsapIndex                                           Integer32,
+   ds3PathTTPParityViolationMonitoringRemoving    OpticsIMDs3ParityViolationMonitoringRemoving,
+   ds3PathTTPAISInsertion                                         OpticsIMAISInsertion
+  }
+
+ds3PathTTPOperationalState OBJECT-TYPE
+     SYNTAX				TsdimOperationalState 
+     MAX-ACCESS		read-only
+     STATUS				current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMDs3PathTTPEntry 1 }
+
+ds3PathTTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMDs3PathTTPEntry 2 }
+
+ds3PathTTPParityViolationMonitoringRemoving OBJECT-TYPE
+     SYNTAX OpticsIMDs3ParityViolationMonitoringRemoving
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs3PathTTPEntry 3 }
+
+ds3PathTTPAISInsertion OBJECT-TYPE
+     SYNTAX OpticsIMAISInsertion
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " See Textual Conventions."
+::= { opticsIMDs3PathTTPEntry 4 }
+
+opticsIMAllowedDs3LineLengthsTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMAllowedDs3LineLengthsEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the list of allowed ranges of lengths of the ds3 lines."
+::= { opticsIMTrsDs3Mngt 3 }
+
+opticsIMAllowedDs3LineLengthsEntry OBJECT-TYPE
+     SYNTAX						OpticsIMAllowedDs3LineLengthsEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the opticsIMAllowedDs3LineLengthsTable. Each entry corresponds to a range of ds3
+            lines lengths. "
+     INDEX  {allowedDs3LineLengthIndex }
+::= { opticsIMAllowedDs3LineLengthsTable 1 }   
+
+OpticsIMAllowedDs3LineLengthsEntry ::= SEQUENCE {
+          allowedDs3LineLengthIndex           OpticsIMDs3pPILineLength,
+          allowedDs3LineLengthMin              Integer32,
+          allowedDs3LineLengthMax             Integer32,
+          allowedDs3LineLengthId                 OpticsIMDs3pPILineLength
+}
+
+allowedDs3LineLengthIndex OBJECT-TYPE
+     SYNTAX 					OpticsIMDs3pPILineLength
+     MAX-ACCESS			not-accessible
+     STATUS					current
+     DESCRIPTION
+       " This object contains the identifier of a range of ds3 lines lengths."
+::= { opticsIMAllowedDs3LineLengthsEntry 1 }
+
+allowedDs3LineLengthMin OBJECT-TYPE
+     SYNTAX 					Integer32
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " This object contains the minimum value allowed for the length of the ds3 line expressed in feet. "
+::= { opticsIMAllowedDs3LineLengthsEntry 2 }
+
+allowedDs3LineLengthMax OBJECT-TYPE
+     SYNTAX 					Integer32
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " This object contains the maximum value allowed for the length of the ds3 line expressed in feet. "
+::= { opticsIMAllowedDs3LineLengthsEntry 3 }
+
+allowedDs3LineLengthId OBJECT-TYPE
+     SYNTAX 					OpticsIMDs3pPILineLength
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " This object contains the identifier of a range of ds3 lines lengths. It contains the same value of
+         allowedDs3LineLengthIndex  but it’s readable by the user."
+::= { opticsIMAllowedDs3LineLengthsEntry 4 }
+
+opticsIMPdhRAIInsertionTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMPdhRAIInsertionEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the RAI insertion management in PDH signals. "
+::= { opticsIMTrsCommonMibObject 6 }
+
+opticsIMPdhRAIInsertionEntry OBJECT-TYPE
+     SYNTAX				OpticsIMPdhRAIInsertionEntry
+     MAX-ACCESS		not-accessible
+     STATUS				current
+     DESCRIPTION
+          " An entry of the opticsIMPdhRAIInsertionTable. "
+     INDEX  { ifIndex, pdhRAIInsertionSignalType }
+::= { opticsIMPdhRAIInsertionTable 1 } 
+
+OpticsIMPdhRAIInsertionEntry ::= SEQUENCE {
+   pdhRAIInsertionSignalType	INTEGER,
+   pdhRAIInsertionStatus			INTEGER
+   }
+
+pdhRAIInsertionSignalType OBJECT-TYPE
+     SYNTAX INTEGER {
+          e1pPI  (1),
+          e1Path  (2),
+          ds3pPI  (3),
+          ds3Path  (4)
+          }
+     MAX-ACCESS		not-accessible 
+     STATUS				current
+     DESCRIPTION
+        " This object specifies the PDH signal (E1 or DS3) and the direction (pPI or path) on which the RAI 
+          insertion management is performed. "
+::= { opticsIMPdhRAIInsertionEntry 1 }
+
+pdhRAIInsertionStatus OBJECT-TYPE
+     SYNTAX INTEGER {
+          enabled  (1),
+          inhibited  (2),
+          forced  (3)
+          }
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object specifies the status of the RAI insertion. "
+::= { opticsIMPdhRAIInsertionEntry 2 }
+
+
+opticsIMAllDs1LineCoding OBJECT-TYPE
+     SYNTAX INTEGER {
+          idle  (1),
+          setAllDs1ToAMI (2),
+          setAllDs1ToB8ZS (3)
+          }
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, the code of all the ds1 lines. As consequence of a set 
+          operation on this object,  the agent has to set to the required value (AMI or B8ZS) the LineCoding
+          columnar object of all the entries present in the opticsIMDs1pPITTPTable. 
+          At the end of this operation the agent has to change the value of this object back to idle.  "
+::= { opticsIMTrsCommonMibObject 7 }
+
+
+opticsIMAllDs1LineLength OBJECT-TYPE
+     SYNTAX				OpticsIMDs1pPILineLength
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, the length of all the ds1 lines. As consequence of a set 
+          operation on this object,  the agent has to set to the required value the LineLength columnar object 
+          of all the entries present in the opticsIMDs1pPITTPTable."
+::= { opticsIMTrsCommonMibObject 8 }
+
+
+opticsIMAllDs1AISSignalType OBJECT-TYPE
+     SYNTAX				OpticsIMDs1E1AISSignalType
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, the type of AIS signal to be inserted (if enabled) 
+        on all the ds1 lines. As consequence of a set operation on this object,  the agent has to set to the
+        required value the AISSignalType columnar object of all the entries present in the
+        opticsIMDs1pPITTPTable."
+::= { opticsIMTrsCommonMibObject 11 }
+
+
+opticsIMAllDs1pPIAISInsertion OBJECT-TYPE
+     SYNTAX				OpticsIMAISInsertion
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, whether the AIS (Alarm Indication Signal) insertion
+         is allowed on pPI direction on all the ds1 lines. As consequence of a set operation on this object,
+         the agent has to set to the required value the AISInsertion columnar object of all the entries present 
+         in the opticsIMDs1pPITTPTable."
+::= { opticsIMTrsCommonMibObject 12 }
+
+
+opticsIMAllDs1PathAISInsertion OBJECT-TYPE
+     SYNTAX				OpticsIMAISInsertion
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, whether the AIS (Alarm Indication Signal) insertion
+         is allowed on path direction on all the ds1 lines. As consequence of a set operation on this object,
+         the agent has to set to the required value the AISInsertion columnar object of all the entries present 
+         in the opticsIMDs1PathTTPTable."
+::= { opticsIMTrsCommonMibObject 13 }
+
+
+opticsIMAllE1AISSignalType OBJECT-TYPE
+     SYNTAX				OpticsIMDs1E1AISSignalType
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, the type of AIS signal to be inserted (if enabled) 
+        on all the e1 lines. As consequence of a set operation on this object,  the agent has to set to the
+        required value the AISSignalType columnar object of all the entries present in the
+        opticsIME1pPITTPTable."
+::= { opticsIMTrsCommonMibObject 14 }
+
+
+opticsIMAllE1pPIAISInsertion OBJECT-TYPE
+     SYNTAX				OpticsIMAISInsertion
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, whether the AIS (Alarm Indication Signal) insertion
+         is allowed on pPI direction on all the e1 lines. As consequence of a set operation on this object,
+         the agent has to set to the required value the AISInsertion columnar object of all the entries present 
+         in the opticsIME1pPITTPTable."
+::= { opticsIMTrsCommonMibObject 15 }
+
+
+opticsIMAllE1PathAISInsertion OBJECT-TYPE
+     SYNTAX				OpticsIMAISInsertion
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, whether the AIS (Alarm Indication Signal) insertion
+         is allowed on path direction on all the e1 lines. As consequence of a set operation on this object,
+         the agent has to set to the required value the AISInsertion columnar object of all the entries present 
+         in the opticsIME1PathTTPTable."
+::= { opticsIMTrsCommonMibObject 16 }
+
+
+
+opticsIMAllDs3pPIParityViolationMonitoringRemoving OBJECT-TYPE
+     SYNTAX				OpticsIMDs3ParityViolationMonitoringRemoving
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, whether the Parity Violation Monitoring Removing
+         (PVMR) is enabled on pPI  direction on all the ds3 lines. As consequence of a set operation 
+          on this object,  the agent has to set to the required value the ParityViolationMonitoringRemoving
+          columnar object 
+          of all the entries present in the opticsIMDs3pPITTPTable."
+::= { opticsIMTrsCommonMibObject 17 }
+
+
+opticsIMAllDs3PathParityViolationMonitoringRemoving OBJECT-TYPE
+     SYNTAX				OpticsIMDs3ParityViolationMonitoringRemoving
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, whether the Parity Violation Monitoring Removing
+         (PVMR) is enabled on path  direction on all the ds3 lines. As consequence of a set operation 
+          on this object,  the agent has to set to the required value the ParityViolationMonitoringRemoving columnar object 
+          of all the entries present in the opticsIMDs3PathTTPTable."
+::= { opticsIMTrsCommonMibObject 18 }
+
+
+opticsIMAllDs3AISSignalType OBJECT-TYPE
+     SYNTAX				OpticsIMDs3AISSignalType
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, the type of AIS signal to be inserted (if enabled) 
+        on all the ds3 lines. As consequence of a set operation on this object,  the agent has to set to the
+        required value the AISSignalType columnar object of all the entries present in the
+        opticsIMDs3pPITTPTable."
+::= { opticsIMTrsCommonMibObject 19 }
+
+
+opticsIMAllDs3pPIAISInsertion OBJECT-TYPE
+     SYNTAX				OpticsIMAISInsertion
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, whether the AIS (Alarm Indication Signal) insertion
+         is allowed on pPI direction on all the ds3 lines. As consequence of a set operation 
+          on this object,  the agent has to set to the required value the AISInsertion columnar object 
+          of all the entries present in the opticsIMDs3pPITTPTable."
+::= { opticsIMTrsCommonMibObject 20 }
+
+
+
+opticsIMAllDs3PathAISInsertion OBJECT-TYPE
+     SYNTAX				OpticsIMAISInsertion
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, whether the AIS (Alarm Indication Signal) insertion
+         is allowed on path direction on all the ds3 lines. As consequence of a set operation on this object,
+         the agent has to set to the required value the AISInsertion columnar object of all the entries present 
+         in the opticsIMDs3PathTTPTable."
+::= { opticsIMTrsCommonMibObject 21 }
+
+
+opticsIMAllDs3AISSignalTiming OBJECT-TYPE
+     SYNTAX				OpticsIMDs3AISSignalTiming
+     MAX-ACCESS		read-write 
+     STATUS				current
+     DESCRIPTION
+        " This object is used to specify, in one shot, the timing for AIS signal on all the ds3 lines. As
+         consequence of a set operation on this object,  the agent has to set to the required value the
+         AISSignalTiming columnar object of all the entries present in the opticsIMDs3pPITTPTable."
+::= { opticsIMTrsCommonMibObject 22 }
+
+
+opticsIMBERMeasureTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF	OpticsIMBERMeasureEntry
+       MAX-ACCESS		not-accessible
+       STATUS			current
+       DESCRIPTION
+             "This table contains the BER measures. The evaluation of the BER is performed counting the 
+               number of violations since the activation of the measure. "
+::= { opticsIMTrsCommonMibObject 9 }
+
+opticsIMBERMeasureEntry OBJECT-TYPE
+       SYNTAX		OpticsIMBERMeasureEntry
+       MAX-ACCESS	not-accessible
+       STATUS		current
+       DESCRIPTION
+            "An entry of the opticsIMBERMeasureTable table. "
+       INDEX    {  ifIndex }
+::= { opticsIMBERMeasureTable 1 }   
+
+OpticsIMBERMeasureEntry ::= SEQUENCE {
+   berMeasureElapsedTime            TimeInterval,
+   berMeasureSuspectIntervalFlag TruthValue,
+   berMeasureViolations                 Integer32,
+   berMeasureValue                        DisplayString,
+   berMeasureRowStatus                RowStatus
+}
+       
+berMeasureElapsedTime OBJECT-TYPE
+       SYNTAX		TimeInterval
+       MAX-ACCESS	read-only
+       STATUS		current
+       DESCRIPTION
+           "This object provides the time since the activation of the measure."
+::= { opticsIMBERMeasureEntry 1 }
+
+berMeasureSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX		TruthValue
+       MAX-ACCESS	read-only
+       STATUS		current
+       DESCRIPTION
+           "This object is used to indicate that the measure is not reliable ."
+::= { opticsIMBERMeasureEntry 2 }
+
+berMeasureViolations OBJECT-TYPE
+       SYNTAX		Integer32
+       MAX-ACCESS	read-only
+       STATUS		current
+       DESCRIPTION
+           "This object provides the number of violations detected since the activation of the measure."
+::= { opticsIMBERMeasureEntry 3 }
+
+berMeasureValue OBJECT-TYPE
+       SYNTAX		DisplayString
+       MAX-ACCESS	read-only
+       STATUS		current
+       DESCRIPTION
+           "This object provides the BER calculated using the number of violations during the elapsed time. 
+            It is expressed as a string with the following format: Mx10E-N, where M and N are integer.
+            The string (notAvailable) is used to indicate that the measure is not available (i.e. in case of an 
+            overflow). "
+::= { opticsIMBERMeasureEntry 4 }
+
+berMeasureRowStatus OBJECT-TYPE
+       SYNTAX		RowStatus
+       MAX-ACCESS	read-create
+       STATUS		current
+       DESCRIPTION
+         "See Textual Conventions.  "
+::= { opticsIMBERMeasureEntry 5 }
+
+
+
+opticsIMTrsAlarms OBJECT IDENTIFIER ::= { opticsIMTrsCommonMibObject 10 }
+
+
+
+-- Section Trace Mismatch (alias TIM) alarm
+
+opticsIMAlarmSectionTraceMismatchRaise NOTIFICATION-TYPE
+      OBJECTS { tsdimEventObjectClassIdentifier,
+                          tsdimEventObjectInstanceIdentifier, 
+                          tsdimEventNotificationId,
+                          tsdimEventTime,
+                          tsdimAlarmSeverity,
+                          tsdimAlarmSpecProblem,
+                          opticsIMAdditionalText,
+                          opticsIMAlarmType}
+      STATUS current
+      DESCRIPTION 
+          "This notification reports the Section Trace Mismatch (STM) defect raise."
+::= { opticsIMTrsAlarms 1 }
+
+opticsIMAlarmSectionTraceMismatchClear NOTIFICATION-TYPE
+      OBJECTS { tsdimEventObjectClassIdentifier,
+                          tsdimEventObjectInstanceIdentifier, 
+                          tsdimEventNotificationId,
+                          tsdimEventTime,
+                          tsdimAlarmSeverity,
+                          tsdimAlarmSpecProblem,
+                          opticsIMAdditionalText,
+                          opticsIMAlarmType}
+      STATUS current
+      DESCRIPTION 
+          " This notification reports the Section Trace Mismatch (STM) defect clear."
+::= { opticsIMTrsAlarms 2 }
+
+
+-- Link Identifier Mismatch alarm
+
+opticsIMAlarmLinkIdentifierMismatchRaise NOTIFICATION-TYPE
+      OBJECTS { tsdimEventObjectClassIdentifier,
+                          tsdimEventObjectInstanceIdentifier, 
+                          tsdimEventNotificationId,
+                          tsdimEventTime,
+                          tsdimAlarmSeverity,
+                          tsdimAlarmSpecProblem,
+                          opticsIMAdditionalText,
+                          opticsIMAlarmType}
+      STATUS current
+      DESCRIPTION 
+          "This notification reports the Link Identifier Mismatch (LIM) defect raise."
+::= { opticsIMTrsAlarms 3 }
+
+opticsIMAlarmLinkIdentifierMismatchClear NOTIFICATION-TYPE
+      OBJECTS { tsdimEventObjectClassIdentifier,
+                          tsdimEventObjectInstanceIdentifier, 
+                          tsdimEventNotificationId,
+                          tsdimEventTime,
+                          tsdimAlarmSeverity,
+                          tsdimAlarmSpecProblem,
+                          opticsIMAdditionalText,
+                          opticsIMAlarmType}
+      STATUS current
+      DESCRIPTION 
+          " This notification reports the Link Identifier Mismatch (LIM) defect clear."
+::= { opticsIMTrsAlarms 4 }
+
+-- PDH Loss Due To Switch alarm
+
+opticsIMAlarmPdhLossDueToSwitchRaise NOTIFICATION-TYPE
+      OBJECTS { tsdimEventObjectClassIdentifier,
+                          tsdimEventObjectInstanceIdentifier, 
+                          tsdimEventNotificationId,
+                          tsdimEventTime,
+                          tsdimAlarmSeverity,
+                          tsdimAlarmSpecProblem,
+                          opticsIMAdditionalText,
+                          opticsIMAlarmType}
+      STATUS current
+      DESCRIPTION 
+          "This notification reports the PDH Loss Due To Switch defect raise."
+::= { opticsIMTrsAlarms 5 }
+
+opticsIMAlarmPdhLossDueToSwitchClear NOTIFICATION-TYPE
+      OBJECTS { tsdimEventObjectClassIdentifier,
+                          tsdimEventObjectInstanceIdentifier, 
+                          tsdimEventNotificationId,
+                          tsdimEventTime,
+                          tsdimAlarmSeverity,
+                          tsdimAlarmSpecProblem,
+                          opticsIMAdditionalText,
+                          opticsIMAlarmType}
+      STATUS current
+      DESCRIPTION 
+          " This notification reports the PDH Loss Due To Switch defect clear."
+::= { opticsIMTrsAlarms 6 }
+
+
+opticsIMTrsDS0Mngt   OBJECT IDENTIFIER ::= { opticsIMTrsCommonMibObject 30 }
+
+-- 
+-- DS0 Channel Group Table 
+-- 
+
+opticsIMDS0ChanGroupTable  OBJECT-TYPE
+	SYNTAX SEQUENCE OF OpticsIMDS0ChanGroupEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION 
+		"The opticsIMDS0ChanGroupTable has an entry for DS0 channels 
+		         grouped together and belonging to a particular DS1 channel."
+	::= { opticsIMTrsDS0Mngt 1 }
+
+opticsIMDS0ChanGroupEntry  OBJECT-TYPE
+	SYNTAX 	OpticsIMDS0ChanGroupEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION 
+		"Each row entry represents one or more DS0 channels on a 
+		         E1/DS1 interface.  opticsIMDS0ChanGroupTimeSlots object is used to add or
+		         remove DS0 channels from the group.
+		         
+		         Entries can be created and deleted via SNMP SET operations 
+		         using the opticsIMDS0ChanGroupRowStatus object. 
+		
+		         For each opticsIMDS0ChanGroupEntry, there should be a corresponding entry 
+		         in the ifTable."
+	INDEX { ds0ChanGroupIndex }
+	::= { opticsIMDS0ChanGroupTable 1 }
+
+OpticsIMDS0ChanGroupEntry ::= SEQUENCE {
+	ds0ChanGroupIndex
+		Unsigned32,
+	ds0ChanGroupRowStatus
+		RowStatus,
+	ds0ChanGroupTimeSlots
+		OpticsIMDs0ChannelList,
+	ds0ChanGroupSpeed
+		INTEGER,
+	ds0ChanGroupCRC
+		INTEGER,
+	ds0ChanGroupMTU
+		Unsigned32,
+	ds0ChanGroupOperMTU
+		Unsigned32,
+	ds0ChanGroupLastChangeTime
+		TimeStamp,
+	ds0ChanGroupIdleCycleFlags
+		OpticsIMDs1E1IdleCycleFlags,
+	ds0ChanGroupScramble
+		TruthValue,
+	ds0ChanGroupAcctPolicyId
+		Unsigned32,
+	ds0ChanGroupCollectStats
+		TruthValue,
+	ds0ChanGroupE1DS1Index
+		Unsigned32,
+	ds0ChanGroupCrossConnectIdentifier
+		Integer32
+}
+
+
+ds0ChanGroupIndex OBJECT-TYPE
+			SYNTAX Unsigned32
+			MAX-ACCESS not-accessible
+			STATUS current
+			DESCRIPTION
+				"This object is used by the ds0ChanGroupTable to
+				identify the row of this table.
+				When creating a new row in the table the value of this
+				index may be obtained by retrieving the value of
+				ds0ChanGroupIndexNext.
+				The range is 1..32, where 32 is the maximum number of DS0
+				slots available in a E1 stream."
+			::= { opticsIMDS0ChanGroupEntry 1 }
+
+ds0ChanGroupRowStatus  OBJECT-TYPE
+	SYNTAX     RowStatus
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"ds0ChanGroupRowStatus controls the creation and deletion of
+		         row entries in the opticsIMDS0ChanGroupTable. The ifIndex 
+		         for a channel group has to be calculated based on the
+		         given encoding scheme."
+	::= { opticsIMDS0ChanGroupEntry 2 }
+
+ds0ChanGroupTimeSlots  OBJECT-TYPE
+	SYNTAX     OpticsIMDs0ChannelList
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"ds0ChanGroupTimeSlots is a bitmap which is used to 
+		         add/remove DS0 timeslots from a channel group. 
+		         The description for TmnxDs0ChannelList contains details of the
+		         bitmap organization.
+		
+		         When a channel group is created on unframed DS1/E1, all timeslots
+		         as applicable to a given speed are auto-allocated and cannot be 
+		         changed.
+		
+		         When a channel group is created on a framed DS1/E1 or
+		         existing channel group's encapsulation is changed from ATM,
+		         the default of no timeslots is auto-assigned to the group.
+		
+		         When a channel group  on a framed DS1/E1 is configured for 
+		         ATM encapsulation, the ATM defaults of 0x00FFFFFF (DS1) 
+		         and 0XFFFEFFFE (E1) are auto-assigned and cannot be changed."
+	::= { opticsIMDS0ChanGroupEntry 3 }
+
+ds0ChanGroupSpeed  OBJECT-TYPE
+	SYNTAX     INTEGER {
+		speed-56 (1),
+		speed-64 (2)
+	}
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"ds0ChanGroupSpeed configures the required link speed 
+		         for all the time slots included in this channel group."
+	::= { opticsIMDS0ChanGroupEntry 4 }
+
+ds0ChanGroupCRC  OBJECT-TYPE
+	SYNTAX     INTEGER {
+		crc16 (1),
+		crc32 (2)
+	}
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"The value of ds0ChanGroupCRC variable indicates the precision of
+		         the cyclic redundancy check.  A value of 'crc16' is a 16-bit
+		         CRC calculation.  A value of 'crc32' is a 32-bit CRC
+		         calculation.  32-bit CRC increases the error detection ability,
+		         but it also adds some performance overhead.
+		
+		         For channel groups with encapsulation set to ATM, the default and
+		         only supported value is crc32 and applies to AAL5 CRC calculations
+		         on that channel group."
+	DEFVAL  { crc16 }
+	::= { opticsIMDS0ChanGroupEntry 5 }
+
+ds0ChanGroupMTU  OBJECT-TYPE
+	SYNTAX     Unsigned32
+	UNITS 	"bytes"
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"The size of the largest packet which can be sent/received
+		         on the channel group, specified in octets.  For groups that
+		         are used for transmitting network datagrams, this is the
+		         size of the largest network datagram that can be sent.
+		            
+		         Setting ds0ChanGroupMTU to a value of zero (0), causes the agent 
+		         to recalculate the default MTU size which can vary based on the 
+		         current setting of opticsIMIfPortMode and ifType variables.  
+		         Some typical default values are:
+		                1522 with mode access and if-type bcp-null
+		                1526 with mode access and if-type bcp-dot1q
+		                1502 with mode access and if-type ipcp
+		                4474 with mode access and if-type frame-relay
+		                1524 with mode access and if-type atm
+		                2092 with mode access and if-type cem
+		        "
+	::= { opticsIMDS0ChanGroupEntry 6 }
+
+ds0ChanGroupOperMTU  OBJECT-TYPE
+	SYNTAX     Unsigned32
+	UNITS 	"bytes"
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION 
+		"The negotiated size of the largest packet which can be sent on 
+		         the channel group, specified in octets.  For channel groups that 
+		         are used for transmitting network datagrams, this is the size of 
+		         the largest network datagram that can be sent."
+	::= { opticsIMDS0ChanGroupEntry 7 }
+
+ds0ChanGroupLastChangeTime  OBJECT-TYPE
+	SYNTAX     TimeStamp
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"The ds0ChanGroupLastChangeTime variable contains the sysUpTime
+		         value of the most recently modified writable variable in the
+		         opticsIMDS0ChanGroupEntry row for this channel group."
+	::= { opticsIMDS0ChanGroupEntry 8 }
+
+ds0ChanGroupIdleCycleFlags  OBJECT-TYPE
+	SYNTAX     OpticsIMDs1E1IdleCycleFlags
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"ds0ChanGroupIdleCycleFlags configures the value that the
+		         channel group transmits during idle cycle.
+		 
+		         The default value applies to HDLC channels only. For ATM
+		         channels the object does not really apply so a default value
+		         of 'none' is used and cannot be changed."
+	DEFVAL  { flags }
+	::= { opticsIMDS0ChanGroupEntry 9 }
+
+ds0ChanGroupScramble  OBJECT-TYPE
+	SYNTAX     TruthValue
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"ds0ChanGroupScramble indicates whether payload scrambling
+		         is enabled on this ATM channel.  Both ends of the connection
+		         must use the same scrambling algorithm.  The default value
+		         is 'true' if the ifType is atmEncap for this
+		         channel, otherwise the default is 'false' and not allowed to 
+		         change."
+	::= { opticsIMDS0ChanGroupEntry 10 }
+
+ds0ChanGroupAcctPolicyId  OBJECT-TYPE
+	SYNTAX     Unsigned32
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"NOT APPLICABLE
+		The value of ds0ChanGroupAcctPolicyId specifies an existing accounting 
+		         policy to use for the ds0 channel-group. Accounting policies can only 
+		         be associated with network ports or channels.
+                     A zero value indicates that there is 
+		         no accounting policy associated with this channel"
+	DEFVAL  { 0 }
+	::= { opticsIMDS0ChanGroupEntry 11 }
+
+ds0ChanGroupCollectStats  OBJECT-TYPE
+	SYNTAX     TruthValue
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"NOT APPLICABLE
+		The value of ds0ChanGroupCollectStats specifies whether or not the 
+		         collection of accounting and statistical data for the network ds0 
+		         channel-group is collected.
+		
+		         When the value is set to false, the statistics are still accumulated 
+		         by the cards, however, the results are not written into the billing file.
+		
+		         When applying accounting policies the data by default will be collected 
+		         in the appropriate records and written to the designated billing file."
+	DEFVAL  { true }
+	::= { opticsIMDS0ChanGroupEntry 12 }
+
+ds0ChanGroupE1DS1Index  OBJECT-TYPE
+	SYNTAX     Unsigned32
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION 
+		"The value of ds0ChanGroupE1DS1Index links to the ifIndex of the relevant E1/DS1 port"
+	::= { opticsIMDS0ChanGroupEntry 13 }
+
+ds0ChanGroupCrossConnectIdentifier  OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION 
+		"This object allows to identify the cross-connection in which the ds0 channel is involved.
+		         It is automatically set by the agent when the ds0 channel is cross-connected. Its value is the one 
+		         that identify the cross-connection index (opticsIMCrossConnectIndex object of the 
+		         opticsIMCrossConnectTable).
+		         The value of the connection identifier is the same for all the objects making part of the same cross-
+		         connection.
+		         The value '0' indicates that the ds0 channel is not involved in any cross-connection."
+	::= { opticsIMDS0ChanGroupEntry 14 }
+
+
+-- OPTICSIM-COMMON-TRS-MC DEFINITIONS ::= BEGIN
+--       IMPORTS
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB;
+
+
+-- opticsIMTrsCommonMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0207240000Z"
+--       ORGANIZATION "Alcatel TND"
+--       CONTACT-INFO "Alcatel TND"
+--       DESCRIPTION
+--           "Added the Ds1TTPBidLineCoding columnar object."
+--       REVISION “0205100000Z"
+--       DESCRIPTION
+--           " Added the tables e1PathTTPBid, ds1PathTTPBid, e3PathTTPBid, ds3PathTTPBid. 
+--             Updated  the already existing groups."
+--       REVISION "0201250000Z"
+--       DESCRIPTION 
+--           "Initial Release of COMMON Transmission Module Compliance."
+    
+-- ::= { opticsIMTrsCommonMCConf 1 }
+
+opticsIMTrsCommonMCConf         OBJECT IDENTIFIER ::= { opticsimSdhPdhMC 3 }
+opticsIMTrsCommonMCCompl      OBJECT IDENTIFIER ::= { opticsIMTrsCommonMCConf 1 }
+opticsIMTrsCommonMCGroup      OBJECT IDENTIFIER ::= { opticsIMTrsCommonMCConf 2 }
+
+opticsIMTrsCommonMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMTrsCommonMib. "
+
+       MODULE -- opticsIMTrsCommonMib  
+
+MANDATORY-GROUPS { opticsIMSdhPdhCommonAlarmsGroup }
+
+GROUP opticsIMGMAUTTPGroup 
+      DESCRIPTION
+          " This group describes the objects related to the GMAU management."
+
+GROUP opticsIME1TTPGroup 
+      DESCRIPTION
+          " This group describes the objects related to E1 management."
+
+GROUP opticsIMDs1TTPGroup 
+      DESCRIPTION
+          " This group describes the objects related to DS1 management."
+
+GROUP opticsIME3TTPGroup 
+      DESCRIPTION
+          " This group describes the objects related to E3 management."
+
+GROUP opticsIMDs3TTPGroup 
+      DESCRIPTION
+          " This group describes the objects related to DS3 management. "
+
+GROUP opticsIMRAIInsertionGroup 
+      DESCRIPTION
+          " This group describes the objects related to the management of the RAI insertion in PDH signals."
+
+GROUP opticsIMAllDs1Group 
+      DESCRIPTION
+          " This group describes the objects related to the global management of all the DS1 signals. "
+
+GROUP opticsIMBERMeasureGroup
+      DESCRIPTION
+          " This group describes the objects related to the BER measure. "
+
+GROUP opticsIMAllowedDs1LineLengthsGroup
+      DESCRIPTION
+          " This group describes the objects related to the allowed ranges of lengths of the ds1 lines."
+
+GROUP opticsIMAllE1Group
+      DESCRIPTION
+          " This group describes the objects related to the global management of all the E1 signals."
+
+GROUP opticsIMAllDs3Group
+      DESCRIPTION
+          " This group describes the objects related to the global management of all the DS3 signals."
+
+GROUP opticsIMAllowedDs3LineLengthsGroup
+      DESCRIPTION
+          " This group describes the objects related to the allowed ranges of lengths of the ds3 lines."
+::= { opticsIMTrsCommonMCCompl 1 }
+
+
+
+opticsIMGMAUTTPGroup OBJECT-GROUP
+      OBJECTS { gMAUTTPBidInterfaceType,
+                          gMAUTTPBidMediaStatus,
+                          gMAUTTPBidAutoNegotiationConf,
+                          gMAUTTPBidAutoNegotiationRate,
+                          gMAUTTPBidAutoNegotiationFlowDirectionality,
+                          gMAUTTPBidAutoNegotiationFlowControlActive,
+                          gMAUTTPBidAutoNegotiationCurrentStatus,
+                          gMAUTTPBidAutoNegotiationRemoteSignalling,
+                          gMAUTTPBidAutoNegotiationRemoteStatus,
+                          gMAUTTPBidManualConfRate,
+                          gMAUTTPBidManualConfFlowDirectionality,
+                          gMAUTTPBidOperationalState,
+                          gMAUTTPBidAsapIndex 
+                          }
+      STATUS deprecated 
+      DESCRIPTION 
+          " This group describes the GMAU TTP objects." 
+::= { opticsIMTrsCommonMCGroup 1 }
+
+
+opticsIME1TTPGroup OBJECT-GROUP
+      OBJECTS { e1pPITTPSignalMode,
+                          e1pPITTPFrameStatus,
+                          e1pPITTPOperationalState,
+                          e1pPITTPAsapIndex,
+                          e1PathTTPFrameStatus,
+                          e1PathTTPOperationalState,
+                          e1PathTTPAsapIndex,
+                          e1pPITTPAISSignalType,
+                          e1pPITTPAISInsertion,
+                          e1PathTTPAISInsertion,
+                          e1pPITTPPseudoRandSeqInsertion,
+                          e1pPITTPCrossConnectIdentifier                 
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of E1 signals." 
+::= { opticsIMTrsCommonMCGroup 2 }
+
+opticsIMDs1TTPGroup OBJECT-GROUP
+      OBJECTS { ds1pPITTPSignalMode,
+                          ds1pPITTPLineCoding,
+                          ds1pPITTPOperationalState,
+                          ds1pPITTPAsapIndex,
+                          ds1pPITTPLineLength,
+                          ds1PathTTPOperationalState,
+                          ds1PathTTPAsapIndex,
+                          ds1pPITTPAISSignalType,
+                          ds1pPITTPAISInsertion,
+                          ds1PathTTPAISInsertion,
+                          ds1pPITTPCrossConnectIdentifier                 
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of DS1 signals." 
+::= { opticsIMTrsCommonMCGroup 3 }
+
+
+opticsIME3TTPGroup OBJECT-GROUP
+      OBJECTS { e3pPITTPSignalMode,
+                          e3pPITTPOperationalState,
+                          e3pPITTPAsapIndex,
+                          e3PathTTPOperationalState,
+                          e3PathTTPAsapIndex,
+                          e3pPITTPPseudoRandSeqInsertion,
+                          e3pPITTPCrossConnectIdentifier                 
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of E3 signals." 
+::= { opticsIMTrsCommonMCGroup 4 }
+
+
+opticsIMDs3TTPGroup OBJECT-GROUP
+      OBJECTS { ds3pPITTPSignalMode,
+                          ds3pPITTPOperationalState,
+                          ds3pPITTPAsapIndex,
+                          ds3PathTTPOperationalState,
+                          ds3PathTTPAsapIndex,
+                          ds3pPITTPParityViolationMonitoringRemoving,
+                          ds3pPITTPAISSignalType,
+                          ds3pPITTPAISInsertion,
+                          ds3pPITTPAISSignalTiming,
+                          ds3pPITTPIdleInsertion,
+                          ds3pPITTPIdleDetection,
+                          ds3PathTTPParityViolationMonitoringRemoving,
+                          ds3PathTTPAISInsertion,
+                          ds3pPITTPInputBridgeEnabled,
+                          ds3pPITTPLineLength,
+                          ds3pPITTPCrossConnectIdentifier                 
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of DS3 signals." 
+::= { opticsIMTrsCommonMCGroup 5 }
+
+
+opticsIMRAIInsertionGroup OBJECT-GROUP
+      OBJECTS { pdhRAIInsertionStatus
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of the RAI insertion in PDH signals."
+::= { opticsIMTrsCommonMCGroup 7 }
+
+
+opticsIMSdhPdhCommonAlarmsGroup NOTIFICATION-GROUP
+      NOTIFICATIONS { opticsIMAlarmSectionTraceMismatchRaise,
+                                     opticsIMAlarmSectionTraceMismatchClear,
+                                     opticsIMAlarmLinkIdentifierMismatchRaise,
+                                     opticsIMAlarmLinkIdentifierMismatchClear,
+                                     opticsIMAlarmPdhLossDueToSwitchRaise,
+                                     opticsIMAlarmPdhLossDueToSwitchClear
+                                     }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the SDH and PDH alarms notifications." 
+::= { opticsIMTrsCommonMCGroup 6 }
+
+
+opticsIMAllDs1Group OBJECT-GROUP
+      OBJECTS { opticsIMAllDs1LineCoding,
+                          opticsIMAllDs1LineLength,
+                          opticsIMAllDs1AISSignalType,
+                          opticsIMAllDs1pPIAISInsertion,
+                          opticsIMAllDs1PathAISInsertion                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the global management of all the DS1 signals." 
+::= { opticsIMTrsCommonMCGroup 8 }
+
+opticsIMAllE1Group OBJECT-GROUP
+      OBJECTS { opticsIMAllE1AISSignalType,
+                          opticsIMAllE1pPIAISInsertion,
+                          opticsIMAllE1PathAISInsertion
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the global management of all the E1 signals." 
+::= { opticsIMTrsCommonMCGroup 11 }
+
+
+opticsIMAllDs3Group OBJECT-GROUP
+      OBJECTS { opticsIMAllDs3pPIParityViolationMonitoringRemoving,
+		    opticsIMAllDs3PathParityViolationMonitoringRemoving,
+                opticsIMAllDs3AISSignalType,
+                opticsIMAllDs3pPIAISInsertion,
+                opticsIMAllDs3PathAISInsertion,
+                opticsIMAllDs3AISSignalTiming
+              }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the global management of all the DS3 signals." 
+::= { opticsIMTrsCommonMCGroup 12 }
+
+
+opticsIMBERMeasureGroup OBJECT-GROUP
+      OBJECTS { berMeasureElapsedTime,
+                         berMeasureSuspectIntervalFlag,
+                         berMeasureViolations,
+                         berMeasureValue,
+                         berMeasureRowStatus
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the BER measure." 
+::= { opticsIMTrsCommonMCGroup 9 }
+
+
+--
+-- S. Winslow Fixed inconsistent OBJECT-GROUP name
+-- opticsIMAllowedDs1LinesLengthsGroup OBJECT-GROUP
+   opticsIMAllowedDs1LineLengthsGroup OBJECT-GROUP
+      OBJECTS { allowedDs1LineLengthMin,
+                         allowedDs1LineLengthMax,
+                         allowedDs1LineLengthId
+                         }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the allowed ranges of lengths of the ds1 lines."
+::= { opticsIMTrsCommonMCGroup 10 }
+
+
+--
+-- S. Winslow Fixed inconsistent OBJECT-GROUP name
+-- opticsIMAllowedDs3LinesLengthsGroup OBJECT-GROUP
+opticsIMAllowedDs3LineLengthsGroup OBJECT-GROUP
+      OBJECTS { allowedDs3LineLengthMin,
+                         allowedDs3LineLengthMax,
+                         allowedDs3LineLengthId
+                         }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the allowed ranges of lengths of the ds3 lines."
+::= { opticsIMTrsCommonMCGroup 13 }
+
+END

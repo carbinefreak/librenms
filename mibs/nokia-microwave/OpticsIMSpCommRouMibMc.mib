@@ -1,0 +1,2215 @@
+OPTICSIM-COMMROU-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, IpAddress, Integer32, Unsigned32 FROM SNMPv2-SMI
+    DisplayString, TruthValue, RowStatus, MacAddress, TEXTUAL-CONVENTION FROM SNMPv2-TC
+    InterfaceIndexOrZero, ifIndex, InterfaceIndex FROM IF-MIB
+    TsdimUdpPort, TsdimNotificationId, TsdimEventTimeInt, 
+    TsdimManagerType  FROM TSDIM-SNMP-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP FROM SNMPv2-CONF
+    OpticsIMIpRoutingProtocol, OpticsIMPtpIpInterfaceType,
+    OpticsIMPtpIpInterfaceMode FROM OPTICSIM-COMMON-TC
+    tsdimBasicMib,tsdimBasicMC FROM TSDIM-BASICREG-MIB
+   InetAddressIPv6 FROM TSDIM-SUPPORT-MIB
+;
+
+ opticsIMCommRouMib MODULE-IDENTITY
+    LAST-UPDATED "202403010000Z"
+    ORGANIZATION "Alcatel TND"
+    CONTACT-INFO "Alcatel TND"
+    DESCRIPTION
+       "Optics-IM Communication and Routing MIB"
+
+    REVISION "202403010000Z"
+    DESCRIPTION
+    	"- Updated some mistakes for wrong sequence definition on the followig table:
+		-- opticsIMInfoPolledTable
+		-- opticsIMMgrPollingInfoTable
+		-- opticsIMOspfAreaTable
+		-- opticsIMIpStaticRoutingInfoTable
+		-- opticsIMIpRoutingInfoTable
+		-- opticsIMLocalEthernetTable
+		-- opticsIMPointToPointIPTable
+		-- opticsIMIPTunnelTable
+		-- opticsIMCLNPTunnelTable
+		-- opticsIMOspfV3AreaTable
+		-- opticsIMIPv6StaticRoutingInfoTable
+		-- opticsIMIPv6RoutingInfoTable
+
+    	"
+
+    REVISION "202311220000Z"
+    DESCRIPTION
+    	"Added the attribute opticsIMIfDataManagementPlaneL3MacAddress to opticsIMIfDataManagementPlaneL3Table.
+    	"
+
+    REVISION "202107070000Z"
+    DESCRIPTION
+    	"Added the attribute opticsIMIfDataManagementPlaneL3InBandForwardingStatus to opticsIMIfDataManagementPlaneL3Table.
+    	"
+
+    REVISION "201802200000Z"
+    DESCRIPTION
+    	"Added 2 new attributes to opticsIMIfDataManagementPlaneL3Table:
+          - opticsIMIfDataManagementPlaneL3DefGateway,
+          - opticsIMIfDataManagementPlaneL3IPv6DefGateway
+    	"
+    
+    REVISION "201511130000Z"
+    DESCRIPTION
+    	"- SNMPIDL-507, update LAST-UPDATED and REVISION date format adding the 2 digits missing (20) for yers after 1999.
+    Added a REVISION block corresponding to the LAST-UPDATED timestamp.
+      	 - SNMPIDL-508, added a space between opening and closing braces and the enclosed content.
+    	"
+    REVISION "201401060000Z"
+    DESCRIPTION
+       "- OPTnm25246: D.Spreafico.
+             Added a new attribute, 		    	opticsIMPointToPointIPRemoteSysName to 	opticsIMPointToPointIPTable.
+
+	"
+    
+    REVISION "201307060000Z"
+    DESCRIPTION
+       "- OPTnm20366: D.Spreafico.
+             Added a new attribute, opticsIMIfDataManagementPlaneL3PCP, to opticsIMIfDataManagementPlaneL3Table.
+
+        - D. Spreafico: for compilation problems removed a P on opticsIMOptPointToPointIPv6PGroup 
+                           (to opticsIMOptPointToPointIPv6Group) .   		
+	"
+    
+    REVISION "1206080000Z"
+    DESCRIPTION
+       "OPTnm10120: Daniela Spreafico.
+ 	        1. Following attribute is added in opticsIMMgrPollingInfoTable:
+ 		       	- opticsIMMgrPollingIPv6Address
+
+    	 	2. Following attribute is added to opticsIMLocalEthernetTable:
+       			- opticsIMLocalEthernetIPv6Address   		
+   	 		- opticsIMLocalEthernetIPv6PrefixLength  	
+   	 		- opticsIMLocalEthernetIPv6RoutingProtocol  	
+   	 		- opticsIMLocalEthernetOspfv3AreaPointer
+
+   		3. Following attribute is to opticsIMPointToPointIPTable:
+ 			- opticsIMPointToPointIPv6RemoteAddress 
+  	  		- opticsIMPointToPointIPv6RoutingProtocol
+   	 		- opticsIMPointToPointOspfv3AreaPointer
+
+ 	        4. Following tables are added:
+  		      	- opticsIMOspfV3AreaTable
+			- opticsIMIPv6StaticRoutingInfoTable
+			- opticsIMIPv6RoutingInfoTable 
+
+      		5. Following scalar objects are added:
+			- opticsIMIpStackVersion
+			- opticsIMOspfV3RouterId
+     		   	- opticsIMIPv6StaticIndexNext    
+
+ 		6. Following attribute is added in opticsIMIfDataManagementPlaneL3Table:
+    		    	- opticsIMIfDataManagementPlaneL3IPv6Address		
+     			- opticsIMIfDataManagementPlaneL3IPv6PrefixLength	
+     			- opticsIMIfDataManagementPlaneL3IPv6RoutingProtocol	
+     			- opticsIMIfDataManagementPlaneL3Ospfv3AreaPointer
+
+        OPTnm10404: Daniela Spreafico.
+                Following attribute is added to opticsIMIfDataManagementPlaneL3Table:
+        	- opticsIMIfDataManagementPlaneL3DSCP    		
+
+	"
+    
+    REVISION "1201260000Z"
+    DESCRIPTION
+       "OPTnm04640: Daniela Spreafico.
+        Following attribute is added in opticsIMPointToPointIPTable:
+        - opticsIMPointToPointIPStatus
+        - opticsIMPointToPointIPRemoteIfIndex
+	"
+    
+    REVISION "1111030000Z"
+    DESCRIPTION
+       "TSDnm93501: Michael Qiu.
+        Following attribute is added in OpticsIMIfDataManagementPlaneTable
+        - opticsIMIfDataManagementPlaneEthernetPppStatus"
+    
+    REVISION "1101270000Z"
+    DESCRIPTION
+       " Following three attributes are added in OpticsIMIfDataManagementPlaneTable
+       - opticsIMIfDataManagementPlaneMode
+       - opticsIMIfDataManagementPlaneVLANId
+       - opticsIMIfDataManagementPlaneTMPLSVLANId "
+  
+    REVISION "1008040000Z"
+    DESCRIPTION
+       "Extended the range for opticsIMPointToPointIPId from Integer32 (1..99) to Integer32 (1..999)    "
+
+    REVISION "1005130000Z"
+    DESCRIPTION
+       "Added tables OpticsIMIfDataManagementPlaneL3Table and opticsIMIfDataManagementPlaneL3PortListTable"
+
+    REVISION "0805290000Z"
+    DESCRIPTION
+       "Added scalar object opticsIMDHCPStatus"
+
+    REVISION "0711290000Z"
+    DESCRIPTION
+       "Added opticsIMIfDataManagementPlanePppStatus to OpticsIMIfDataManagementPlaneEntry"
+
+    REVISION "0701280000Z"
+    DESCRIPTION
+       "Added asapIndex to LocalEthernet table."
+    REVISION "0612210000Z"
+    DESCRIPTION
+       "Added the neighbor NE Table for NE auto-discovery: opticsIMNeighborNeTable."
+    REVISION "0602160000Z"
+    DESCRIPTION
+       "Added the CLNS management: opticsIMClnsStatus."
+    REVISION "200506070000Z"
+    DESCRIPTION
+       "Ed. 10
+        Addition of the following objects:
+        - opticsIMIfDataManagementPlaneTable
+       "        
+    REVISION "0411300000Z"
+    DESCRIPTION
+       "Spreafico:
+        in opticsIMOspfAreaTable the behaviour is changed to manage 
+        backbone area: opticsIMOspfAreaID SINTAX change from 
+        integer32 (1..999) to integer32 (0..999). 
+        Conseguently: opticsIMLocalEthernetOspfAreaPointer (in 
+        opticsIMLocalEthernetTable) and opticsIMPointToPointIPOspfAreaPointer
+        (in opticsIMPointToPointIPTable) and opticsIMCLNPTunnelOspfAreaPointer 
+        (in opticsIMCLNPTunnelTable) change from Integer32 (1..3) to
+        Integer32 (0..999).
+        In opticsIMLocalEthernetTable: opticsIMLocalEthernetId changes from 
+        integer32 (1..3) to integer32 (1..999).
+        In opticsIMStaticRoutingInfoTable: opticsIMIpStaticInterfaceIndex change 
+        from integer32 (1..2147483647) to integer32 (0..2147483647)."
+    REVISION "0406150000Z"
+    DESCRIPTION
+        "Hongtao Ren:
+           Added the CLNP tunnel management: opticsIMCLNPTunnelTable.
+         Gariani, Spreafico:
+           Bug detection in opticsIMOspfAreaTable and 
+           opticsIMPointToPointTable. The two indexes SINTAX, 
+           respectively opticsIMOspfAreaId and opticsIMPointToPointId,
+           is integer32 (1..3), while it changed as (1..999) and (1..99)."
+    REVISION "0307250000Z"
+    DESCRIPTION
+        "Added the IP tunnel table and the ASAP object to the 
+         opticsIMPointToPointIPTable."
+    REVISION "0303140000Z"
+    DESCRIPTION
+        "Added the LAPD management and the IP remote address in the 
+         point-to-point IP interfaces table. Renaming of 
+         opticsIMLocalPtpIpInterfaceTable in opticsIMPointToPointIPTable"
+    REVISION  "0211050000Z"
+    DESCRIPTION
+        "Changed the syntax of the OSPF Area pointer objects in 
+         opticsIMLocalEthernet and opticsIMPointToPointIP tables and 
+         the syntax of opticsIMIpRoutingProtocol object in 
+         opticsIMIpRoutingInfoTable.
+         NeRestartFlag object has been deprecated."
+    REVISION  "0207240000Z"
+    DESCRIPTION
+        "Added new features to IP Routing functionality objects 
+         (OSPF and interface objects"
+    REVISION "200107180000Z"
+    DESCRIPTION
+        "The GenEvent notification and time have been added to 
+         the polled table"
+    REVISION "200104130000Z"
+    DESCRIPTION
+        "The event notification and time have been added to 
+         the polled table"
+    REVISION "0005090000Z"
+    DESCRIPTION
+        "Initial Release Optics-IM Communication and Routing MIB"
+::= { tsdimBasicMib 6 }
+
+-- OpticsIMNeighborConnectionType
+
+OpticsIMNeighborConnectionType  ::= TEXTUAL-CONVENTION
+	STATUS current
+	DESCRIPTION
+	" This object indicates the connection type of neighbor NE "
+	SYNTAX INTEGER {
+               direct   (1),
+               pointToPoint     (2)
+       }
+
+
+
+opticsIMCommRouMibObject      OBJECT IDENTIFIER ::= { opticsIMCommRouMib 1 }
+
+
+opticsIMIpStackVersion OBJECT-TYPE
+ SYNTAX INTEGER { 
+        ipv4 (1),
+        ipv6 (2),
+        dualStack (3) }
+  MAX-ACCESS read-write
+  STATUS current
+  DESCRIPTION
+    "This scalar object defines the current IP stack working on the NE. 
+     if 'ipv4' is selected then the NE is able to receive, forward, route IP packets containing address in IPv4 format.
+     if 'ipv6' is selected then the NE is able to receive, forward, route IP packets containing address in IPv6 format.
+     if 'dualStack' is selected then the NE is able to receive , forward, route IP packets containing address whether in IPv4 or IPv6 format.
+    "
+::= { opticsIMCommRouMibObject 25 }
+
+-- opticsIMInfoPolledTable 
+
+opticsIMInfoPolledTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMInfoPolledEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the information that managing systems
+         will read with polling messages."
+::= { opticsIMCommRouMibObject 7 }
+
+opticsIMInfoPolledEntry OBJECT-TYPE
+    SYNTAX OpticsIMInfoPolledEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "The row describes the information that managing systems
+         will read with polling messages."
+    INDEX { opticsIMInfoIndex }
+::= { opticsIMInfoPolledTable 1 }
+
+OpticsIMInfoPolledEntry ::= SEQUENCE {
+    opticsIMInfoIndex                   Integer32,
+    opticsIMInfoLastAlarmNotificationId TsdimNotificationId,
+    opticsIMInfoLastAlarmTime           TsdimEventTimeInt, 
+    opticsIMInfoNERestartFlag           TruthValue,
+    opticsIMInfoLastEventNotificationId TsdimNotificationId,
+    opticsIMInfoLastEventTime           TsdimEventTimeInt, 
+    opticsIMInfoLastGenEventNotificationId TsdimNotificationId,
+    opticsIMInfoLastGenEventTime           TsdimEventTimeInt 
+    }
+
+opticsIMInfoIndex OBJECT-TYPE 
+    SYNTAX Integer32 
+    MAX-ACCESS not-accessible
+    STATUS current 
+    DESCRIPTION  
+        "This object defines the index of the table." 
+::= { opticsIMInfoPolledEntry 1 } 
+
+opticsIMInfoLastAlarmNotificationId OBJECT-TYPE 
+    SYNTAX TsdimNotificationId 
+    MAX-ACCESS read-only 
+    STATUS current 
+    DESCRIPTION   
+        "This object contains the notification identifier of the last alarm
+         stored inside AlarmLog." 
+::= { opticsIMInfoPolledEntry 2 } 
+
+opticsIMInfoLastAlarmTime OBJECT-TYPE 
+    SYNTAX TsdimEventTimeInt 
+    MAX-ACCESS read-only 
+    STATUS current 
+    DESCRIPTION 
+        "This object contains the time of the last alarm stored  
+         inside AlarmLog." 
+::= { opticsIMInfoPolledEntry 3 } 
+
+opticsIMInfoNERestartFlag OBJECT-TYPE 
+    SYNTAX TruthValue 
+    MAX-ACCESS read-write 
+    STATUS deprecated 
+    DESCRIPTION 
+        "This is the NE restart attribute.
+         It is set by NE at each restart, and reset by manager after
+         having read it"
+::= { opticsIMInfoPolledEntry 4 } 
+
+opticsIMInfoLastEventNotificationId OBJECT-TYPE 
+    SYNTAX TsdimNotificationId 
+    MAX-ACCESS read-only 
+    STATUS current 
+    DESCRIPTION   
+        "This object contains the notification identifier of the last Event
+         stored inside EventLog." 
+::= { opticsIMInfoPolledEntry 5 } 
+
+opticsIMInfoLastEventTime OBJECT-TYPE 
+    SYNTAX TsdimEventTimeInt 
+    MAX-ACCESS read-only 
+    STATUS current 
+    DESCRIPTION 
+        "This object contains the time of the last Event stored  
+         inside EventLog." 
+::= { opticsIMInfoPolledEntry 6 } 
+
+opticsIMInfoLastGenEventNotificationId OBJECT-TYPE 
+    SYNTAX TsdimNotificationId 
+    MAX-ACCESS read-only 
+    STATUS current 
+    DESCRIPTION   
+        "This object contains the notification identifier of the last Event
+         stored inside GenEventLog." 
+::= { opticsIMInfoPolledEntry 7 } 
+
+opticsIMInfoLastGenEventTime OBJECT-TYPE 
+    SYNTAX TsdimEventTimeInt 
+    MAX-ACCESS read-only 
+    STATUS current 
+    DESCRIPTION 
+        "This object contains the time of the last Event stored  
+         inside GenEventLog." 
+::= { opticsIMInfoPolledEntry 8 } 
+
+-- opticsIMMgrPollingInfoTable 
+
+opticsIMMgrPollingInfoTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMMgrPollingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the manager polling information. This polling
+         mechanism is used in order to simulate a connection oriented 
+         association between Manager and Agent."
+::= { opticsIMCommRouMibObject 8 }
+
+opticsIMMgrPollingInfoEntry OBJECT-TYPE
+    SYNTAX OpticsIMMgrPollingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "The row describes the manager configuration parameters for 
+         Polling functionality"
+    INDEX { opticsIMMgrPollingIndex }
+::= { opticsIMMgrPollingInfoTable 1 }
+
+OpticsIMMgrPollingInfoEntry ::= SEQUENCE {
+    opticsIMMgrPollingIndex         Integer32,
+    opticsIMMgrPollingIpAddress     IpAddress,
+    opticsIMMgrPollingUdpPort       TsdimUdpPort,
+    opticsIMMgrPollingTimeOut       Integer32,
+    opticsIMMgrPollingManagerType   TsdimManagerType,
+    opticsIMMgrPollingRowStatus     RowStatus,
+    opticsIMMgrPollingIPv6Address   InetAddressIPv6
+    }
+
+opticsIMMgrPollingIndex OBJECT-TYPE 
+    SYNTAX Integer32 
+    MAX-ACCESS not-accessible
+    STATUS current 
+    DESCRIPTION  
+        "This object defines the index of the table." 
+::= { opticsIMMgrPollingInfoEntry 1 } 
+
+opticsIMMgrPollingIpAddress OBJECT-TYPE  
+    SYNTAX IpAddress 
+    MAX-ACCESS read-create 
+    STATUS current 
+    DESCRIPTION  
+        "This is the IP address information of the manager that support 
+         the polling mechanism." 
+::= { opticsIMMgrPollingInfoEntry 2 } 
+
+opticsIMMgrPollingUdpPort OBJECT-TYPE  
+    SYNTAX TsdimUdpPort 
+    MAX-ACCESS read-create 
+    STATUS current 
+    DESCRIPTION  
+        "See textual conventions." 
+::= { opticsIMMgrPollingInfoEntry 3 } 
+
+opticsIMMgrPollingTimeOut OBJECT-TYPE 
+    SYNTAX Integer32 
+    UNITS "seconds" 
+    MAX-ACCESS read-create 
+    STATUS current 
+    DESCRIPTION  
+        "This is the time-out value used by Manager during the  
+         polling mechanism. It is used from the agent to calculate  
+         the proper delay before declaring a manager unreachable" 
+::= { opticsIMMgrPollingInfoEntry 4 } 
+
+opticsIMMgrPollingManagerType OBJECT-TYPE  
+    SYNTAX TsdimManagerType 
+    MAX-ACCESS read-create 
+    STATUS current 
+    DESCRIPTION  
+        "See textual conventions." 
+::= { opticsIMMgrPollingInfoEntry 5 } 
+
+opticsIMMgrPollingRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object is used to create / delete a row."
+::= { opticsIMMgrPollingInfoEntry 6 }
+
+opticsIMMgrPollingIPv6Address OBJECT-TYPE
+    SYNTAX InetAddressIPv6
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the IP address information of the manager that support 
+         the polling mechanism in the IPv6 format." 
+::= { opticsIMMgrPollingInfoEntry 7 }
+
+-- opticsIMOspfAreaTable 
+
+opticsIMOspfAreaTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMOspfAreaEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the Ospf Area routing information. 
+         This information are used in order to manage the IP routing
+         functionality."
+::= { opticsIMCommRouMibObject 10 }
+
+opticsIMOspfAreaEntry OBJECT-TYPE
+    SYNTAX OpticsIMOspfAreaEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes the Ospf Area routing information.
+         The row identified by AreaId 0 and IpAddress 0.0.0.0 is used for the
+         Ospf backbone default value. This row is created by the agent and not        
+         managed (deleted or modified) by management system."
+    INDEX { opticsIMOspfAreaId }
+::= { opticsIMOspfAreaTable 1 }
+
+OpticsIMOspfAreaEntry ::= SEQUENCE {
+    opticsIMOspfAreaId        Integer32,
+    opticsIMOspfAreaIpAddress IpAddress,
+    opticsIMOspfAreaIpMask    IpAddress,
+    opticsIMOspfAreaStubFlag  TruthValue,  
+        opticsIMOspfAreaRowStatus RowStatus
+    }
+
+opticsIMOspfAreaId OBJECT-TYPE
+    SYNTAX Integer32 (0..999) 
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This is the Ospf area identifier number. "
+::= { opticsIMOspfAreaEntry 1 }
+
+opticsIMOspfAreaIpAddress OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the Ospf area address."
+::= { opticsIMOspfAreaEntry 2 }
+
+opticsIMOspfAreaIpMask OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the Ospf area mask."
+::= { opticsIMOspfAreaEntry 3 }
+
+opticsIMOspfAreaStubFlag OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the Ospf stub flag."
+::= { opticsIMOspfAreaEntry 4 }
+
+opticsIMOspfAreaRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object is used to create / delete an OSPF area."
+::= { opticsIMOspfAreaEntry 5 }
+
+-- opticsIMIpStaticRoutingInfoTable 
+
+opticsIMIpStaticRoutingInfoTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMIpStaticRoutingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the Ip static routing  information. 
+         This information are used in order to manage the IP routing
+         functionality"
+::= { opticsIMCommRouMibObject 11 }
+
+opticsIMIpStaticRoutingInfoEntry OBJECT-TYPE
+    SYNTAX OpticsIMIpStaticRoutingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes the IP static routing information."
+    INDEX { opticsIMIpStaticIpAddress }
+::= { opticsIMIpStaticRoutingInfoTable 1 }
+
+OpticsIMIpStaticRoutingInfoEntry ::= SEQUENCE {
+    opticsIMIpStaticIpAddress   IpAddress,
+    opticsIMIpStaticIpMask      IpAddress,
+    opticsIMIpStaticDefGateway  IpAddress,
+    opticsIMIpStaticInterfaceIndex InterfaceIndexOrZero,
+    opticsIMIpStaticRowStatus   RowStatus
+    }
+
+opticsIMIpStaticIpAddress OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "The host or network IpAddress."
+::= { opticsIMIpStaticRoutingInfoEntry 1 }
+
+opticsIMIpStaticIpMask OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object defines the  mask associated to the 
+         network IP address."
+::= { opticsIMIpStaticRoutingInfoEntry 2 }
+
+opticsIMIpStaticDefGateway OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "The ip address of the default gateway."
+::= { opticsIMIpStaticRoutingInfoEntry 3 }
+
+opticsIMIpStaticInterfaceIndex OBJECT-TYPE
+    SYNTAX InterfaceIndexOrZero
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object identifies the entry inside the ifTable 
+         which describes the AAL interface."
+::= { opticsIMIpStaticRoutingInfoEntry 4 }
+
+opticsIMIpStaticRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object is used to create / delete a row."
+::= { opticsIMIpStaticRoutingInfoEntry 5 }
+
+-- opticsIMIpRoutingInfoTable 
+
+opticsIMIpRoutingInfoTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMIpRoutingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the Ip routing  information. 
+         This information can be retrieve by managers for maintenance 
+         purposes. 
+         The agent can fill in this table only as a consequence of a 
+         GET-Request from a manager"
+::= { opticsIMCommRouMibObject 12 }
+
+opticsIMIpRoutingInfoEntry OBJECT-TYPE
+    SYNTAX OpticsIMIpRoutingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes the IP  routing information."
+    INDEX { opticsIMIpRoutingDestIpAddress }
+::= { opticsIMIpRoutingInfoTable 1 }
+
+OpticsIMIpRoutingInfoEntry ::= SEQUENCE {
+    opticsIMIpRoutingDestIpAddress   IpAddress,
+    opticsIMIpRoutingDestIpMask      IpAddress,
+    opticsIMIpRoutingDefGateway  IpAddress,
+    opticsIMIpRoutingMetricValue Integer32,
+    opticsIMIpRoutingRouteAge    Integer32,
+    opticsIMIpRoutingRouteType   INTEGER,
+    opticsIMIpRoutingProtocol    OpticsIMIpRoutingProtocol,
+    opticsIMIpRoutingLocalPtpInterface    Integer32
+    }
+
+opticsIMIpRoutingDestIpAddress OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This object describes the host or network IpAddress."
+::= { opticsIMIpRoutingInfoEntry 1 }
+
+opticsIMIpRoutingDestIpMask OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "The mask related to the network IP address."
+::= { opticsIMIpRoutingInfoEntry 2 }
+
+opticsIMIpRoutingDefGateway OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "The ip address of the default gateway."
+::= { opticsIMIpRoutingInfoEntry 3 }
+
+opticsIMIpRoutingMetricValue OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the metric information ."
+::= { opticsIMIpRoutingInfoEntry 4 }
+
+opticsIMIpRoutingRouteAge OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the route age information ."
+::= { opticsIMIpRoutingInfoEntry 5 }
+
+opticsIMIpRoutingRouteType OBJECT-TYPE
+    SYNTAX INTEGER {
+        indirect ( 1 ),
+        direct   ( 2 ) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the route type information ."
+::= { opticsIMIpRoutingInfoEntry 6 }
+
+opticsIMIpRoutingProtocol OBJECT-TYPE
+    SYNTAX OpticsIMIpRoutingProtocol
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing protocol information ."
+::= { opticsIMIpRoutingInfoEntry 7 }
+
+opticsIMIpRoutingLocalPtpInterface OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing point to point interface ."
+::= { opticsIMIpRoutingInfoEntry 8 }
+
+-- opticsIMLocalEthernetTable 
+
+opticsIMLocalEthernetTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMLocalEthernetEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+      "This table contains the information needed to manage NEs which
+       provide LAN ethernet interfaces."
+::= { opticsIMCommRouMibObject 13 }
+
+opticsIMLocalEthernetEntry OBJECT-TYPE
+    SYNTAX OpticsIMLocalEthernetEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes the ethernet interface information."
+    INDEX { opticsIMLocalEthernetId }
+::= { opticsIMLocalEthernetTable 1 }
+
+
+OpticsIMLocalEthernetEntry ::= SEQUENCE {
+    opticsIMLocalEthernetId   Integer32,
+
+    opticsIMLocalEthernetMacAddress    MacAddress,
+
+    opticsIMLocalEthernetIpAddress 		IpAddress,
+    opticsIMLocalEthernetIpMask  		IpAddress,
+    opticsIMLocalEthernetIpRoutingProtocol  	OpticsIMIpRoutingProtocol,
+    opticsIMLocalEthernetOspfAreaPointer  	Integer32,
+    opticsIMLocalEthernetRowStatus   		RowStatus,
+    opticsIMLocalEthernetAsapIndex   		Integer32,
+    opticsIMLocalEthernetIPv6Address   		InetAddressIPv6,
+    opticsIMLocalEthernetIPv6PrefixLength  	Unsigned32,
+    opticsIMLocalEthernetIPv6RoutingProtocol  	OpticsIMIpRoutingProtocol,
+    opticsIMLocalEthernetOspfv3AreaPointer  	Integer32
+
+    }
+
+opticsIMLocalEthernetId OBJECT-TYPE
+    SYNTAX Integer32 (1..999) 
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This is the local ethernet interface identifier number. "
+::= { opticsIMLocalEthernetEntry 1 }
+
+opticsIMLocalEthernetMacAddress OBJECT-TYPE
+    SYNTAX MacAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This is the MAC address of the local ethernet interface."
+::= { opticsIMLocalEthernetEntry 2 }
+
+opticsIMLocalEthernetIpAddress OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the local ethernet interface address."
+::= { opticsIMLocalEthernetEntry 3 }
+
+opticsIMLocalEthernetIpMask OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the local ethernet interface mask."
+::= { opticsIMLocalEthernetEntry 4 }
+
+opticsIMLocalEthernetIpRoutingProtocol OBJECT-TYPE
+    SYNTAX  OpticsIMIpRoutingProtocol 
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing protocol information."
+::= { opticsIMLocalEthernetEntry 5 }
+
+opticsIMLocalEthernetOspfAreaPointer OBJECT-TYPE
+    SYNTAX Integer32 (0..999)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the pointer to the associated OSPF area."
+::= { opticsIMLocalEthernetEntry 6 }
+
+opticsIMLocalEthernetRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This object is used to create / delete a local ethernet interface."
+::= { opticsIMLocalEthernetEntry 7 }
+
+opticsIMLocalEthernetAsapIndex OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This object defines the ASAP object associated to this local ethernet interface."
+::= { opticsIMLocalEthernetEntry 8 }
+
+opticsIMLocalEthernetIPv6Address   OBJECT-TYPE
+    SYNTAX InetAddressIPv6
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the local ethernet interface address in the IPv6 format."
+::= { opticsIMLocalEthernetEntry 9 }
+
+opticsIMLocalEthernetIPv6PrefixLength  OBJECT-TYPE
+    SYNTAX Unsigned32 (0..128)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This is the length of local ethernet interface prefix when the IPv6 addressing is used."
+::= { opticsIMLocalEthernetEntry 10 }
+
+opticsIMLocalEthernetIPv6RoutingProtocol  OBJECT-TYPE
+    SYNTAX OpticsIMIpRoutingProtocol
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing protocol information when the IPv6 addressing is used."
+::= { opticsIMLocalEthernetEntry 11 }
+
+opticsIMLocalEthernetOspfv3AreaPointer  OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the pointer to the associated OSPF area when the IPv6 addressing is used."
+::= { opticsIMLocalEthernetEntry 12 }
+
+
+
+-- opticsIMPointToPointIPTable 
+
+opticsIMPointToPointIPTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMPointToPointIPEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+      "This table contains IP point-to-point addressing information."
+::= { opticsIMCommRouMibObject 14 }
+
+opticsIMPointToPointIPEntry OBJECT-TYPE
+    SYNTAX OpticsIMPointToPointIPEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes the IP point-to-point interface information."
+    INDEX { opticsIMPointToPointIPId }
+::= { opticsIMPointToPointIPTable 1 }
+
+
+OpticsIMPointToPointIPEntry ::= SEQUENCE {
+    opticsIMPointToPointIPId   Integer32,
+
+    opticsIMPointToPointIPType  OpticsIMPtpIpInterfaceType,
+
+    opticsIMPointToPointIPMode  OpticsIMPtpIpInterfaceMode,
+
+    opticsIMPointToPointIPRoutingProtocol    OpticsIMIpRoutingProtocol,
+    opticsIMPointToPointIPOspfAreaPointer    Integer32,
+    opticsIMPointToPointIPRemoteAddress      IpAddress, 
+    opticsIMPointToPointIPRowStatus          RowStatus,
+    opticsIMPointToPointIPAsapIndex          Integer32,
+    opticsIMPointToPointIPStatus   	     INTEGER,
+    opticsIMPointToPointIPRemoteIfIndex      InterfaceIndex,
+    opticsIMPointToPointIPv6RemoteAddress    InetAddressIPv6,
+    opticsIMPointToPointIPv6RoutingProtocol  OpticsIMIpRoutingProtocol,
+    opticsIMPointToPointOspfv3AreaPointer    Integer32,
+-- begin OPTnmxxxx
+    opticsIMPointToPointIPRemoteSysName   DisplayString
+-- end OPTnmxxxx
+
+    }
+
+opticsIMPointToPointIPId OBJECT-TYPE
+    SYNTAX Integer32 (1..999) 
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This is the IP point-to-point interface identifier number. "
+::= { opticsIMPointToPointIPEntry 1 }
+
+opticsIMPointToPointIPType OBJECT-TYPE
+    SYNTAX OpticsIMPtpIpInterfaceType
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object defines the IP point-to-point port type."
+::= { opticsIMPointToPointIPEntry 2 }
+
+opticsIMPointToPointIPMode OBJECT-TYPE
+    SYNTAX OpticsIMPtpIpInterfaceMode
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object defines the mode of working of the IP point-to-point
+         interface."
+::= { opticsIMPointToPointIPEntry 3 }
+
+opticsIMPointToPointIPRoutingProtocol OBJECT-TYPE
+    SYNTAX  OpticsIMIpRoutingProtocol 
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing protocol information."
+::= { opticsIMPointToPointIPEntry 4 }
+
+opticsIMPointToPointIPOspfAreaPointer OBJECT-TYPE
+    SYNTAX Integer32 (0..999)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the pointer to the associated OSPF area."
+::= { opticsIMPointToPointIPEntry 5 }
+
+opticsIMPointToPointIPRemoteAddress OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This is the IP address of the remote interface."
+::= { opticsIMPointToPointIPEntry 6 }
+
+opticsIMPointToPointIPRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This object is used to create / delete an IP point-to-point
+        interface."
+
+::= { opticsIMPointToPointIPEntry 7 }
+
+opticsIMPointToPointIPAsapIndex OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This object defines the ASAP object associated to this point-to-
+        point interface."
+
+::= { opticsIMPointToPointIPEntry 8 }
+
+opticsIMPointToPointIPStatus   OBJECT-TYPE
+    SYNTAX INTEGER {
+         enabled    (1),
+         disabled   (2)
+     }
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This object allow the managing system to enable or disable the point-to-
+        point on this interface ."
+
+::= { opticsIMPointToPointIPEntry 9 }
+
+opticsIMPointToPointIPRemoteIfIndex    OBJECT-TYPE
+    SYNTAX InterfaceIndex
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This is the IfIndex of the remote interface"
+
+::= { opticsIMPointToPointIPEntry 10 }
+
+opticsIMPointToPointIPv6RemoteAddress    OBJECT-TYPE
+    SYNTAX InetAddressIPv6
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This is the IP address of the remote interface in the IPv6 format."
+::= { opticsIMPointToPointIPEntry 11 }
+
+opticsIMPointToPointIPv6RoutingProtocol  OBJECT-TYPE
+    SYNTAX  OpticsIMIpRoutingProtocol 
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing protocol information when the IPv6 addressing is used."
+::= { opticsIMPointToPointIPEntry 12 }
+
+opticsIMPointToPointOspfv3AreaPointer  OBJECT-TYPE
+    SYNTAX Integer32 (0..999)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the pointer to the associated OSPF area when the IPv6 addressing is used."
+::= { opticsIMPointToPointIPEntry 13 }
+
+-- begin OPTnm25246
+opticsIMPointToPointIPRemoteSysName   OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This is the sysName of the remote interface."
+::= { opticsIMPointToPointIPEntry 14 }
+-- end OPTnm25246
+
+-- opticsIMLAPDTable 
+
+opticsIMLAPDTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMLAPDEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+       "This table contains the information useful to manage the LAPD 
+        ports."
+::= { opticsIMCommRouMibObject 15 }
+
+opticsIMLAPDEntry OBJECT-TYPE
+    SYNTAX OpticsIMLAPDEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+       "An entry of the LAPD ports table. "
+    INDEX { ifIndex }
+::= { opticsIMLAPDTable 1 } 
+
+OpticsIMLAPDEntry ::= SEQUENCE {
+   opticsIMLAPDPhysicalLayer INTEGER,
+   opticsIMLAPDStatus INTEGER,
+   opticsIMLAPDRole INTEGER
+   }
+
+opticsIMLAPDPhysicalLayer OBJECT-TYPE
+    SYNTAX INTEGER {
+       rs  (1),
+       rfcoh  (2)
+       }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+       " This object provides the LAPD physical layer."
+::= { opticsIMLAPDEntry 1 }
+
+opticsIMLAPDStatus OBJECT-TYPE
+    SYNTAX INTEGER {
+       enabled  (1),
+       disabled (2)
+       }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+       " This object provides the status of the LAPD port (enabled or 
+         disabled)."
+::= { opticsIMLAPDEntry 2 }
+
+opticsIMLAPDRole OBJECT-TYPE
+    SYNTAX INTEGER {
+       user (1),
+       network (2)
+       }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+       " This object provides the role of the LAPD port (user or network)."
+::= { opticsIMLAPDEntry 3 }
+
+-- opticsIMIPTunnelTable 
+
+opticsIMIPTunnelTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMIPTunnelEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+      "This table contains the information needed to manage the IP tunnel."
+::= { opticsIMCommRouMibObject 16 }
+
+opticsIMIPTunnelEntry OBJECT-TYPE
+    SYNTAX OpticsIMIPTunnelEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes an IP tunnel."
+    INDEX { opticsIMIPTunnelId }
+::= { opticsIMIPTunnelTable 1 }
+
+OpticsIMIPTunnelEntry ::= SEQUENCE {
+    opticsIMIPTunnelId   Integer32,
+
+    opticsIMIPTunnelIPAddress   IpAddress,
+    opticsIMIPTunnelRowStatus   RowStatus
+
+    }
+
+opticsIMIPTunnelId OBJECT-TYPE
+    SYNTAX Integer32 
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This is the IP tunnel index. "
+::= { opticsIMIPTunnelEntry 1 }
+
+opticsIMIPTunnelIPAddress OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the IP address of the remote destination."
+::= { opticsIMIPTunnelEntry 2 }
+
+opticsIMIPTunnelRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This object is used to create / delete an IP tunnel."
+
+::= { opticsIMIPTunnelEntry 3 }
+
+opticsIMNsapAddress OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION 
+      "This scalar object defines the local NSAP address of
+       the IP over CLNP tunnel"
+::= { opticsIMCommRouMibObject 17 }
+
+
+-- opticsIMCLNPTunnelTable 
+
+opticsIMCLNPTunnelTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMCLNPTunnelEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+      "Each row this table contains information of a single far-end point of
+CLNP tunnel."
+::= { opticsIMCommRouMibObject 18 }
+
+opticsIMCLNPTunnelEntry OBJECT-TYPE
+    SYNTAX OpticsIMCLNPTunnelEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes a single far-end point of CLNP"
+    INDEX { opticsIMCLNPTunnelId }
+::= { opticsIMCLNPTunnelTable 1 }
+
+
+OpticsIMCLNPTunnelEntry ::= SEQUENCE {
+    opticsIMCLNPTunnelId   Integer32,
+    opticsIMCLNPTunnelIPRoutingProtocol  OpticsIMIpRoutingProtocol,
+    opticsIMCLNPTunnelOspfAreaPointer  Integer32,
+    opticsIMCLNPTunnelRemoteNsapAddress DisplayString, 
+    opticsIMCLNPTunnelRowStatus   RowStatus,
+    opticsIMCLNPTunnelAsapIndex   Integer32
+    }
+
+opticsIMCLNPTunnelId OBJECT-TYPE
+    SYNTAX Integer32 (1..3) 
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This is the CLNP tunnel identifier number. "
+::= { opticsIMCLNPTunnelEntry 1 }
+
+opticsIMCLNPTunnelIPRoutingProtocol OBJECT-TYPE
+    SYNTAX  OpticsIMIpRoutingProtocol 
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object represents the IP routing protocol information."
+::= { opticsIMCLNPTunnelEntry 2 }
+
+opticsIMCLNPTunnelOspfAreaPointer OBJECT-TYPE
+    SYNTAX Integer32 (0..999)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the pointer to the associated OSPF area."
+::= { opticsIMCLNPTunnelEntry 3 }
+
+opticsIMCLNPTunnelRemoteNsapAddress OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the NSAP address of the remote point of CLNP tunnel."
+::= { opticsIMCLNPTunnelEntry 4 }
+
+opticsIMCLNPTunnelRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This object is used to create / delete an IP over CLNP tunnel."
+::= { opticsIMCLNPTunnelEntry 5 }
+
+opticsIMCLNPTunnelAsapIndex OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This object defines the ASAP object associated to the CLNP tunnel."
+
+::= { opticsIMCLNPTunnelEntry 6 }
+
+-- opticsIMIfDataManagementPlaneTable
+
+opticsIMIfDataManagementPlaneTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMIfDataManagementPlaneEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the configuration of management plane carried by data interfaced (In Fiber/In Band), in fact it references the IfTable."
+::= { opticsIMCommRouMibObject 19 }
+
+opticsIMIfDataManagementPlaneEntry OBJECT-TYPE
+    SYNTAX OpticsIMIfDataManagementPlaneEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+		"This is the configured management plane In-Fiber In-Band interface."
+    INDEX { ifIndex }
+::= { opticsIMIfDataManagementPlaneTable 1 }
+
+OpticsIMIfDataManagementPlaneEntry ::= SEQUENCE {
+    opticsIMIfDataManagementPlaneId       Integer32,
+    opticsIMIfDataManagementPlaneLabel    Integer32,
+    opticsIMIfDataManagementPlaneIpRoutingProtocol OpticsIMIpRoutingProtocol,
+    opticsIMIfDataManagementPlaneOspfAreaPointer   Integer32,
+    opticsIMIfDataManagementPlaneRowStatus   RowStatus,
+--- CRB Oct2007 Begin
+    opticsIMIfDataManagementPlanePppStatus       INTEGER,
+--- CRB Oct2007 End
+--- CRB Jan2011 Begin
+    opticsIMIfDataManagementPlaneMode       INTEGER,
+    opticsIMIfDataManagementPlaneVLANId     Integer32,
+    opticsIMIfDataManagementPlaneTMPLSVLANId  Integer32,
+--- CRB Jan2011 End
+
+--- CRB Oct2011 Begin
+    opticsIMIfDataManagementPlaneEthernetPppStatus   INTEGER
+--- CRB Oct2011 End
+}
+
+opticsIMIfDataManagementPlaneId OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This is the identifier of the un-numbered interface."
+::= { opticsIMIfDataManagementPlaneEntry 1 }
+
+opticsIMIfDataManagementPlaneLabel OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+		"This is the label which tags the management plane packets,
+		 discriminating them from the data plane ones.
+		 In case of Ethernet interface the label is the VLAN
+		 and the default value is 4094."
+::= { opticsIMIfDataManagementPlaneEntry 2 }
+
+opticsIMIfDataManagementPlaneIpRoutingProtocol OBJECT-TYPE
+    SYNTAX OpticsIMIpRoutingProtocol
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+		"This specifies the routing protocol used for the Management Plane packets."
+::= { opticsIMIfDataManagementPlaneEntry 3 }
+
+opticsIMIfDataManagementPlaneOspfAreaPointer OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+		"This is the pointer to the associated Ospf Area."
+::= { opticsIMIfDataManagementPlaneEntry 4 }
+
+opticsIMIfDataManagementPlaneRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+		"This is object is used to create/delete an
+		 In-Fiber/In-Band Management Plane interface.
+		 The creation is dependent to the presence of
+		 the corresponding data interface identified by IfIndex."
+::= { opticsIMIfDataManagementPlaneEntry 5 }
+
+--- CRB Oct2007 Begin
+
+opticsIMIfDataManagementPlanePppStatus OBJECT-TYPE
+    SYNTAX INTEGER {
+       enabled  (1),
+       disabled (2)
+       }
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+      "This scalar object specify the PPP work status (enabled or 
+         disabled). default value is enabled"
+::= { opticsIMIfDataManagementPlaneEntry  6 }
+
+--- CRB Oct2007 End
+                   
+--- CRB Jan2011 Begin                   
+opticsIMIfDataManagementPlaneMode OBJECT-TYPE
+    SYNTAX INTEGER {
+       singleDCNStack  (0),
+       doubleDCNStack (1)
+       }
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+		"This is the DCN stack mode configuration.
+		 SingleDCNStack (0) -- default value, [in order to manage currently 
+		 mutually exclusive options: either VLAN or MPLS label]
+		 DoubleDCNStack (1) --in this case both VLAN and MPLS label can be used. "
+::= { opticsIMIfDataManagementPlaneEntry 7 }
+
+opticsIMIfDataManagementPlaneVLANId OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+		"This is the VLAN ID which tags the management plane packets,
+		 discriminating them from the data plane ones if opticsIMIfDataManagementPlaneMode 
+		 is configured as 'DoubleDCNStack'.
+		 In case of Ethernet interface the label is the VLAN and the default value is 4094"
+::= { opticsIMIfDataManagementPlaneEntry 8 }
+
+opticsIMIfDataManagementPlaneTMPLSVLANId OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+		"This is used if opticsIMIfDataManagementPlaneMode is configured as DoubleDCNStack (1), 
+		It is used to specify the VLAN ID which is used by TMPLS in-fiber in-band packets 
+		which are requested to be transported over Ethernet (the VLAN ID before tunnel label)"
+::= { opticsIMIfDataManagementPlaneEntry 9 }     
+--- CRB Jan2011 End 
+
+--- CRB Oct2011 Begin 
+opticsIMIfDataManagementPlaneEthernetPppStatus OBJECT-TYPE
+    SYNTAX INTEGER {
+       enabled  (1),
+       disabled (2)
+       }
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+      "This scalar object specify the PPP work status (enabled or 
+         disabled) for VLAN based management plane. default value is enabled,
+this attribute is used when the DoubleDCNMode is used."
+::= { opticsIMIfDataManagementPlaneEntry  10 }
+--- CRB Oct2011 End                                                 
+                                                 
+-- ******************************************************************
+-- opticsIMIfDataManagementPlaneL3Table
+-- ******************************************************************
+
+opticsIMIfDataManagementPlaneL3Table OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMIfDataManagementPlaneL3Entry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the configuration of management plane carried by data interfaced (In Band) using L3."
+::= { opticsIMCommRouMibObject 23 }
+
+opticsIMIfDataManagementPlaneL3Entry OBJECT-TYPE
+    SYNTAX OpticsIMIfDataManagementPlaneL3Entry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This is the configured management plane In-Band interface using L3."
+    INDEX { opticsIMIfDataManagementPlaneL3Id }
+::= { opticsIMIfDataManagementPlaneL3Table 1 }
+
+OpticsIMIfDataManagementPlaneL3Entry ::= SEQUENCE {
+     opticsIMIfDataManagementPlaneL3Id			Integer32,
+     opticsIMIfDataManagementPlaneL3IpAddress		IpAddress,
+     opticsIMIfDataManagementPlaneL3IpMask		IpAddress,
+     opticsIMIfDataManagementPlaneL3IpRoutingProtocol	OpticsIMIpRoutingProtocol,
+     opticsIMIfDataManagementPlaneL3OspfAreaPointer  	Integer32,
+     opticsIMIfDataManagementPlaneL3Label		Integer32,
+     opticsIMIfDataManagementPlaneL3RowStatus		RowStatus,
+     opticsIMIfDataManagementPlaneL3IPv6Address		InetAddressIPv6,
+     opticsIMIfDataManagementPlaneL3IPv6PrefixLength	Unsigned32,
+     opticsIMIfDataManagementPlaneL3IPv6RoutingProtocol	OpticsIMIpRoutingProtocol,
+     opticsIMIfDataManagementPlaneL3Ospfv3AreaPointer   Integer32,
+     opticsIMIfDataManagementPlaneL3DSCP    		INTEGER,
+     opticsIMIfDataManagementPlaneL3PCP    		INTEGER,
+     opticsIMIfDataManagementPlaneL3DefGateway          IpAddress,
+     opticsIMIfDataManagementPlaneL3IPv6DefGateway      InetAddressIPv6,
+opticsIMIfDataManagementPlaneL3InBandForwardingStatus INTEGER,
+opticsIMIfDataManagementPlaneL3MacAddress MacAddress
+    }
+
+opticsIMIfDataManagementPlaneL3Id OBJECT-TYPE
+    SYNTAX Integer32 (1..999) 
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This is the number identifier of the In-band interface. "
+::= { opticsIMIfDataManagementPlaneL3Entry 1 }
+
+opticsIMIfDataManagementPlaneL3IpAddress OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the the In-band interface address."
+::= { opticsIMIfDataManagementPlaneL3Entry 2 }
+
+opticsIMIfDataManagementPlaneL3IpMask OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the In-band interface mask."
+::= { opticsIMIfDataManagementPlaneL3Entry 3 }
+
+opticsIMIfDataManagementPlaneL3IpRoutingProtocol OBJECT-TYPE
+    SYNTAX  OpticsIMIpRoutingProtocol 
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing protocol information."
+::= { opticsIMIfDataManagementPlaneL3Entry 4 }
+
+opticsIMIfDataManagementPlaneL3OspfAreaPointer OBJECT-TYPE
+    SYNTAX Integer32 (0..999)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the pointer to the associated OSPF area."
+::= { opticsIMIfDataManagementPlaneL3Entry 5 }
+
+opticsIMIfDataManagementPlaneL3Label OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+		"This is the label which tags the management plane packets,
+		 discriminating them from the data plane ones.
+		 In case of Ethernet interface the label is the VLAN."
+::= { opticsIMIfDataManagementPlaneL3Entry 6 }
+
+
+opticsIMIfDataManagementPlaneL3RowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+       "This object is used to create / delete a In-band interface."
+::= { opticsIMIfDataManagementPlaneL3Entry 7 }
+
+opticsIMIfDataManagementPlaneL3IPv6Address OBJECT-TYPE
+    SYNTAX InetAddressIPv6
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the the In-band interface address in the IPv6 format."
+::= { opticsIMIfDataManagementPlaneL3Entry 8 }
+
+opticsIMIfDataManagementPlaneL3IPv6PrefixLength OBJECT-TYPE
+    SYNTAX Unsigned32 (0..128)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object defines the  length of the prefix associated to the 
+         In-band interface IP address when the IPv6 addressing is used."
+::= { opticsIMIfDataManagementPlaneL3Entry 9 }
+
+opticsIMIfDataManagementPlaneL3IPv6RoutingProtocol OBJECT-TYPE
+    SYNTAX  OpticsIMIpRoutingProtocol 
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing protocol information."
+::= { opticsIMIfDataManagementPlaneL3Entry 10 }
+
+opticsIMIfDataManagementPlaneL3Ospfv3AreaPointer OBJECT-TYPE
+    SYNTAX Integer32 (0..999)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the pointer to the associated OSPF area."
+::= { opticsIMIfDataManagementPlaneL3Entry 11 }
+
+opticsIMIfDataManagementPlaneL3DSCP  OBJECT-TYPE
+    SYNTAX INTEGER (0..63)
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION 
+        "The DSCP value provided by managing system for the frames of the In-band interface"
+::= { opticsIMIfDataManagementPlaneL3Entry 12 }
+
+opticsIMIfDataManagementPlaneL3PCP  OBJECT-TYPE
+    SYNTAX INTEGER (0..7)
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION 
+        "The PCP value provided by managing system for the frames of the In-band interface.
+         Default value is 7."
+::= { opticsIMIfDataManagementPlaneL3Entry 13 }
+
+opticsIMIfDataManagementPlaneL3DefGateway OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION 
+        "The ip address of the default gateway."
+::= { opticsIMIfDataManagementPlaneL3Entry 14 }
+
+opticsIMIfDataManagementPlaneL3IPv6DefGateway  OBJECT-TYPE
+    SYNTAX InetAddressIPv6
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION 
+        "The ip address (IPV6 format) of the default gateway."
+::= { opticsIMIfDataManagementPlaneL3Entry 15 }
+
+opticsIMIfDataManagementPlaneL3InBandForwardingStatus  OBJECT-TYPE
+    SYNTAX INTEGER {
+       enabled  (1),
+       disabled (2)
+       }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "The TMN In-Band Forwarding status (enabled/disabled)."
+::= { opticsIMIfDataManagementPlaneL3Entry 16 }
+
+opticsIMIfDataManagementPlaneL3MacAddress  OBJECT-TYPE
+    SYNTAX MacAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This is the MAC address of the TMN in Band interface."
+::= { opticsIMIfDataManagementPlaneL3Entry 17 }
+
+ 
+-- ******************************************************************
+-- The list of ethernet ports allowed for an In-band interface
+-- ******************************************************************
+
+opticsIMIfDataManagementPlaneL3PortListTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMIfDataManagementPlaneL3PortListEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "List of ports in NE that are allowed to trasmit/receive frames for an In-band interface.
+        Since SNMP SMI does not allow to state in a MIB that an object in 
+        a table is an array, the information has to be stored in another 
+        table with two indices, being the first index, the index of the table 
+        that contains the list or array.
+       "
+    ::= { opticsIMCommRouMibObject 24 }
+
+opticsIMIfDataManagementPlaneL3PortListEntry OBJECT-TYPE
+    SYNTAX      OpticsIMIfDataManagementPlaneL3PortListEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The allowed ports table entry."
+    INDEX { opticsIMIfDataManagementPlaneL3Id,
+            opticsIMIfDataManagementPlaneL3PortIfIndex
+          }
+    ::= { opticsIMIfDataManagementPlaneL3PortListTable 1 }
+
+OpticsIMIfDataManagementPlaneL3PortListEntry ::= SEQUENCE {
+      opticsIMIfDataManagementPlaneL3PortIfIndex  	InterfaceIndex,
+      opticsIMIfDataManagementPlaneL3PortListRowStatus  RowStatus
+    }
+
+opticsIMIfDataManagementPlaneL3PortIfIndex  	OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The index of the physical interface where the Management interface (TMN) In-Band is enabled"
+    ::= { opticsIMIfDataManagementPlaneL3PortListEntry 1 }
+
+opticsIMIfDataManagementPlaneL3PortListRowStatus  OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "The status of the row. Read SNMPv2-TC (RFC1903) for an
+        explanation of the possible values this object can take.
+       "
+    ::= { opticsIMIfDataManagementPlaneL3PortListEntry 2 }
+
+--
+
+opticsIMClnsStatus OBJECT-TYPE
+    SYNTAX INTEGER {
+       enabled  (1),
+       disabled (2)
+       }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION 
+      "This scalar object specify the CLNS work status(enabled or 
+         disabled)."
+    DEFVAL { enabled }
+::= { opticsIMCommRouMibObject 20 }
+
+-- opticsIMNeighborNeTable --
+
+opticsIMNeighborNeTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMNeighborNeEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the information of NE's neighbor retrieved by auto-discovery functions."
+::= { opticsIMCommRouMibObject 21 }
+
+opticsIMNeighborNeEntry OBJECT-TYPE
+    SYNTAX OpticsIMNeighborNeEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+		"This is the information of NE's neighbor retrieved by auto-discovery functions."
+    INDEX { opticsIMNeighborNeId }
+::= { opticsIMNeighborNeTable 1 }
+
+OpticsIMNeighborNeEntry ::= SEQUENCE {
+    opticsIMNeighborNeId                 Integer32,
+    opticsIMNeighborNeIpAddress          IpAddress,
+    opticsIMNeighborNeConnectionType     OpticsIMNeighborConnectionType     
+}
+
+opticsIMNeighborNeId OBJECT-TYPE
+    SYNTAX Integer32 (1..999) 
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This is the neighbor identifier number. "
+::= { opticsIMNeighborNeEntry 1 }
+
+opticsIMNeighborNeIpAddress OBJECT-TYPE  
+    SYNTAX IpAddress 
+    MAX-ACCESS read-create 
+    STATUS current 
+    DESCRIPTION  
+        "This is the IP address information of the neighbor" 
+::= { opticsIMNeighborNeEntry 2 }
+
+opticsIMNeighborNeConnectionType OBJECT-TYPE
+    SYNTAX OpticsIMNeighborConnectionType
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object indicates the connection type of neighbor NE."
+::= { opticsIMNeighborNeEntry 3 }
+
+opticsIMDhcpStatus OBJECT-TYPE
+    SYNTAX INTEGER {
+       enabled  (1),
+       disabled (2)
+       }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION 
+      "This scalar object specify the DHCP server status (enabled or 
+         disabled)."
+    DEFVAL { enabled }
+::= { opticsIMCommRouMibObject 22 }
+
+
+-- ****************************************************************************
+-- The Ospf Area table for protocol v3 to use when the IPv6 addressing is used
+-- ****************************************************************************
+
+
+opticsIMOspfV3RouterId OBJECT-TYPE
+  SYNTAX IpAddress
+  MAX-ACCESS read-write
+  STATUS current
+  DESCRIPTION
+    "This scalar object defines the RouterId of the NE used by OspfV3 protocol"
+::= { opticsIMCommRouMibObject 26 }
+
+
+opticsIMOspfV3AreaTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMOspfV3AreaEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the Ospf Area routing information for protocol Version 3. 
+         This information are used in order to manage the IP routing
+         functionality."
+::= { opticsIMCommRouMibObject 27 }
+
+opticsIMOspfV3AreaEntry OBJECT-TYPE
+    SYNTAX OpticsIMOspfV3AreaEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes the Ospf Area routing information.
+         The row identified by AreaId 0 and IpAddress 0.0.0.0 is used for the
+         Ospf backbone default value. This row is created by the agent and not        
+         managed (deleted or modified) by management system."
+    INDEX { opticsIMOspfV3AreaId }
+::= { opticsIMOspfV3AreaTable 1 }
+
+OpticsIMOspfV3AreaEntry ::= SEQUENCE {
+    opticsIMOspfV3AreaId        Integer32,
+    opticsIMOspfV3AreaIpAddress IpAddress,
+    opticsIMOspfV3AreaStubFlag  TruthValue,  
+    opticsIMOspfV3AreaRowStatus RowStatus
+    }
+
+opticsIMOspfV3AreaId OBJECT-TYPE
+    SYNTAX Integer32 (0..999) 
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This is the Ospf area identifier number. "
+::= { opticsIMOspfV3AreaEntry 1 }
+
+opticsIMOspfV3AreaIpAddress OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the Ospf area address."
+::= { opticsIMOspfV3AreaEntry 2 }
+
+opticsIMOspfV3AreaStubFlag OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This is the Ospf stub flag."
+::= { opticsIMOspfV3AreaEntry 3 }
+
+opticsIMOspfV3AreaRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object is used to create / delete an OSPF area."
+::= { opticsIMOspfV3AreaEntry 4 }
+
+
+-- ******************************************************************
+-- The Static Routing table to use when the IPv6 addressing is used
+-- ******************************************************************
+
+ opticsIMIPv6StaticIndexNext OBJECT-TYPE  
+       SYNTAX            Unsigned32  
+       MAX-ACCESS        read-only  
+       STATUS            current  
+       DESCRIPTION  
+           "This object contains an appropriate value to be used  
+            for opticsIMIIPv6StaticIndex when creating entries in the  
+            opticsIMIPv6StaticRoutingInfoTable. The value 0 indicates that no  
+            unassigned entries are available.  To obtain the  
+            value of opticsIMIIPv6StaticIndex for a new entry in the  
+            opticsIMIPv6StaticRoutingInfoTable , the manager issues a management  
+            protocol retrieval operation. The agent will determine 
+            through its local policy when this index value will be made  
+            available for reuse."  
+        
+::= { opticsIMCommRouMibObject 28 }
+
+opticsIMIPv6StaticRoutingInfoTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMIPv6StaticRoutingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the Ip static routing  information in IPv6 format. 
+         This information are used in order to manage the IP routing
+         functionality"
+::= { opticsIMCommRouMibObject 29 }
+
+opticsIMIPv6StaticRoutingInfoEntry OBJECT-TYPE
+    SYNTAX OpticsIMIPv6StaticRoutingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes the IP static routing information."
+    INDEX { opticsIMIPv6StaticIndex}
+::= { opticsIMIPv6StaticRoutingInfoTable 1 }
+
+OpticsIMIPv6StaticRoutingInfoEntry ::= SEQUENCE {
+    opticsIMIPv6StaticIndex		INTEGER,
+    opticsIMIPv6StaticIPv6Address  	InetAddressIPv6,
+    opticsIMIPv6StaticIPv6PrefixLength	Unsigned32,
+    opticsIMIPv6StaticDefGateway 	InetAddressIPv6,
+    opticsIMIPv6StaticInterfaceIndex    InterfaceIndexOrZero,
+    opticsIMIPv6StaticRowStatus   	RowStatus
+    }
+
+opticsIMIPv6StaticIndex OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "The index of this table."
+::= { opticsIMIPv6StaticRoutingInfoEntry 1 }
+
+opticsIMIPv6StaticIPv6Address OBJECT-TYPE
+    SYNTAX InetAddressIPv6
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "The host or network IpAddress in IPv6 format."
+::= { opticsIMIPv6StaticRoutingInfoEntry 2 }
+
+opticsIMIPv6StaticIPv6PrefixLength OBJECT-TYPE
+    SYNTAX Unsigned32 (0..128)
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object defines the  length of the prefix associated to the 
+         network IP address when the IPv6 addressing is used."
+::= { opticsIMIPv6StaticRoutingInfoEntry 3 }
+
+opticsIMIPv6StaticDefGateway OBJECT-TYPE
+    SYNTAX InetAddressIPv6
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "The ip address in IPv6 format of the default gateway."
+::= { opticsIMIPv6StaticRoutingInfoEntry 4 }
+
+opticsIMIPv6StaticInterfaceIndex OBJECT-TYPE
+    SYNTAX InterfaceIndexOrZero
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object identifies the entry inside the ifTable 
+         which describes the AAL interface."
+::= { opticsIMIPv6StaticRoutingInfoEntry 5 }
+
+opticsIMIPv6StaticRowStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION 
+        "This object is used to create / delete a row."
+::= { opticsIMIPv6StaticRoutingInfoEntry 6 }
+
+
+-- ******************************************************************
+-- The Ip Routing information table reported when the IPv6 addressing is used
+-- ******************************************************************
+
+opticsIMIPv6RoutingInfoTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMIPv6RoutingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the Ip routing  information in IPv6 format. 
+         This information can be retrieve by managers for maintenance 
+         purposes. 
+         The agent can fill in this table only as a consequence of a 
+         GET-Request from a manager"
+::= { opticsIMCommRouMibObject 30 }
+
+opticsIMIPv6RoutingInfoEntry OBJECT-TYPE
+    SYNTAX OpticsIMIPv6RoutingInfoEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "Each row describes the IP  routing information."
+    INDEX { opticsIMIPv6RoutingInfoIndex }
+::= { opticsIMIPv6RoutingInfoTable 1 }
+
+OpticsIMIPv6RoutingInfoEntry ::= SEQUENCE {
+    opticsIMIPv6RoutingInfoIndex		INTEGER,
+    opticsIMIPv6RoutingDestIPv6Address  	InetAddressIPv6,
+    opticsIMIPv6RoutingDestIPv6PrefixLength    	Unsigned32,
+    opticsIMIPv6RoutingDefGateway  		InetAddressIPv6,
+    opticsIMIPv6RoutingMetricValue 		Integer32,
+    opticsIMIPv6RoutingRouteAge  		Integer32,
+    opticsIMIPv6RoutingRouteType  		INTEGER,
+    opticsIMIPv6RoutingProtocol   		OpticsIMIpRoutingProtocol,
+    opticsIMIPv6RoutingLocalPtpInterface    	Integer32
+    }
+
+opticsIMIPv6RoutingInfoIndex OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "The index of the table."
+::= { opticsIMIPv6RoutingInfoEntry 1 }
+
+opticsIMIPv6RoutingDestIPv6Address  OBJECT-TYPE
+    SYNTAX InetAddressIPv6
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object describes the host or network IpAddress in the IPv6 format."
+::= { opticsIMIPv6RoutingInfoEntry 2 }
+
+opticsIMIPv6RoutingDestIPv6PrefixLength    	OBJECT-TYPE
+    SYNTAX Unsigned32 (0..128)
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+       "This object defines the  length of the prefix associated to the 
+         network IP address when the IPv6 addressing is used."
+::= { opticsIMIPv6RoutingInfoEntry 3 }
+
+opticsIMIPv6RoutingDefGateway OBJECT-TYPE
+    SYNTAX InetAddressIPv6
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "The ip address of the default gateway in the IPv6 format."
+::= { opticsIMIPv6RoutingInfoEntry 4 }
+
+opticsIMIPv6RoutingMetricValue OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the metric information ."
+::= { opticsIMIPv6RoutingInfoEntry 5 }
+
+opticsIMIPv6RoutingRouteAge OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the route age information ."
+::= { opticsIMIPv6RoutingInfoEntry 6 }
+
+opticsIMIPv6RoutingRouteType OBJECT-TYPE
+    SYNTAX INTEGER {
+        indirect ( 1 ),
+        direct   ( 2 ) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the route type information ."
+::= { opticsIMIPv6RoutingInfoEntry 7 }
+
+opticsIMIPv6RoutingProtocol OBJECT-TYPE
+    SYNTAX OpticsIMIpRoutingProtocol
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing protocol information ."
+::= { opticsIMIPv6RoutingInfoEntry 8 }
+
+opticsIMIPv6RoutingLocalPtpInterface OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION 
+        "This object represents the routing point to point interface ."
+::= { opticsIMIPv6RoutingInfoEntry 9 }
+
+
+--  END
+
+-- TSDIM-CommRou-MC DEFINITIONS ::= BEGIN
+--     IMPORTS
+--     MODULE-IDENTITY, OBJECT-TYPE FROM SNMPv2-SMI
+--     MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--     opticsIMBasicMC FROM TSDIM-BASICREG-MIB;
+
+-- opticsIMCommRouMCCompl
+
+-- opticsIMCommRouMCCompl MODULE-IDENTITY
+-- LAST-UPDATED "0107180000Z"
+-- ORGANIZATION "Alcatel TND"
+-- CONTACT-INFO "Alcatel TND"
+-- DESCRIPTION
+--       "Joined the MIB and MC for ATM and IP equipments.
+--        Added GenEvent object"
+-- REVISION "0104130000Z"
+-- DESCRIPTION
+--       "The event notification and time have been added to 
+--        the polled table"
+-- REVISION "0009290000Z"
+-- DESCRIPTION
+--      "Bug Fixing"
+-- REVISION "0004140000Z"
+-- DESCRIPTION
+--      "Initial Release"
+-- ::= { opticsIMCommRouMCConf 1 }
+
+opticsIMCommRouMCConf       OBJECT IDENTIFIER ::= { tsdimBasicMC 3 }
+opticsIMCommRouMCCompl      OBJECT IDENTIFIER ::= { opticsIMCommRouMCConf 1 }
+opticsIMCommRouMCGroup      OBJECT IDENTIFIER ::= { opticsIMCommRouMCConf 2 }
+
+opticsIMCommRouMc MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION 
+        "This module compliance describes a set of objects required 
+         for TSD-IM SNMP Agent implementation. These objects are
+         defined inside opticsIMCommRouMib"
+
+    MODULE -- opticsIMCommRouMib
+
+GROUP opticsIMOptCommRouPollingGroup
+    DESCRIPTION
+        "This group contains the objects used in Manager-Agent
+         polling management."
+
+GROUP opticsIMOptIpRoutingGroup
+    DESCRIPTION
+        "This group contains the objects used in non IP equipment for IP
+         routing management."
+
+GROUP opticsIMOptIPv6RoutingGroup
+    DESCRIPTION
+        "This group contains the objects used in non IP equipment for IP
+         routing management when IPv6 addressing is used."
+
+GROUP opticsIMOptCommRouOptPollingGroup
+    DESCRIPTION
+        "This group contains the optional objects used in Manager-Agent
+         polling management."
+
+
+GROUP opticsIMOptLocalEthernetGroup
+    DESCRIPTION
+        "This group describes the objects needed for the for the local
+         ethernet port management."
+
+GROUP opticsIMOptLocalEthernetIPv6Group
+    DESCRIPTION
+        "This group describes the objects needed for the for the local
+         ethernet port management."
+
+GROUP opticsIMOptPointToPointIPGroup
+    DESCRIPTION
+        "This group describes the objects needed for the point-to-point IP
+         ports management."
+
+GROUP opticsIMOptPointToPointIPv6Group
+    DESCRIPTION
+        "This group describes the objects needed for the point-to-point IP
+         ports management."
+
+GROUP opticsIMLAPDGroup
+DESCRIPTION
+          " This group describes the objects related to the LAPD ports."
+
+GROUP opticsIMIPTunnelGroup
+DESCRIPTION
+          " This group describes the objects related to the IP tunnel."
+
+GROUP opticsIMAutoDiscoveryGroup
+DESCRIPTION
+          " This group describes the objects related to the NE autodiscovery."
+
+::= { opticsIMCommRouMCCompl 1 }
+
+-- Units of conformance
+
+opticsIMOptCommRouPollingGroup OBJECT-GROUP
+    OBJECTS { opticsIMMgrPollingIpAddress,
+        opticsIMMgrPollingIPv6Address,
+        opticsIMMgrPollingUdpPort,
+        opticsIMMgrPollingTimeOut,
+        opticsIMInfoLastAlarmNotificationId,
+        opticsIMInfoLastAlarmTime ,
+        opticsIMInfoNERestartFlag,  
+        opticsIMInfoLastEventNotificationId,
+        opticsIMInfoLastEventTime ,
+        opticsIMMgrPollingRowStatus  }
+    STATUS current
+    DESCRIPTION 
+        "This group describes the objects needed for the polling
+         handling"
+::= { opticsIMCommRouMCGroup 1 }
+
+opticsIMOptIpRoutingGroup OBJECT-GROUP
+    OBJECTS { opticsIMOspfAreaIpAddress,
+        opticsIMOspfAreaIpMask,
+        opticsIMOspfAreaStubFlag,
+        opticsIMIpStaticIpMask,
+        opticsIMIpStaticDefGateway,
+        opticsIMIpStaticInterfaceIndex,
+        opticsIMIpStaticRowStatus,
+        opticsIMIpRoutingDestIpMask,
+        opticsIMIpRoutingDefGateway,
+        opticsIMIpRoutingMetricValue,
+        opticsIMIpRoutingRouteAge,
+        opticsIMIpRoutingRouteType,
+        opticsIMIpRoutingProtocol,
+        opticsIMIpRoutingLocalPtpInterface }
+    STATUS current
+    DESCRIPTION 
+        "This group describes the objects needed for the IP routing
+         management. It is mandatory only for agent that provide
+
+         the IP routing functionality."
+::= { opticsIMCommRouMCGroup 2 }
+
+opticsIMOptIPv6RoutingGroup OBJECT-GROUP
+    OBJECTS { opticsIMOspfV3RouterId,
+        opticsIMOspfV3AreaIpAddress,
+        opticsIMOspfV3AreaStubFlag,
+        opticsIMIPv6StaticIPv6Address, 	
+        opticsIMIPv6StaticIPv6PrefixLength,	
+        opticsIMIPv6StaticDefGateway,
+        opticsIMIPv6StaticInterfaceIndex,
+        opticsIMIPv6StaticRowStatus,
+
+        opticsIMIPv6RoutingDestIPv6Address, 	
+        opticsIMIPv6RoutingDestIPv6PrefixLength,	
+        opticsIMIPv6RoutingDefGateway,
+        opticsIMIPv6RoutingMetricValue,
+        opticsIMIPv6RoutingRouteAge,	
+        opticsIMIPv6RoutingRouteType,  		
+        opticsIMIPv6RoutingProtocol, 		
+        opticsIMIPv6RoutingLocalPtpInterface }
+    STATUS current
+    DESCRIPTION 
+        "This group describes the objects needed for the IP routing
+         management. It is mandatory only for agent that provide
+
+         the IP routing functionality when the IPv6 addressing is used."
+::= { opticsIMCommRouMCGroup 9 }
+
+opticsIMOptCommRouOptPollingGroup OBJECT-GROUP
+    OBJECTS { opticsIMInfoLastGenEventNotificationId,
+        opticsIMInfoLastGenEventTime }
+    STATUS current
+    DESCRIPTION 
+        "This group describes the optional objects to be added to 
+         the polling functionality "
+::= { opticsIMCommRouMCGroup 3 }
+
+opticsIMOptLocalEthernetGroup OBJECT-GROUP
+    OBJECTS {opticsIMLocalEthernetMacAddress,
+
+        opticsIMLocalEthernetIpAddress,
+        opticsIMLocalEthernetIpMask,
+        opticsIMLocalEthernetIpRoutingProtocol,
+        opticsIMLocalEthernetOspfAreaPointer,
+        opticsIMLocalEthernetRowStatus,
+        opticsIMLocalEthernetAsapIndex  }
+    STATUS current
+    DESCRIPTION 
+        "This group describes the objects needed for the local ethernet 
+         port management."
+::= { opticsIMCommRouMCGroup 4 }
+
+opticsIMOptLocalEthernetIPv6Group OBJECT-GROUP
+    OBJECTS {opticsIMLocalEthernetIPv6Address,		
+    	opticsIMLocalEthernetIPv6PrefixLength,	
+    	opticsIMLocalEthernetIPv6RoutingProtocol,	
+    	opticsIMLocalEthernetOspfv3AreaPointer}
+    STATUS current
+    DESCRIPTION 
+        "This group describes the objects needed for the local ethernet 
+         port management when the IPv6 addressing is used."
+::= { opticsIMCommRouMCGroup 10 }
+
+opticsIMOptPointToPointIPGroup OBJECT-GROUP
+    OBJECTS { opticsIMPointToPointIPType,
+        opticsIMPointToPointIPMode,
+        opticsIMPointToPointIPRoutingProtocol,
+        opticsIMPointToPointIPOspfAreaPointer,
+        opticsIMPointToPointIPRemoteAddress, 
+        opticsIMPointToPointIPRowStatus,
+        opticsIMPointToPointIPAsapIndex }
+    STATUS current
+    DESCRIPTION 
+        "This group describes the objects needed for the point-to-point IP
+         ports management."
+::= { opticsIMCommRouMCGroup 5 }
+
+opticsIMOptPointToPointIPv6Group OBJECT-GROUP
+    OBJECTS { opticsIMPointToPointIPv6RemoteAddress,
+        opticsIMPointToPointIPv6RoutingProtocol,
+        opticsIMPointToPointOspfv3AreaPointer }
+    STATUS current
+    DESCRIPTION 
+        "This group describes the objects needed for the point-to-point IP
+         ports management when the IPv6 addressing is used."
+::= { opticsIMCommRouMCGroup 11 }
+
+opticsIMLAPDGroup OBJECT-GROUP
+    OBJECTS { opticsIMLAPDPhysicalLayer,
+              opticsIMLAPDStatus,
+              opticsIMLAPDRole
+              }
+    STATUS current 
+    DESCRIPTION 
+        " This group describes the LAPD objects." 
+::= { opticsIMCommRouMCGroup 6 }
+
+opticsIMIPTunnelGroup OBJECT-GROUP
+    OBJECTS { opticsIMIPTunnelIPAddress,
+              opticsIMIPTunnelRowStatus
+              }
+    STATUS current 
+    DESCRIPTION 
+        " This group describes the IP tunnel objects." 
+::= { opticsIMCommRouMCGroup 7 }
+
+opticsIMAutoDiscoveryGroup OBJECT-GROUP
+    OBJECTS { opticsIMNeighborNeIpAddress,
+              opticsIMNeighborNeConnectionType
+              }
+    STATUS current 
+    DESCRIPTION 
+        " This group describes the objects related to NE auto-discovery." 
+::= { opticsIMCommRouMCGroup 8 }
+
+END
+

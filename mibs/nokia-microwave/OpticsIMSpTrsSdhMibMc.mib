@@ -1,0 +1,1190 @@
+OPTICSIM-TRS-SDH-MIB DEFINITIONS ::= BEGIN
+	IMPORTS
+	MODULE-IDENTITY, OBJECT-TYPE, Integer32,
+	  Unsigned32                                    FROM SNMPv2-SMI
+	RowStatus, TruthValue, TEXTUAL-CONVENTION	FROM SNMPv2-TC
+	ifIndex						FROM IF-MIB
+	MODULE-COMPLIANCE, OBJECT-GROUP			FROM SNMPv2-CONF
+	opticsimSdhPdhMib, opticsimSdhPdhMC		FROM OPTICSIM-RADIOREG-MIB
+        OpticsIMProtectionPriority, OpticsIMProtectionGroupType, 
+        OpticsIMProtectionSwitchStatus, OpticsIMProtectionUnitType,
+        OpticsIMProtectionSwitchCommand, OpticsIMRevertive,
+        OpticsIMEquipmentProtectionSwitchCriteria       FROM OPTICSIM-COMMON-TC
+	TsdimOperationalState				FROM TSDIM-SNMP-TC;
+
+ opticsIMTrsSdhMib MODULE-IDENTITY
+       LAST-UPDATED "1008040000Z"
+       ORGANIZATION "Alcatel TND"
+       CONTACT-INFO "Alcatel TND"
+       DESCRIPTION
+               " - Added OpticsIMTu12Table and OpticsIMVc12Table.
+                 - Added eSPITTPBidStmnClockSource and eSPITTPBidStmnMode to opticsIMElectricalSPITTPBidTable  
+                    oSPITTPBidStmnClockSource and oSPITTPBidStmnMode to opticsIMOpticalSPITTPBidTable 
+               "
+       REVISION "1004010000Z"
+       DESCRIPTION
+               " - Added OpticsIMRsMonitoringTable , opticsIMUnidirectionalMSProtectionGroupTable and 
+                   opticsIMUnidirectionalMSProtectionUnitTable. 
+                 - Added eSPITTPBidAdminStatus to opticsIMElectricalSPITTPBidTable  
+                    and oSPITTPBidAdminStatus to opticsIMOpticalSPITTPBidTable 
+               "
+       REVISION "0404300000Z"
+       DESCRIPTION
+               " Added OpticsIMAu4Table and opticsIMTu3Table. 
+                Added clause DISPLAY-HINT to OpticsIMTIExpectedValue, OpticsIMTISentValue and
+               OpticsIMTIReceivedValue textual convention."
+       REVISION "0303140000Z"
+       DESCRIPTION
+               " Redefinition of Trail Trace Identifier management (TC and rsTTPBidTable). "
+       REVISION "0201250000Z"
+       DESCRIPTION
+                "Initial Release of SDH TRS MIB."
+ ::= {  opticsimSdhPdhMib 1}
+
+
+opticsIMTrsSdhMibObject      OBJECT IDENTIFIER ::= { opticsIMTrsSdhMib 1 }
+
+
+OpticsIMTIExpectedMode ::= TEXTUAL-CONVENTION
+     STATUS current
+     DESCRIPTION
+        "This object is used to specify the mode of the expected Trail Trace Identifier (TTI).
+         If the disabled mode is selected, the TTI mismatch detection is disabled.  
+         If the sixteenBytesFrame mode is selected, the TTI mismatch detection is enabled and the TTI 
+         value shall be a 16 bytes string conformant to ETS300417-1-1 mode 1.  
+         If oneRepeatedByte mode is selected, the TTI mismatch detection is enabled and the TTI value 
+         shall be a string repeated in each frame."
+     SYNTAX INTEGER {
+          disabled (1),
+          sixteenBytesFrame (2),
+          oneRepeatedByte (3)
+          }
+
+OpticsIMTIExpectedValue ::= TEXTUAL-CONVENTION
+DISPLAY-HINT "15a"
+STATUS current
+     DESCRIPTION
+        " This object contains the expected TTI value. If oneRepeatedByte mode is selected the agent will 
+          use only the first byte (SIZE(1)). "
+     SYNTAX  OCTET STRING (SIZE(15))
+
+OpticsIMTISentMode ::= TEXTUAL-CONVENTION
+     STATUS current
+     DESCRIPTION
+        "This object is used to specify the mode of sent Trail Trace Identifier (TTI).
+         The TTI shall be a 16 bytes string in accordance with mode 1 ETS300417-1-1 in case 
+         sixteenBytesFrame mode is selected. 
+         The TTI shall be a string repeated in each frame if oneRepeatedByte value is selected."
+     SYNTAX INTEGER {
+          sixteenBytesFrame (1),
+          oneRepeatedByte (2)
+          }
+
+OpticsIMTISentValue ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "15a"
+    STATUS current
+     DESCRIPTION
+       " This object contains the sent TTI value. If oneRepeatedByte mode is selected the agent will use 
+         only the first byte (SIZE(1)). "
+     SYNTAX  OCTET STRING (SIZE(15))
+
+OpticsIMTIReceivedValue ::= TEXTUAL-CONVENTION
+     DISPLAY-HINT "15a"
+     STATUS current
+     DESCRIPTION
+       " This object contains the received TTI value." 
+     SYNTAX  OCTET STRING (SIZE(15))
+
+OpticsIMStmnClockSource ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION 
+		"This indicates the clock for transmitted data on a Stmn channel.
+		         loopTimed(1)     - The clock is recovered from the line's receive
+		                            data stream
+		         nodeTimed(2)     - The clock is internal
+		 "
+	SYNTAX  INTEGER {
+		loopTimed (1),
+		nodeTimed (2),
+                none (0)
+	}
+
+OpticsIMStmnMode ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION 
+		"This indicates if the the data on the Stmn channel have to be managed by NE in a 'transparent' or 'channelized' mode
+		 "
+	SYNTAX  INTEGER {
+		transparent (1),
+		channelized (2)
+	}
+
+opticsIMElectricalSPITTPBidTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMElectricalSPITTPBidEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          " This table represents  the points at which the incoming electrical interface signals is converted 
+            into an internal STM-N logic level and viceversa. "
+::= { opticsIMTrsSdhMibObject 1 }
+
+opticsIMElectricalSPITTPBidEntry OBJECT-TYPE
+     SYNTAX						OpticsIMElectricalSPITTPBidEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the electricalSPITTPBidTable table. Each entry corresponds to an electrical 
+            Synchronous Physical Interface (SPI). "
+     INDEX  { ifIndex }
+::= { opticsIMElectricalSPITTPBidTable 1 }   
+
+OpticsIMElectricalSPITTPBidEntry ::= SEQUENCE {
+  eSPITTPBidOperationalState			TsdimOperationalState,
+  eSPITTPBidAsapIndex				Integer32,
+  eSPITTPBidAdminStatus				INTEGER,
+  eSPITTPBidStmnClockSource			OpticsIMStmnClockSource,
+  eSPITTPBidStmnMode	 			OpticsIMStmnMode
+  }
+
+eSPITTPBidOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMElectricalSPITTPBidEntry 1 }
+
+eSPITTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this electrical interface."
+     ::= { opticsIMElectricalSPITTPBidEntry 2 }
+
+eSPITTPBidAdminStatus OBJECT-TYPE
+    SYNTAX  INTEGER {
+                up(1),       -- ready to pass packets
+                down(2)
+            }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "The desired state of the interface. "
+    ::= { opticsIMElectricalSPITTPBidEntry 3 }
+
+eSPITTPBidStmnClockSource OBJECT-TYPE
+    SYNTAX  	OpticsIMStmnClockSource
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "The clock source for the transmit STM-N signal. "
+    ::= { opticsIMElectricalSPITTPBidEntry 4 }
+
+eSPITTPBidStmnMode OBJECT-TYPE
+    SYNTAX  	OpticsIMStmnMode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The management mode of the STM-N signal. "
+    ::= { opticsIMElectricalSPITTPBidEntry 5 }
+
+
+
+opticsIMOpticalSPITTPBidTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMOpticalSPITTPBidEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          " This table represents  the points at which the incoming optical interface signals is converted 
+            into an internal STM-N logic level and viceversa. "
+::= { opticsIMTrsSdhMibObject 2 }
+
+opticsIMOpticalSPITTPBidEntry OBJECT-TYPE
+     SYNTAX						OpticsIMOpticalSPITTPBidEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the opticalSPITTPBidTable table. Each entry corresponds to an optical 
+            Synchronous Physical Interface (SPI). "
+     INDEX  { ifIndex }
+ ::= { opticsIMOpticalSPITTPBidTable 1 }   
+
+OpticsIMOpticalSPITTPBidEntry ::= SEQUENCE {
+  oSPITTPBidReach				INTEGER,
+  oSPITTPBidWavelenght				INTEGER,
+  oSPITTPBidOperationalState			TsdimOperationalState,
+  oSPITTPBidAsapIndex				Integer32,
+  oSPITTPBidAdminStatus				INTEGER,
+  oSPITTPBidStmClockSource			OpticsIMStmnClockSource,
+  oSPITTPBidStmnMode				OpticsIMStmnMode
+  }
+
+oSPITTPBidReach OBJECT-TYPE
+     SYNTAX INTEGER {
+          intraOffice  (1),
+          shortHaul  (2),
+          longHaul  (3)
+          }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+         "This object indicates the lenght the optical signal may travel before requiring termination or 
+          regeneration."
+::= { opticsIMOpticalSPITTPBidEntry 1 }
+
+oSPITTPBidWavelenght OBJECT-TYPE
+     SYNTAX INTEGER {
+          wl1310  (1),
+          wl1550  (2),
+          coloured  (3),
+          wl820  (4),
+          multimode  (5)
+          }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+         "This object specifies the optical wavelenght used by an opticalSPITTPBid object."
+::= { opticsIMOpticalSPITTPBidEntry 2 }
+
+oSPITTPBidOperationalState OBJECT-TYPE
+     SYNTAX TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+        " See Textual Conventions."
+::= { opticsIMOpticalSPITTPBidEntry 3 }
+
+oSPITTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        "This object defines the ASAP object associated to this optical interface."
+::= { opticsIMOpticalSPITTPBidEntry 4 }
+
+oSPITTPBidAdminStatus OBJECT-TYPE
+    SYNTAX  INTEGER {
+                up(1),       -- ready to pass packets
+                down(2)
+            }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "The desired state of the interface. "
+    ::= { opticsIMOpticalSPITTPBidEntry 5 }
+
+oSPITTPBidStmClockSource OBJECT-TYPE
+    SYNTAX  	OpticsIMStmnClockSource
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "The clock source for the transmit STM-N signal. "
+    ::= { opticsIMOpticalSPITTPBidEntry 6 }
+
+
+oSPITTPBidStmnMode OBJECT-TYPE
+    SYNTAX  	OpticsIMStmnMode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The management mode of the STM-N signal. "
+    ::= { opticsIMOpticalSPITTPBidEntry 7 }
+
+
+
+opticsIMAlsHandlerTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMAlsHandlerEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table is used to manage the optical source as well as the Automatic Laser Shutdown (ALS) 
+           procedure described in ITU-T Rec. G.958. "
+::= { opticsIMTrsSdhMibObject 3}
+
+opticsIMAlsHandlerEntry OBJECT-TYPE
+     SYNTAX 					OpticsIMAlsHandlerEntry
+     MAX-ACCESS			not-accessible
+     STATUS					current
+     DESCRIPTION
+          " An entry of the alsHandlerTable table. "
+     INDEX  { ifIndex }
+::= { opticsIMAlsHandlerTable 1 }  
+
+OpticsIMAlsHandlerEntry ::= SEQUENCE {
+  alsControl							INTEGER,
+  alsCurrentState					INTEGER,
+  alsAutoRestartEnabled			TruthValue,
+  alsManualRestartEnabled		TruthValue,
+  alsInvokeManualRestart			INTEGER,
+  alsInvokeTestRestart			INTEGER,
+  alsRowStatus						RowStatus
+  }
+
+alsControl OBJECT-TYPE
+     SYNTAX INTEGER {
+          alsEnabled  (1),
+          alsDisabledLaserForcedOn  (2),
+          alsDisabledLaserForcedOff  (3)
+          }
+     MAX-ACCESS			read-create
+     STATUS					current
+     DESCRIPTION
+         "This object indicates the state of the ALS procedure and can take one of the following values:
+- the ALS procedure is enabled and the laser is automatically cut off under detection of a failure 
+       on the receiving end (alsEnabled)
+- the ALS procedure is disabled and the laser is forced to ON (alsDisableLaserForcedOn)
+- the ALS procedure is disabled and the laser is forced to OFF (alsDisabledLaserForcedOff)."
+::= { opticsIMAlsHandlerEntry 1 }
+
+alsCurrentState OBJECT-TYPE
+     SYNTAX INTEGER {
+          active  (1),
+          inactive  (2),
+          inTest  (3)
+          }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+         "This object specifies the state of the ALS procedure:
+- the ALS is activated due to a LOS (active)
+- the ALS is not activated or disabled (inactive)
+- a manual restart for test is activated (inTest)."
+::= { opticsIMAlsHandlerEntry 2 }
+
+alsAutoRestartEnabled OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-create
+     STATUS					current
+     DESCRIPTION
+         "This object indicates if an automatic restart is allowed after the laser has been automatically cut off 
+          under detection of a failure on the receiving end. The true value indicates that the restart is 
+          automatic, the false value that no automatic restart is possible. 
+          This object is used only when the ALS is enabled."
+::= { opticsIMAlsHandlerEntry 3 }
+
+alsManualRestartEnabled OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-create
+     STATUS					current
+     DESCRIPTION
+         "This object indicates if a manual restart is allowed after the laser has been automatically cut off 
+          under detection of a failure on the receiving end. The true value indicates that the restart maybe 
+          performed by the management systems using the objects alsInvokeManualRestart or 
+          alsInvokeTestRestart.
+          This object is used only when the ALS is enabled."
+::= { opticsIMAlsHandlerEntry 4 }
+
+alsInvokeManualRestart OBJECT-TYPE
+     SYNTAX INTEGER {
+          on  (1),
+          off  (2)
+          }
+     MAX-ACCESS			read-create
+     STATUS					current
+     DESCRIPTION
+         "This object allows to invoke a manual restart of the ALS procedure."
+::= { opticsIMAlsHandlerEntry 5 }
+
+alsInvokeTestRestart OBJECT-TYPE
+     SYNTAX INTEGER {
+          on  (1),
+          off  (2)
+          }
+     MAX-ACCESS			read-create
+     STATUS					current
+     DESCRIPTION
+         "This object allows to invoke a manual restart for test of the ALS procedure."
+::= { opticsIMAlsHandlerEntry 6 }
+
+alsRowStatus OBJECT-TYPE
+       SYNTAX				RowStatus
+       MAX-ACCESS		read-create
+       STATUS				current
+       DESCRIPTION
+         "See Textual Conventions."
+::= { opticsIMAlsHandlerEntry 7 }
+
+
+opticsIMRsTTPBidTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMRsTTPBidEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          " This table contains the information related to the termination and to the origination of the SDH 
+            Regenerator Section trails. "
+::= { opticsIMTrsSdhMibObject 4 }
+
+opticsIMRsTTPBidEntry OBJECT-TYPE
+     SYNTAX						OpticsIMRsTTPBidEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the rsTTPBidTable. Each entry corresponds to a Regenerator Section Termination 
+            (RST) . "
+     INDEX  { ifIndex }
+::= { opticsIMRsTTPBidTable 1 }  
+
+OpticsIMRsTTPBidEntry ::= SEQUENCE {
+  rsTTPBidTIReceivedValue			OpticsIMTIReceivedValue,
+  rsTTPBidTIExpectedMode			OpticsIMTIExpectedMode, 
+  rsTTPBidTIExpectedValue			OpticsIMTIExpectedValue,
+  rsTTPBidTISentMode				OpticsIMTISentMode,
+  rsTTPBidTISentValue				OpticsIMTISentValue,
+  rsTTPBidOperationalState			TsdimOperationalState,
+  rsTTPBidAsapIndex					Integer32
+  }
+
+rsTTPBidTIReceivedValue OBJECT-TYPE
+     SYNTAX					OpticsIMTIReceivedValue
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions. "
+ ::= { opticsIMRsTTPBidEntry 1 }
+
+rsTTPBidTIExpectedMode OBJECT-TYPE
+     SYNTAX					OpticsIMTIExpectedMode
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " See Textual Conventions. 
+          The associated value is contained in rsTTPBidTIExpectedValue object."
+::= { opticsIMRsTTPBidEntry 2 }
+
+rsTTPBidTIExpectedValue OBJECT-TYPE
+     SYNTAX					OpticsIMTIExpectedValue
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " See Textual Conventions. "
+::= { opticsIMRsTTPBidEntry 3 }
+
+rsTTPBidTISentMode OBJECT-TYPE
+     SYNTAX					OpticsIMTISentMode
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " See Textual Conventions
+          The associated value is contained in rsTTPBidTISentValue object."
+::= { opticsIMRsTTPBidEntry 4 }
+
+rsTTPBidTISentValue OBJECT-TYPE
+     SYNTAX					OpticsIMTISentValue
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions. "
+::= { opticsIMRsTTPBidEntry 5 }
+
+rsTTPBidOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMRsTTPBidEntry 6 }
+
+rsTTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMRsTTPBidEntry 7 }
+
+
+opticsIMMsTTPBidTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMMsTTPBidEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination and to the origination of the SDH 
+           Multiplex Section trails. "
+::= { opticsIMTrsSdhMibObject 5 }
+
+opticsIMMsTTPBidEntry OBJECT-TYPE
+     SYNTAX						OpticsIMMsTTPBidEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the msTTPBidTable. Each entry corresponds to a Multiplex Section Termination 
+            (MST). "
+     INDEX  { ifIndex }
+::= { opticsIMMsTTPBidTable 1 }  
+
+OpticsIMMsTTPBidEntry ::= SEQUENCE {
+   msTTPBidOperationalState		TsdimOperationalState,
+   msTTPBidAsapIndex				Integer32
+   }
+
+msTTPBidOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMMsTTPBidEntry 1 }
+
+msTTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMMsTTPBidEntry 2 }
+
+
+opticsIMVc4TTPBidTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMVc4TTPBidEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+           "This table contains the information related to the termination and to the origination of the vc4 
+            trails. "
+::= { opticsIMTrsSdhMibObject 6 }
+
+opticsIMVc4TTPBidEntry OBJECT-TYPE
+     SYNTAX						OpticsIMVc4TTPBidEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the vc4TTPBidTable. Each entry corresponds to a VC4 termination. "
+     INDEX  { ifIndex }
+::= { opticsIMVc4TTPBidTable 1 }   
+
+OpticsIMVc4TTPBidEntry ::= SEQUENCE {
+   vc4TTPBidVcnMappingForFE			INTEGER,
+   vc4TTPBidEnableE1ForFE			TruthValue,
+   vc4TTPBidOperationalState			TsdimOperationalState,
+   vc4TTPBidAsapIndex					Integer32
+   }
+
+vc4TTPBidVcnMappingForFE OBJECT-TYPE
+     SYNTAX INTEGER {
+          vc4Mapping   (1),
+          vc3Mapping   (2)
+          }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+         "This object indicates the type of mapping used in applications with Fast Ethernet signals. If the vc3Mapping is selected, 3 x vcTTPBid entries are created in the opticsIMVc3TTPBidTable."
+::= { opticsIMVc4TTPBidEntry 1 }
+
+vc4TTPBidEnableE1ForFE OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+         " When vc4Mapping is selected, this object specifies if E1 signals, directly mapped in the VC4, are 
+           enabled in applications with Fast  Ethernet signals."
+::= { opticsIMVc4TTPBidEntry 2 }
+
+vc4TTPBidOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMVc4TTPBidEntry 3 }
+
+vc4TTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS				current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMVc4TTPBidEntry 4 }
+
+opticsIMVc3TTPBidTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMVc3TTPBidEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination and to the origination of the vc3 
+            trails. "
+::= { opticsIMTrsSdhMibObject 7 }
+
+opticsIMVc3TTPBidEntry OBJECT-TYPE
+     SYNTAX						OpticsIMVc3TTPBidEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the vc3TTPBidTable. Each entry corresponds to a VC3 termination. "
+     INDEX  { ifIndex }
+::= { opticsIMVc3TTPBidTable 1 } 
+
+OpticsIMVc3TTPBidEntry ::= SEQUENCE {
+   vc3TTPBidEnableE1ForFE		TruthValue,
+   vc3TTPBidOperationalState		TsdimOperationalState,
+   vc3TTPBidAsapIndex				Integer32
+   }
+
+vc3TTPBidEnableE1ForFE OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+         "When the vc3Mapping is selected (see vc4TTPBidTable), this object specifies if E1 signals, 
+          mapped in the VC3, are enabled in applications with Fast Ethernet signals."
+::= { opticsIMVc3TTPBidEntry 1 }
+
+vc3TTPBidOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMVc3TTPBidEntry 2 }
+
+vc3TTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMVc3TTPBidEntry 3 }
+
+opticsIMAu4Table OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMAu4Entry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination and to the origination of the au4 
+            trails. "
+::= { opticsIMTrsSdhMibObject 8 }
+
+opticsIMAu4Entry OBJECT-TYPE
+     SYNTAX						OpticsIMAu4Entry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the au4Table. Each entry corresponds to a AU4 termination . "
+     INDEX  { ifIndex }
+::= { opticsIMAu4Table 1 }  
+
+OpticsIMAu4Entry ::= SEQUENCE {
+   au4OperationalState		TsdimOperationalState,
+   au4AsapIndex				Integer32
+   }
+
+au4OperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMAu4Entry 1 }
+
+au4AsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMAu4Entry 2 }
+
+
+opticsIMTu3Table OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMTu3Entry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination and to the origination of the tu3 
+            trails. "
+::= { opticsIMTrsSdhMibObject 9 }
+
+opticsIMTu3Entry OBJECT-TYPE
+     SYNTAX						OpticsIMTu3Entry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the tu3Table. Each entry corresponds to a TU3 termination. "
+     INDEX  { ifIndex }
+::= { opticsIMTu3Table 1 }  
+
+OpticsIMTu3Entry ::= SEQUENCE {
+   tu3OperationalState		TsdimOperationalState,
+   tu3AsapIndex				Integer32
+   }
+
+tu3OperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMTu3Entry 1 }
+
+tu3AsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMTu3Entry 2 }
+
+
+-- Tu12 table
+
+opticsIMTu12Table OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMTu12Entry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination and to the origination of the TU12
+            trails. "
+::= { opticsIMTrsSdhMibObject 13 }
+
+opticsIMTu12Entry OBJECT-TYPE
+     SYNTAX						OpticsIMTu12Entry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the tu12Table. Each entry corresponds to a Tu12 termination . "
+     INDEX  { ifIndex }
+::= { opticsIMTu12Table 1 }  
+
+OpticsIMTu12Entry ::= SEQUENCE {
+   tu12OperationalState		TsdimOperationalState,
+   tu12AsapIndex				Integer32
+   }
+
+tu12OperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMTu12Entry 1 }
+
+tu12AsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMTu12Entry 2 }
+
+
+-- VC12 table
+
+opticsIMVc12Table OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMVc12Entry
+     MAX-ACCESS		not-accessible
+     STATUS		current
+     DESCRIPTION
+          "This table contains the information related to the termination and to the origination of the VC12
+            trails. "
+::= { opticsIMTrsSdhMibObject 14 }
+
+opticsIMVc12Entry OBJECT-TYPE
+     SYNTAX		OpticsIMVc12Entry
+     MAX-ACCESS		not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the vc12Table. Each entry corresponds to a Vc12 termination . "
+     INDEX  { ifIndex }
+::= { opticsIMVc12Table 1 }  
+
+OpticsIMVc12Entry ::= SEQUENCE {
+   vc12OperationalState		TsdimOperationalState,
+   vc12AsapIndex				Integer32
+   }
+
+vc12OperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMVc12Entry 1 }
+
+vc12AsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMVc12Entry 2 }
+
+--  Rs monitoring table
+
+opticsIMRsMonitoringTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMRsMonitoringEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          " This table contains the information related to the RS monitoring(link trace monitoring) of the SDH Regenerator Section trails "
+::= { opticsIMTrsSdhMibObject 10 }
+
+opticsIMRsMonitoringEntry OBJECT-TYPE
+     SYNTAX						OpticsIMRsMonitoringEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the rsMonitoringTable. Each entry corresponds to a Regenerator Section Monitoring. "
+     INDEX  { ifIndex }
+::= { opticsIMRsMonitoringTable 1 }  
+
+OpticsIMRsMonitoringEntry ::= SEQUENCE {
+  rsMonitoringTIExpectedMode			OpticsIMTIExpectedMode, 
+  rsMonitoringTIExpectedValue			OpticsIMTIExpectedValue,
+  rsMonitoringAsapIndex 			Integer32
+  }
+
+rsMonitoringTIExpectedMode			OBJECT-TYPE
+     SYNTAX					OpticsIMTIExpectedMode
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " See Textual Conventions. 
+          The associated value is contained in rsMonitoringTIExpectedValue object."
+::= { opticsIMRsMonitoringEntry 1 }
+
+rsMonitoringTIExpectedValue			OBJECT-TYPE
+     SYNTAX					OpticsIMTIExpectedValue
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " See Textual Conventions. "
+::= { opticsIMRsMonitoringEntry 2 }
+
+rsMonitoringAsapIndex 			OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMRsMonitoringEntry 3 }
+
+--
+
+opticsIMUnidirectionalMSProtectionGroupTable OBJECT-TYPE
+  SYNTAX SEQUENCE OF OpticsIMUnidirectionalMSProtectionGroupEntry
+  MAX-ACCESS         not-accessible
+  STATUS             current
+  DESCRIPTION
+    "This table is used to manage all the protection schemes related to the Unidirectional MSP."
+::= { opticsIMTrsSdhMibObject 11 }
+
+opticsIMUnidirectionalMSProtectionGroupEntry OBJECT-TYPE
+  SYNTAX         OpticsIMUnidirectionalMSProtectionGroupEntry
+  MAX-ACCESS     not-accessible
+  STATUS         current
+  DESCRIPTION
+   "An entry of the opticsIMUnidirectionalMSProtectionGroup table. 
+    Each entry corresponds to an Unidirectional MSP protection scheme and allows to define all 
+    the related common management functions.
+    Each entry can be created as consequence of the equipment provisioning or directly by the managing systems.
+   "
+  INDEX   { opticsIMUnidirectionalMSProtectionGroupIndex }
+::= { opticsIMUnidirectionalMSProtectionGroupTable 1 }
+
+OpticsIMUnidirectionalMSProtectionGroupEntry ::= SEQUENCE {
+  opticsIMUnidirectionalMSProtectionGroupIndex             Unsigned32,
+  opticsIMUnidirectionalMSProtectionGroupType              OpticsIMProtectionGroupType,
+  opticsIMUnidirectionalMSProtectionGroupRevertive         OpticsIMRevertive,
+  opticsIMUnidirectionalMSProtectionGroupOperationalState  TsdimOperationalState,
+  opticsIMUnidirectionalMSProtectionGroupRowStatus         RowStatus
+}
+
+opticsIMUnidirectionalMSProtectionGroupIndex OBJECT-TYPE
+  SYNTAX      Unsigned32
+  MAX-ACCESS  not-accessible
+  STATUS      current
+  DESCRIPTION
+    "This object is the identifier of the opticsIMUnidirectionalMSProtectionGroupTable"
+::= { opticsIMUnidirectionalMSProtectionGroupEntry 1 }
+
+opticsIMUnidirectionalMSProtectionGroupType OBJECT-TYPE
+  SYNTAX       OpticsIMProtectionGroupType
+  MAX-ACCESS   read-only
+  STATUS       current
+  DESCRIPTION
+    "See Textual Conventions."
+::= { opticsIMUnidirectionalMSProtectionGroupEntry 2 }
+
+opticsIMUnidirectionalMSProtectionGroupRevertive OBJECT-TYPE
+  SYNTAX      OpticsIMRevertive
+  MAX-ACCESS  read-create
+  STATUS      current
+  DESCRIPTION
+    "See Textual Conventions."
+::= { opticsIMUnidirectionalMSProtectionGroupEntry 3 }
+
+opticsIMUnidirectionalMSProtectionGroupOperationalState OBJECT-TYPE
+  SYNTAX       TsdimOperationalState 
+  MAX-ACCESS   read-only
+  STATUS       current
+  DESCRIPTION
+    "See Textual Conventions."
+::= { opticsIMUnidirectionalMSProtectionGroupEntry 4 }
+
+opticsIMUnidirectionalMSProtectionGroupRowStatus OBJECT-TYPE
+  SYNTAX        RowStatus
+  MAX-ACCESS    read-create
+  STATUS        current
+  DESCRIPTION
+    "See Textual Conventions.
+     When an entry of this table is deleted the corresponding entries of
+     equipmentProtectionUnit table are deleted."
+::= { opticsIMUnidirectionalMSProtectionGroupEntry 5 }
+
+
+
+opticsIMUnidirectionalMSProtectionUnitTable OBJECT-TYPE
+  SYNTAX SEQUENCE OF   OpticsIMUnidirectionalMSProtectionUnitEntry
+  MAX-ACCESS                     not-accessible
+  STATUS                               current
+  DESCRIPTION
+  " This table contains the Unidirectional MSP Unit associated to each Unidirectional MSP Protection Group."
+::= { opticsIMTrsSdhMibObject 12 }
+
+opticsIMUnidirectionalMSProtectionUnitEntry OBJECT-TYPE
+  SYNTAX       OpticsIMUnidirectionalMSProtectionUnitEntry
+  MAX-ACCESS   not-accessible
+  STATUS       current
+  DESCRIPTION
+    "An entry in the opticsIMUnidirectionalMSProtectionUnit table. Entries of this table are 
+     created when the associated UnidirectionalMSP Protection Group is created. "
+  INDEX { opticsIMUnidirectionalMSProtectionGroupIndex,
+          opticsIMUnidirectionalMSProtectionUnitIndex }
+::= { opticsIMUnidirectionalMSProtectionUnitTable 1 }
+
+OpticsIMUnidirectionalMSProtectionUnitEntry ::= SEQUENCE {
+  opticsIMUnidirectionalMSProtectionUnitIndex          Integer32,
+  opticsIMUnidirectionalMSProtectionUnitType           OpticsIMProtectionUnitType,
+  opticsIMUnidirectionalMSProtectionUnitSwitchCommand  OpticsIMProtectionSwitchCommand,
+  opticsIMUnidirectionalMSProtectionUnitSwitchCriteria
+                                   		       INTEGER,
+  opticsIMUnidirectionalMSProtectionUnitSwitchStatus   OpticsIMProtectionSwitchStatus,
+  opticsIMUnidirectionalMSProtectionUnitPriority       OpticsIMProtectionPriority
+}
+
+opticsIMUnidirectionalMSProtectionUnitIndex OBJECT-TYPE
+  SYNTAX       Integer32
+  MAX-ACCESS   not-accessible
+  STATUS       current
+  DESCRIPTION
+    "This object identifies the index of the protection unit for each equipment
+     protection group."
+::= { opticsIMUnidirectionalMSProtectionUnitEntry 1 }
+
+opticsIMUnidirectionalMSProtectionUnitType           OBJECT-TYPE
+  SYNTAX          OpticsIMProtectionUnitType
+  MAX-ACCESS      read-only
+  STATUS          current
+  DESCRIPTION
+    "See Textual Conventions."
+::= { opticsIMUnidirectionalMSProtectionUnitEntry 2 }
+
+opticsIMUnidirectionalMSProtectionUnitSwitchCommand  OBJECT-TYPE
+  SYNTAX          OpticsIMProtectionSwitchCommand
+  MAX-ACCESS      read-write
+  STATUS          current
+  DESCRIPTION
+    "See Textual Conventions."
+::= { opticsIMUnidirectionalMSProtectionUnitEntry 3 }
+
+opticsIMUnidirectionalMSProtectionUnitSwitchCriteria  OBJECT-TYPE
+  SYNTAX	INTEGER {
+			noOne(0),
+			equipmentFailure        (1), 
+			lowBer   (2),
+ 			highBer   (3),
+			signalFail   (4)
+         		}
+  MAX-ACCESS      read-only
+  STATUS          current
+  DESCRIPTION
+    "This object contains the highest priority automatic switch request
+     currently active on the channel. "
+::= { opticsIMUnidirectionalMSProtectionUnitEntry 4 }
+
+opticsIMUnidirectionalMSProtectionUnitSwitchStatus  OBJECT-TYPE
+  SYNTAX        OpticsIMProtectionSwitchStatus
+  MAX-ACCESS    read-only
+  STATUS        current
+  DESCRIPTION
+    "See Textual Conventions."
+::= { opticsIMUnidirectionalMSProtectionUnitEntry 5 }
+
+opticsIMUnidirectionalMSProtectionUnitPriority OBJECT-TYPE
+  SYNTAX          OpticsIMProtectionPriority
+  MAX-ACCESS      read-write
+  STATUS          current
+  DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMUnidirectionalMSProtectionUnitEntry 6 }
+
+--
+
+-- OPTICSIM-TRS-SDH-MC DEFINITIONS ::= BEGIN
+--       IMPORTS
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB;
+
+
+-- opticsIMTrsSdhMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0201250000Z"
+--       ORGANIZATION "Alcatel TND"
+--       CONTACT-INFO "Alcatel TND"
+--       DESCRIPTION 
+--           "Initial Release of SDH Transmission Module Compliance."
+    
+-- ::= { opticsIMTrsSdhMCConf 1 }
+
+opticsIMTrsSdhMCConf         OBJECT IDENTIFIER ::= { opticsimSdhPdhMC 1 }
+opticsIMTrsSdhMCCompl      OBJECT IDENTIFIER ::= { opticsIMTrsSdhMCConf 1 }
+opticsIMTrsSdhMCGroup      OBJECT IDENTIFIER ::= { opticsIMTrsSdhMCConf 2 }
+
+opticsIMTrsSdhMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMTrsSdhMib. "
+
+       MODULE -- opticsIMTrsSdhMib  
+
+MANDATORY-GROUPS { opticsIMRsTTPGroup }
+
+GROUP opticsIMElectricalSPITTPGroup
+      DESCRIPTION
+          " This group describes the objects related to the Electrical SPI. "
+
+GROUP opticsIMOpticalSPITTPGroup
+      DESCRIPTION
+          " This group describes the objects related to the Optical SPI. "
+
+GROUP opticsIMAlsHandlerGroup
+      DESCRIPTION
+          " This group describes the objects related to the ALS. "
+
+GROUP opticsIMMsTTPGroup
+      DESCRIPTION
+          " This group describes the objects related to the Multiplex Section Termination. "
+
+GROUP opticsIMVc4TTPGroup
+      DESCRIPTION
+          " This group describes the objects related to the VC-4 Termination. "
+
+
+GROUP opticsIMVc3TTPGroup
+      DESCRIPTION
+          " This group describes the objects related to the VC-3 Termination. "
+
+GROUP opticsIMAu4Group
+      DESCRIPTION
+          " This group describes the objects related to the AU-4 Termination. "
+
+GROUP opticsIMTu3Group
+      DESCRIPTION
+          " This group describes the objects related to the TU-3 Termination. "
+
+::= { opticsIMTrsSdhMCCompl 1 }
+
+
+opticsIMElectricalSPITTPGroup OBJECT-GROUP
+      OBJECTS { eSPITTPBidOperationalState,
+                          eSPITTPBidAsapIndex
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Electrical SPI objects." 
+::= { opticsIMTrsSdhMCGroup 1 }
+
+opticsIMOpticalSPITTPGroup OBJECT-GROUP
+      OBJECTS { oSPITTPBidReach,
+                          oSPITTPBidWavelenght,
+                          oSPITTPBidOperationalState,
+                          oSPITTPBidAsapIndex
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Optical SPI objects." 
+::= { opticsIMTrsSdhMCGroup 2 }
+
+opticsIMAlsHandlerGroup OBJECT-GROUP
+      OBJECTS { alsControl,
+                          alsCurrentState,
+                          alsAutoRestartEnabled,
+                          alsManualRestartEnabled,
+                          alsInvokeManualRestart,
+                          alsInvokeTestRestart,
+                          alsRowStatus
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the ALS objects." 
+::= { opticsIMTrsSdhMCGroup 3 }
+
+opticsIMRsTTPGroup OBJECT-GROUP
+OBJECTS { rsTTPBidTIReceivedValue,
+                    rsTTPBidTIExpectedMode, 
+                    rsTTPBidTIExpectedValue,
+                    rsTTPBidTISentMode,
+                    rsTTPBidTISentValue,
+                    rsTTPBidOperationalState,
+                    rsTTPBidAsapIndex
+                    }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the RST objects." 
+::= { opticsIMTrsSdhMCGroup 4 }
+
+opticsIMMsTTPGroup OBJECT-GROUP
+      OBJECTS { msTTPBidOperationalState,
+                          msTTPBidAsapIndex
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the MST objects." 
+::= { opticsIMTrsSdhMCGroup 5 }
+
+opticsIMVc4TTPGroup OBJECT-GROUP
+      OBJECTS { vc4TTPBidVcnMappingForFE,
+                          vc4TTPBidEnableE1ForFE,
+                          vc4TTPBidOperationalState,
+                          vc4TTPBidAsapIndex
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the VC4 objects." 
+::= { opticsIMTrsSdhMCGroup 6 }
+
+opticsIMVc3TTPGroup OBJECT-GROUP
+      OBJECTS { vc3TTPBidEnableE1ForFE,
+                          vc3TTPBidOperationalState,
+                          vc3TTPBidAsapIndex
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the VC3 objects." 
+::= { opticsIMTrsSdhMCGroup 7 }
+
+opticsIMAu4Group OBJECT-GROUP
+      OBJECTS { vc3TTPBidEnableE1ForFE,
+                          vc3TTPBidOperationalState,
+                          vc3TTPBidAsapIndex
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the AU4 objects." 
+::= { opticsIMTrsSdhMCGroup 8 }
+
+
+opticsIMTu3Group OBJECT-GROUP
+      OBJECTS { vc3TTPBidEnableE1ForFE,
+                          vc3TTPBidOperationalState,
+                          vc3TTPBidAsapIndex
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the TU3 objects." 
+::= { opticsIMTrsSdhMCGroup 9 }
+
+
+END
+

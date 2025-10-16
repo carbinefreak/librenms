@@ -1,0 +1,796 @@
+OPTICSIM-ERP-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, Unsigned32, 
+       TimeTicks      FROM SNMPv2-SMI
+       TEXTUAL-CONVENTION, RowStatus, MacAddress, TruthValue    FROM SNMPv2-TC
+
+       OpticsIMProtectionSwitchStatus,OpticsIMProtectionPriority, 
+       OpticsIMRevertive, OpticsIMProtectionUnitType
+                                             FROM OPTICSIM-COMMON-TC
+       OpticsIMUserLabel                     FROM TSDIM-SNMP-TC
+       VlanIndex                             FROM Q-BRIDGE-MIB
+       dot1agCfmStackMdIndex, dot1agCfmStackMaIndex, Dot1agCfmMepId, 
+       Dot1agCfmMepIdOrZero, Dot1agCfmMDLevel
+                                             FROM IEEE8021-CFM-MIB
+       opticsimEthMib          		     FROM OPTICSIM-ETHREG-MIB
+       InterfaceIndex                        FROM IF-MIB
+       Gauge                                 FROM RFC1155-SMI
+       Integer32                             FROM SNMPv2-SMI;
+
+           
+opticsIMErpMib MODULE-IDENTITY
+       LAST-UPDATED "202001100000Z"
+       ORGANIZATION "Alcatel-Lucent Optics"
+       CONTACT-INFO "Alcatel-Lucent Optics"
+
+       DESCRIPTION 
+            "Ethernet Ring Protection module.
+            "
+
+       REVISION "202001100000Z"
+       DESCRIPTION 
+            "Added 1min and 10min values to opticsIMErpCcmInterval on opticsIMErpPortTable.
+            "
+
+       REVISION "201905060000Z"
+       DESCRIPTION 
+            "- Changed Dot1agCfmMaintenanceDomainLevel Textual Convention to Dot1agCfmMDLevel Textual Convention for the import from standard IEEE-CFM-MIB.
+            "
+
+       REVISION "201904300000Z"
+       DESCRIPTION 
+            "- Added  opticsIMErpCcmInterval 
+	       to opticsIMErpPortTable.
+            "
+
+       REVISION "201303140000Z"
+       DESCRIPTION 
+            "- Added  opticsIMErpRplNeighbour and opticsIMErpSubRingWithoutVirtualChannel
+	       to opticsIMErpTable.
+	     - Added opticsIMErpPortRplNeighbourIf and opticsIMErpPortBandwidthThreshold to opticsIMErpPortTable
+ 	     - Added bwdeg(9) new value to OpticsIMErpDefectList
+            "
+
+       REVISION "201008040000Z"
+       DESCRIPTION 
+            "Added opticsIMErpTopologyLagBundleId"
+
+       REVISION "201005130000Z"
+
+       DESCRIPTION 
+            "Redefined opticsIMErpPortMepIdentifier"
+
+       REVISION "200904230000Z"
+       DESCRIPTION
+            "Initial Release of Ethernet Ring Protection MIB.
+             Latest Changes: 
+             - Modified default value of opticsIMErpVersion
+             - Introduced opticsIMErpTopologyTable, opticsIMErpTopologyPortTable 
+                 and opticsIMErpTopologyIndexNext
+             - Modified opticsIMErpTable,opticsIMErpPortTable,opticsIMErpVlanTable"                             
+ ::= {  opticsimEthMib 310 }
+
+opticsIMErpMibObject      OBJECT IDENTIFIER ::= { opticsIMErpMib 1 }
+
+
+-- Define a Syntax of a New Ethernet Ring Protection Status --
+
+OpticsIMErpRingStatus ::= TEXTUAL-CONVENTION
+       STATUS current
+       DESCRIPTION
+          "This object specifies the current status of a Ethernet Ring Protection Instance"
+       SYNTAX INTEGER {
+          deactivated (1),
+          idle (2),
+          protection (3),
+          manualSwitch (4),
+          forcedSwitch (5),
+          pending (6)
+        }
+        
+OpticsIMErpDefectList ::= TEXTUAL-CONVENTION
+    STATUS current
+    DESCRIPTION
+	"Each defect parameter as input to ERP Protocol Machine is
+         represented by a single bit within the  value of this object. 
+         Only the first 9 bits are defined (from 0 to 8); the remaining bits 
+         (from 9 to 31) have not been defined yet.
+	 Following the list of the actual defect parameters:
+	 1) bit  0: Critical Link Event (CLE) defect
+	 2) bit  1: Auto-Negotiation Mismatch (ANM) defect
+	 3) bit  2: AIS defect
+	 4) bit  3: Loss Of Continuity (LOC) defect
+	 5) bit  4: MisMerge  (MMG) defect
+         6) bit  5: UNexpected Mep (UNM) defect
+         7) bit  6: UNexpected Level (UNL) defect
+         8) bit  7: DEG defect
+         9) bit  8: Partial Loss of capacity (PLC) defect
+         10) bit  9: Bandwidth degrade (bwdeg) defect"
+	 
+    SYNTAX BITS
+	    {
+	    cle(0),
+	    anm(1),
+	    ais(2),
+	    loc(3),
+	    mmg(4),
+            unm(5),
+            unl(6),
+            deg(7),
+            plc(8),
+            bwdeg(9)
+	   }
+
+OpticsIMErpPortCurrentStatus ::= TEXTUAL-CONVENTION
+       STATUS current
+       DESCRIPTION
+          "This object specifies the current Status of a Port inside an 
+           Ethernet Ring Protection Instance"
+       SYNTAX INTEGER {
+          disabled (0),
+          normal (1),
+          forcedSwitch (2),
+          manualSwitch (3),
+          localFail (4),
+          localDegrade (5)           
+        }
+
+OpticsIMErpPortForwardingStatus ::= TEXTUAL-CONVENTION
+       STATUS current
+       DESCRIPTION
+          "This object specifies the Forwarding Status of a Port inside an 
+           Ethernet Ring Protection Instance"
+       SYNTAX INTEGER {
+          blocked (0),
+          unblocked (1)          
+        }
+
+OpticsIMErpScope ::= TEXTUAL-CONVENTION
+       STATUS current
+       DESCRIPTION
+         "This specifies the scope of an Ethernet Ring Protection instance"
+       SYNTAX INTEGER {
+          perPort (1),
+          perVLAN (2)
+        } 
+
+OpticsIMErpVersion ::= TEXTUAL-CONVENTION
+        STATUS current
+        DESCRIPTION
+           "This object specifies the protocol version of an
+            Ethernet Ring Protection Instance"
+        SYNTAX INTEGER {
+           v1plus (1),
+           v2 (2)
+         }
+
+OpticsIMErpPortQualifier ::= TEXTUAL-CONVENTION
+        STATUS current
+        DESCRIPTION
+           "This object specifies the east/west role of a Port inside an
+            Ethernet Ring Protection Topology Instance"
+        SYNTAX INTEGER {
+           east (0),
+           west (1)
+         }
+
+OpticsIMErpSwitchCommand ::= TEXTUAL-CONVENTION
+       STATUS      current
+       DESCRIPTION
+           "List of user-defined switch commands to be applied to Protection Group:             Clear, Lockout of Protection(LO), West Forced Switch(wFS), East 
+           Forced Switch(eFS), West Manual Switch(wMS), East Manual Switch(eMS)" 
+       SYNTAX INTEGER {
+            clear (0),
+            lo (1),           
+            wFS(2),
+            eFS(3),  
+            wMS(4),
+            eMS(5)
+       }
+
+-- TopologyTable --
+
+opticsIMErpTopologyIndexNext OBJECT-TYPE
+      SYNTAX        Unsigned32 (0..4294967295)
+      MAX-ACCESS    read-only
+      STATUS        current
+      DESCRIPTION
+          "This object contains an unused value for
+           opticsIMErpTopologyIndex, or a zero to indicate
+           that none exist. Negative values are not allowed,
+           as they do not correspond to valid values of
+           opticsIMErpTopologyIndex"
+      ::= { opticsIMErpMibObject  1 }
+
+opticsIMErpTopologyTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF OpticsIMErpTopologyEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The Ethernet Ring Protection Topology table"
+::= { opticsIMErpMibObject   2 }
+
+opticsIMErpTopologyEntry OBJECT-TYPE
+      SYNTAX OpticsIMErpTopologyEntry
+      MAX-ACCESS not-accessible
+      STATUS current
+      DESCRIPTION
+           "An entry in the Ethernet Ring Protection Topology table"
+ INDEX { opticsIMErpTopologyIndex }
+::= { opticsIMErpTopologyTable 1 }
+
+OpticsIMErpTopologyEntry::= SEQUENCE { 
+      opticsIMErpTopologyIndex               Unsigned32, 
+      opticsIMErpTopologyInterconnectionNode TruthValue,
+      opticsIMErpTopologyUserLabel           OpticsIMUserLabel,
+      opticsIMErpTopologyRowStatus           RowStatus,
+      opticsIMErpTopologyLagBundleId         Unsigned32
+}
+
+opticsIMErpTopologyIndex OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       DESCRIPTION
+           "A unique value to identify this Ethernet Ring Protection Topology.
+            Managers should obtain new values for row creation in this table by 
+            reading opticsIMErpTopologyIndexNext"
+::= { opticsIMErpTopologyEntry 1 }
+
+opticsIMErpTopologyInterconnectionNode OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Interconnection between Major Ring and Sub-ring Node role of an 
+            ERP Topology instance. 
+            This parameter must be in the set {TRUE,FALSE }, 
+            default value is FALSE."
+::= { opticsIMErpTopologyEntry 2 }
+
+opticsIMErpTopologyUserLabel OBJECT-TYPE
+       SYNTAX      OpticsIMUserLabel
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "a NAME - string of at most 32 characters - assigned to an ERP 
+            Topology instance. "
+::= { opticsIMErpTopologyEntry 3 }
+
+opticsIMErpTopologyRowStatus   OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+       "For creating, modifying, and deleting this row."
+::= { opticsIMErpTopologyEntry 4 }
+
+opticsIMErpTopologyLagBundleId OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "A unique value to identify LAG Bundle attached to this Ethernet Ring 
+            Protection Topology. Default Value:0 (no attached LAG Bundle)"
+::= { opticsIMErpTopologyEntry 5 }
+
+-- TopologyPortTable --
+
+opticsIMErpTopologyPortTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF   OpticsIMErpTopologyPortEntry
+        MAX-ACCESS           not-accessible
+        STATUS               current
+        DESCRIPTION
+           "This table contains the Ethernet Ports associated to each 
+            Ethernet Ring Protection Topology Instance"
+::= { opticsIMErpMibObject 3} 
+
+opticsIMErpTopologyPortEntry OBJECT-TYPE
+        SYNTAX               OpticsIMErpTopologyPortEntry
+        MAX-ACCESS           not-accessible
+        STATUS               current
+        DESCRIPTION
+           "An entry in the opticsIMErpTopologyPortTable. 
+            Entries of this table are created after the associated Ethernet 
+            Ring Protection Topology is created."
+        INDEX  { 
+        opticsIMErpTopologyIndex, 
+	    opticsIMErpTopologyPortIndex}
+	    ::= { opticsIMErpTopologyPortTable 1 }
+
+OpticsIMErpTopologyPortEntry ::= SEQUENCE {
+      opticsIMErpTopologyPortIndex       InterfaceIndex,
+      opticsIMErpTopologyPortQualifier   OpticsIMErpPortQualifier,
+      opticsIMErpTopologyPortPrimaryFlag TruthValue,
+      opticsIMErpTopologyPortRowStatus   RowStatus
+     }
+
+ 
+opticsIMErpTopologyPortIndex OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            " See Textual Conventions. "
+::= { opticsIMErpTopologyPortEntry 1 }
+
+opticsIMErpTopologyPortQualifier     OBJECT-TYPE
+        SYNTAX      OpticsIMErpPortQualifier
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+           "This attribute specifies east/west indication of an ERP port"
+::= { opticsIMErpTopologyPortEntry 2 }
+
+opticsIMErpTopologyPortPrimaryFlag OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+           "This attribute (relevant ONLY in case of LAG interface) specifies if 
+            traffic has to be transmitted over a Primary Port or over any of 
+            underlying links. Default value: True (use of Primary Port)"
+::= { opticsIMErpTopologyPortEntry 3 }
+
+opticsIMErpTopologyPortRowStatus   OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+       "For creating, modifying, and deleting this row."
+::= { opticsIMErpTopologyPortEntry 4 }
+
+-- ProtectionTable --
+
+opticsIMErpIndexNext OBJECT-TYPE
+      SYNTAX        Unsigned32 (0..4294967295)
+      MAX-ACCESS    read-only
+      STATUS        current
+      DESCRIPTION
+          "This object contains an unused value for
+           opticsIMErpIndex, or a zero to indicate
+           that none exist. Negative values are not allowed,
+           as they do not correspond to valid values of
+           opticsIMErpIndex"
+      ::= { opticsIMErpMibObject  4 }
+
+opticsIMErpTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF OpticsIMErpEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The Ethernet Ring protection table"
+::= { opticsIMErpMibObject   5 }
+
+opticsIMErpEntry OBJECT-TYPE
+      SYNTAX OpticsIMErpEntry
+      MAX-ACCESS not-accessible
+      STATUS current
+      DESCRIPTION
+           "An entry in the Ethernet Ring Protection table."         
+      INDEX { 
+      opticsIMErpTopologyIndex, 
+      opticsIMErpIndex }                          
+::= { opticsIMErpTable 1 }
+
+OpticsIMErpEntry::= SEQUENCE { 
+      opticsIMErpIndex              Unsigned32, 
+      opticsIMErpRingId             Unsigned32,
+      opticsIMErpRingVlanId         VlanIndex,
+      opticsIMErpVlanPriority       INTEGER,
+      opticsIMErpVlanDropEnable     TruthValue,
+      opticsIMErpMdlevel            Dot1agCfmMDLevel,
+      opticsIMErpRplOwner           TruthValue,
+      opticsIMErpScope              OpticsIMErpScope,
+      opticsIMErpSwitchDefectInput  OpticsIMErpDefectList,
+      opticsIMErpSwitchCommand      OpticsIMErpSwitchCommand,
+      opticsIMErpRevertive          OpticsIMRevertive,
+      opticsIMErpWaitToRestoreTime  Gauge,
+      opticsIMErpHoldOffTime        Gauge,
+      opticsIMErpGuardTime          Gauge,
+      opticsIMErpUserLabel          		OpticsIMUserLabel,
+      opticsIMErpVersion            		OpticsIMErpVersion,
+      opticsIMErpStatus	            		OpticsIMErpRingStatus,
+      opticsIMErpFlushControlEnable 		TruthValue,
+      opticsIMErpAsapId             		Integer32, 
+      opticsIMErpRowStatus          		RowStatus,
+      opticsIMErpRplNeighbour       		TruthValue,
+      opticsIMErpSubRingWithoutVirtualChannel  TruthValue
+}
+
+
+opticsIMErpIndex OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       DESCRIPTION
+           "A unique value to identify this Ethernet Ring protection.
+            Managers should obtain new values for row creation in this table by 
+            reading opticsIMErpIndexNext"
+::= { opticsIMErpEntry 1 }
+
+opticsIMErpRingId OBJECT-TYPE
+       SYNTAX      Unsigned32 
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Ring ID of an ERP instance. The value must be in the range[ 1,.. 239].                  Default value will be 1."
+::= { opticsIMErpEntry 2 }
+              
+opticsIMErpRingVlanId OBJECT-TYPE
+       SYNTAX      VlanIndex
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Ring (Primary) APS VID of an ERP instance. The value must be in range 
+            [1...4093]. No Default value"
+::= { opticsIMErpEntry 3 }
+
+opticsIMErpVlanPriority OBJECT-TYPE
+       SYNTAX      INTEGER (0..7)
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Priority. 3 bit value to be used in the VLAN tag, if present
+            in the transmitted Ring APS frame.Default value: 7"
+::= { opticsIMErpEntry 4 }
+
+opticsIMErpVlanDropEnable OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Drop Enable bit value to be used in the VLAN tag, if present
+            in the transmitted Ring APS frame. Default value is False (No Drop)"
+::= { opticsIMErpEntry 5 }
+
+opticsIMErpMdlevel OBJECT-TYPE
+       SYNTAX      Dot1agCfmMDLevel
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Maintenance Entity Level of an ERP instance. 
+            The value must be in the range [ 0, .., 7 ].Default value is 7"
+::= { opticsIMErpEntry 6 }
+ 
+opticsIMErpRplOwner OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "RPL-Owner role of an ERP instance. This parameter must be in the set 
+            {TRUE,FALSE }, default value is FALSE."
+::= { opticsIMErpEntry 7 }
+
+opticsIMErpScope OBJECT-TYPE
+       SYNTAX      OpticsIMErpScope
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Scope of an ERP instance. The value must be in the set {per Port, 
+            per VLAN }. Default value will be per Port"
+::= { opticsIMErpEntry 8 }
+
+opticsIMErpSwitchDefectInput OBJECT-TYPE
+       SYNTAX      OpticsIMErpDefectList
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "This attribute enables to choose out 'on per ERP instance basis' 
+            ingress defect parameters for ERP switching criterias.
+	    If the bit is 1 it indicates that the relative
+	    ingress defect parameter will be used for ERP switching criterias
+            otherwise if 0 it will be unused. Default value: all  bits set to 0"
+::= { opticsIMErpEntry 9 }
+      
+opticsIMErpSwitchCommand OBJECT-TYPE
+       SYNTAX      OpticsIMErpSwitchCommand
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Indicates user-defined switch commands to be applied to Protection Group.Default Value: Clear"
+       ::= { opticsIMErpEntry 10 }
+
+opticsIMErpRevertive  OBJECT-TYPE
+       SYNTAX OpticsIMRevertive
+       MAX-ACCESS read-write
+       STATUS current
+       DESCRIPTION
+          "See Textual Conventions.Default value:true "
+::= { opticsIMErpEntry 11 }
+
+opticsIMErpWaitToRestoreTime  OBJECT-TYPE
+       SYNTAX Gauge (0..4294967295)
+       MAX-ACCESS read-write
+       STATUS current
+       DESCRIPTION
+          " This attribute specifies in minutes the ERP Instance WTR. 
+            Range from 0 to 12 minutes - default value is 5 minutes.  
+            A value of 0xFFFFFFFF indicates an infinite WTR."
+::= { opticsIMErpEntry 12 }
+
+opticsIMErpHoldOffTime OBJECT-TYPE
+       SYNTAX Gauge (0..4294967295)
+       MAX-ACCESS read-write
+       STATUS current
+       DESCRIPTION
+          "This  attribute specifies  ERP Instance Hold-Off values in 1/10 seconds.  
+           The minimum value is zero (no hold off time) and the maximum 
+           is 100 (representing 10 seconds). Default Value is 0 sec"
+::= { opticsIMErpEntry 13 }
+
+opticsIMErpGuardTime OBJECT-TYPE
+       SYNTAX Gauge (0..4294967295)
+       MAX-ACCESS read-write
+       STATUS current
+       DESCRIPTION
+          "This  attribute specifies ERP Instance Guard-Time values  in  1/100 seconds. The minimum value is 1 (10msec) and the maximum value is 2000 
+           (representing 2 seconds). Default value is 500 (500msec)"
+::= { opticsIMErpEntry 14 }
+
+opticsIMErpUserLabel OBJECT-TYPE
+       SYNTAX      OpticsIMUserLabel
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "a NAME - string of at most 32 characters - assigned to an ERP instance. "
+::= { opticsIMErpEntry 15 }
+
+opticsIMErpVersion   OBJECT-TYPE
+       SYNTAX      OpticsIMErpVersion
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Version of ERP protocol.Default Value: v2"
+::= { opticsIMErpEntry 16 }
+     
+opticsIMErpStatus OBJECT-TYPE
+       SYNTAX      OpticsIMErpRingStatus
+       MAX-ACCESS  read-only
+       STATUS      current
+       DESCRIPTION
+           "See Textual conventions"
+::= { opticsIMErpEntry 17 }
+
+opticsIMErpFlushControlEnable OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "Enabled/Disabled Automatic Flush propagation Control applied to ERP Instance. Default value is False (Disabled Automatic Flush propagation Control)"
+::= { opticsIMErpEntry 18 }
+
+opticsIMErpAsapId OBJECT-TYPE
+   SYNTAX Integer32 (1..2147483647)
+   MAX-ACCESS read-write
+   STATUS current
+   DESCRIPTION
+       "This object defines the ASAP object associated to an ERP Instance"
+::= { opticsIMErpEntry 19  }
+      
+opticsIMErpRowStatus   OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+       "For creating, modifying, and deleting this row."
+::= { opticsIMErpEntry 20 }
+
+opticsIMErpRplNeighbour   OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "The ERP instance is adjacent to a Node with RPL-Owner role of an ERP instance.
+            This parameter must be in the set {TRUE,FALSE }, default value is FALSE."
+::= { opticsIMErpEntry 21 }
+
+opticsIMErpSubRingWithoutVirtualChannel  OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+       DESCRIPTION
+           "In case of Interconnection between Major Ring and Sub-ring Node role of an 
+            ERP Topology instance (opticsIMErpTopologyInterconnectionNode = 'true'), this object defines if the opticsIMErpRingVlanId 
+            (R-APS VID) has to be blocked on the interconnection Node ('true' value) or has to be fowarded to the Major Ring  as traffic VLAN
+            ('false' value)."
+::= { opticsIMErpEntry 22 }
+
+
+-- PortTable --
+
+opticsIMErpPortTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF   OpticsIMErpPortEntry
+        MAX-ACCESS           not-accessible
+        STATUS               current
+        DESCRIPTION
+           "This table contains the Ethernet Ports associated to each 
+            Ethernet Ring Protection Instance"
+::= { opticsIMErpMibObject 6} 
+
+opticsIMErpPortEntry OBJECT-TYPE
+        SYNTAX               OpticsIMErpPortEntry
+        MAX-ACCESS           not-accessible
+        STATUS               current
+        DESCRIPTION
+           "An entry in the opticsIMErpPortTable. Entries of this table are created after the associated Ethernet Ring Protection is created. "
+        INDEX  { 
+    opticsIMErpTopologyIndex,  
+    opticsIMErpIndex, 
+	opticsIMErpPortIndex}                                           
+::= { opticsIMErpPortTable 1 }
+
+OpticsIMErpPortEntry ::= SEQUENCE {
+      opticsIMErpPortIndex 	    	InterfaceIndex,
+      opticsIMErpPortRplFlag        	TruthValue,
+      opticsIMErpPortFwdStatus      	OpticsIMErpPortForwardingStatus,
+      opticsIMErpPortCurrentStatus  	OpticsIMErpPortCurrentStatus,
+      opticsIMErpPortMdIndex        	Unsigned32,
+      opticsIMErpPortMaIndex        	Unsigned32,
+      opticsIMErpPortMepIdentifier  	Dot1agCfmMepIdOrZero,
+      opticsIMErpPortRowStatus      	RowStatus,
+      opticsIMErpPortRplNeighbourIf 	InterfaceIndex,
+      opticsIMErpPortBandwidthThreshold Integer32,
+      opticsIMErpCcmInterval 		INTEGER
+     }
+
+ 
+opticsIMErpPortIndex OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            " See Textual Conventions. "
+::= { opticsIMErpPortEntry 1 }
+
+opticsIMErpPortRplFlag OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+           "This attribute (relevant ONLY in case of True value of ERP Instance 
+            RPL-Owner) specifies if the port is a Ring Protection Link 
+            (Default value : False). Only a single ERP Port is allowed as 
+            Ring Protection Link inside an ERP Instance"
+::= { opticsIMErpPortEntry 2 }
+
+opticsIMErpPortFwdStatus OBJECT-TYPE
+        SYNTAX      OpticsIMErpPortForwardingStatus
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+           "This attribute reports the forwarding Status of a Port inside ERP instance"
+::= { opticsIMErpPortEntry 3 }
+
+opticsIMErpPortCurrentStatus OBJECT-TYPE
+        SYNTAX      OpticsIMErpPortCurrentStatus
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+           "This attribute reports the current Status of a Port inside ERP instance"
+::= { opticsIMErpPortEntry 4 }
+
+opticsIMErpPortMdIndex OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+           "The index to the Maintenance Domain table in order to identify 
+            (1st Index) an optional Down MEP on Ring Port (defects detected on this MEP are considered as a Signal Fail condition on that Ring port). Default value: 0"
+::= { opticsIMErpPortEntry 5 }
+
+opticsIMErpPortMaIndex OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+           "The index to the Maintenance Association table in order to identify 
+            (2nd Index) an optional Down MEP on Ring Port (defects detected on this MEP are considered as a Signal Fail condition on that Ring port). Default value: 0"
+::= { opticsIMErpPortEntry 6 }
+
+opticsIMErpPortMepIdentifier OBJECT-TYPE
+        SYNTAX      Dot1agCfmMepIdOrZero
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+           "Maintenance association End Point in order to identify 
+            (last Index) an optional Down MEP on Ring Port (defects detected on this MEP are considered as a Signal Fail condition on that Ring port). Default value: 0"
+::= { opticsIMErpPortEntry 7 }
+
+opticsIMErpPortRowStatus   OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+       "For creating, modifying, and deleting this row."
+::= { opticsIMErpPortEntry 8 }
+
+opticsIMErpPortRplNeighbourIf OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+            " This object contains, in case of ERP instance adjacent to a Node with RPL-owner (opticsIMErpRplNeighbour = true) 
+              the ifIndex of the port on the adjacent Node associated to this port (identified by opticsIMErpPortIndex). "
+::= { opticsIMErpPortEntry 9 }
+
+opticsIMErpPortBandwidthThreshold OBJECT-TYPE
+        SYNTAX      Integer32 (1..2147483647)
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+            " This object defines the threshold for the bandwidth of the Port inside an ERP Instance to trigger a switch 
+              on the Protection Group when the bwdeg(9) value is selected on  opticsIMErpSwitchDefectInput.
+              It is specified in kilobits per second (Kbps).
+    	      In case the ERP instance switch occurs due to bandwidth degrade, then the opticsIMErpPortCurrentStatus has to set to 'localDegrade' status value.
+            "
+::= { opticsIMErpPortEntry 10 }
+
+opticsIMErpCcmInterval OBJECT-TYPE
+        SYNTAX      INTEGER {
+			interval3330us (1),
+			interval10ms  (2),
+			interval100ms     (3),
+			interval1s        (4),
+			interval10s       (5),
+			interval1m       (6),
+			interval10m       (7)
+
+                }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+            " This object defines the interval at which CCMs are sent by the MEP on the Ring Port.
+            "
+::= { opticsIMErpPortEntry 11 }
+
+
+--  VlanTable
+
+opticsIMErpVlanTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMErpVlanEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table containing static configuration information for each Traffic VLAN 
+         in order to perform the assignment of Traffic VLAN to an ERP Instance
+         (ONLY with per VLAN Scope)."
+    ::= { opticsIMErpMibObject 7 }
+
+opticsIMErpVlanEntry OBJECT-TYPE
+    SYNTAX      OpticsIMErpVlanEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "ERP Traffic Vlan entry indexed via ERP Topology Index, ERP Instance 
+         Index and Traffic Vlan Index"
+    INDEX   { 
+     opticsIMErpTopologyIndex,
+     opticsIMErpIndex,
+     opticsIMErpVlanIndex}
+    ::= { opticsIMErpVlanTable 1 }
+
+OpticsIMErpVlanEntry ::=
+    SEQUENCE {
+        opticsIMErpVlanIndex       VlanIndex,
+        opticsIMErpVlanRowStatus   RowStatus
+    }
+
+
+opticsIMErpVlanIndex OBJECT-TYPE
+    SYNTAX      VlanIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Traffic VLAN Identifier"
+    ::= { opticsIMErpVlanEntry 1 }
+
+opticsIMErpVlanRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the status of this entry."
+    ::= { opticsIMErpVlanEntry 2 }
+
+END

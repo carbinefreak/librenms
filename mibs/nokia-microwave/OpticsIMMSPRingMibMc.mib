@@ -1,0 +1,343 @@
+OPTICSIM-MSPRing-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+       Integer32, Unsigned32 FROM SNMPv2-SMI
+       TruthValue, DisplayString, RowStatus, TEXTUAL-CONVENTION FROM SNMPv2-TC
+       ifIndex, InterfaceIndex FROM IF-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP FROM SNMPv2-CONF
+       tsdimEventObjectClassIdentifier, tsdimEventObjectInstanceIdentifier,
+       tsdimEventNotificationId, tsdimEventTime, tsdimAlarmSeverity,
+       tsdimAlarmSpecProblem, opticsIMAdditionalText, opticsIMAlarmType FROM TSDIM-SUPPORT-MIB
+       opticsimRadioMib, opticsimRadioMC FROM OPTICSIM-RADIOREG-MIB
+       OpticsIMRadioChannelNumber FROM OPTICSIM-COMMON-TC
+       ;
+
+ opticsIMMSPRingMib MODULE-IDENTITY
+       LAST-UPDATED "0902190000Z"
+       ORGANIZATION "Alcatel WT"
+       CONTACT-INFO "Alcatel WT" 
+       DESCRIPTION
+                "Initial Release of Multi Service Packet Ring (MSPR) MIB."
+
+ ::= {  opticsimRadioMib 10}
+
+opticsIMMSPRingMibObject     OBJECT IDENTIFIER ::= { opticsIMMSPRingMib 1 }
+
+
+	-- -------------------------------------------------------------
+	-- The Multi service Packet Ring Configuration Table
+	-- -------------------------------------------------------------
+
+   	opticsIMCurrentMSPRingInstanceNumber OBJECT-TYPE  
+       	SYNTAX            Unsigned32  
+       	MAX-ACCESS        read-only  
+       	STATUS            current  
+       	DESCRIPTION  
+           "This object contains an appropriate value to be used for opticsIMMSPRingIndex 
+	    definition (according to the naming convention defined in each product specification)
+	    when creating entries in the  opticsIMMSPRingTable. The value 0 indicates that no  
+            unassigned entries are available.  To define the  value of opticsIMMSPRingIndex for a 
+            new entry in the opticsIMMSPRingTable, the manager issues a management protocol retrieval 
+            operation. "
+       	::= { opticsIMMSPRingMibObject 1 }  
+
+	opticsIMMSPRingTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF   OpticsIMMSPRingEntry
+     	MAX-ACCESS                not-accessible
+     	STATUS                          current
+     	DESCRIPTION
+          " This table contains information used to manage the Multi Service Packet Ring. "
+	::= { opticsIMMSPRingMibObject 2 }
+
+
+
+
+	opticsIMMSPRingEntry OBJECT-TYPE
+		SYNTAX OpticsIMMSPRingEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION
+			"A list of the MSPRing group parameters. This is indexed
+			by the ifIndex of the MSPRing"
+		INDEX { opticsIMMSPRingIndex }
+		::= { opticsIMMSPRingTable 1 }
+
+
+	OpticsIMMSPRingEntry::=
+		SEQUENCE {
+		opticsIMMSPRingIndex 				InterfaceIndex, 	
+                opticsIMMSPRingNbrSelectedPorts 		INTEGER,
+		opticsIMMSPRingInsertDirection	 		INTEGER,
+                opticsIMMSPRingDropDirection	 		INTEGER,
+    		opticsIMMSPRingAvailableBandwidth		Integer32,
+	        opticsIMMSPRingRowStatus			RowStatus
+		}
+	
+	
+	opticsIMMSPRingIndex 		OBJECT-TYPE
+		SYNTAX InterfaceIndex
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION
+			"The index of the MSPRing instance.
+			 This attribute identifies the ifIndex in the ifEntry related to the MSPRing interface."
+		
+		::= { opticsIMMSPRingEntry 1 }
+	
+	 opticsIMMSPRingNbrSelectedPorts OBJECT-TYPE
+		SYNTAX INTEGER (0..2)
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION
+			"The number of ports selected at the momemt ."
+		
+		::= { opticsIMMSPRingEntry 2 }
+
+	 opticsIMMSPRingInsertDirection	 		OBJECT-TYPE
+		SYNTAX INTEGER {
+      		    	toEast(1),
+         		toWest (2),
+			noOne (3)
+         		}
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION
+			"The current direction of the inserted flows on the MSPRing group.
+			'NoOne' value in case the flows are not working"
+		::= { opticsIMMSPRingEntry 3 }
+
+	 opticsIMMSPRingDropDirection	 		OBJECT-TYPE
+		SYNTAX INTEGER {
+       		    	fromEast(1),
+         		fromWest (2),
+			noOne (3)     
+         		}
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION
+			"The current direction of the extracted flows on the MSPRing group.		
+			'NoOne' value in case the flows are not working"		
+		::= { opticsIMMSPRingEntry 4 }
+
+	opticsIMMSPRingAvailableBandwidth  OBJECT-TYPE
+     		SYNTAX Integer32 (1..2147483647)
+     		MAX-ACCESS			read-only
+     		STATUS				current
+     		DESCRIPTION
+         	"This value indicates the total amount of bandwidth available on this interface and is
+         	 specified in kilobits per second (Kbps).  This value is calculated as the minumum bandwidth 
+		 allowed on each MSPRing ports belonging to this MSPRing instance."
+		::= { opticsIMMSPRingEntry 5 }
+	
+	opticsIMMSPRingRowStatus	OBJECT-TYPE
+                SYNTAX RowStatus   	
+      		MAX-ACCESS read-create
+      		STATUS current
+      		DESCRIPTION
+         		"This object is the RowStatus for creating or deleting MSPRing objects."
+		::= { opticsIMMSPRingEntry 6 }
+	
+
+
+
+
+	-- -------------------------------------------------------------
+	-- The Multi service Packet Ring Port Table
+	-- -------------------------------------------------------------
+
+
+	opticsIMMSPRingPortTable OBJECT-TYPE
+		SYNTAX SEQUENCE OF OpticsIMMSPRingPortEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION
+			"A table that contains configuration information about every
+			MSPRing Port associated with a MSPRing interface.
+			A row appears in this table for each physical port."
+		::= { opticsIMMSPRingMibObject     3 }
+	
+	opticsIMMSPRingPortEntry OBJECT-TYPE
+		SYNTAX OpticsIMMSPRingPortEntry
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION
+			"A list of Link Aggregation Control configuration
+			parameters for each Aggregation Port on this device."
+		INDEX { opticsIMMSPRingIndex, opticsIMMSPRingPortIndex }
+		::= { opticsIMMSPRingPortTable 1 }
+
+	OpticsIMMSPRingPortEntry::=
+		SEQUENCE {
+			opticsIMMSPRingPortIndex 		InterfaceIndex,
+			opticsIMMSPRingPortType			INTEGER,
+			opticsIMMSPRingPortSwitchCommands	INTEGER,
+			opticsIMMSPRingPortSwitchCriteria	INTEGER,
+			opticsIMMSPRingPortSwitchStatus		INTEGER,
+			opticsIMMSPRingPortTxDirectionRole	INTEGER,			
+			opticsIMMSPRingPortRxDirectionRole	INTEGER,
+		        opticsIMMSPRingPortWTRTime		INTEGER,
+ 	        	opticsIMMSPRingPortRowStatus		RowStatus
+		}
+
+
+	opticsIMMSPRingPortIndex 		OBJECT-TYPE
+		SYNTAX InterfaceIndex
+		MAX-ACCESS not-accessible
+		STATUS current
+		DESCRIPTION
+			"The ifIndex of the port"
+		::= { opticsIMMSPRingPortEntry 1 }
+	
+
+	opticsIMMSPRingPortType			OBJECT-TYPE
+		SYNTAX INTEGER {
+         		east (1),
+         		west   (2)
+         		}
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION
+			"The role of this MSPRing port on MSPRing grouop."
+		::= { opticsIMMSPRingPortEntry 2 }
+	
+	opticsIMMSPRingPortSwitchCommands	OBJECT-TYPE
+		SYNTAX INTEGER {
+         		noRequest   (1),
+         		wrap   (2)
+         		}
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION
+			"This object specifies the operator switch command currently active (if any) on this MSPRing port."
+		::= { opticsIMMSPRingPortEntry 3 }
+	
+	opticsIMMSPRingPortSwitchCriteria	OBJECT-TYPE
+		SYNTAX INTEGER {
+         		noOne        (1),
+         		indicationFail   (2)
+         	}
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION
+			"This object contains the highest priority automatic switch request currently active on this MSPRing port"
+
+		::= { opticsIMMSPRingPortEntry 4 }
+	
+	opticsIMMSPRingPortSwitchStatus		OBJECT-TYPE
+		SYNTAX INTEGER {
+       			nominal (1),
+       			wrapped (2)
+		}
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION
+			"This object indicates the status of this MSPRing port: nominal (normal state) or wrapped (exception state)."
+		::= { opticsIMMSPRingPortEntry 5 }
+
+	opticsIMMSPRingPortTxDirectionRole	OBJECT-TYPE
+		SYNTAX INTEGER {
+       			working (1),
+       			protection (2)
+			}
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION
+			"This object indicates for this MSPRing port if  the Transmission direction is the 'working' or the 'protection' 
+                         direction in the MSPRing in the nominal state. 
+			 The value depends on opticsIMMSPRingPortType and defined on each external product specification. "
+		::= { opticsIMMSPRingPortEntry 6 }
+	
+	opticsIMMSPRingPortRxDirectionRole	OBJECT-TYPE
+		SYNTAX INTEGER {
+       			working (1),
+       			protection (2)
+		}
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION
+			"This object indicates for this MSPRing port if  the Receive direction is the 'working' or the 'protection' 
+                         direction in the MSPRing in the nominal state. 
+			 The value depends on opticsIMMSPRingPortType and defined on each external product specification. "
+		::= { opticsIMMSPRingPortEntry 7 }
+		
+	opticsIMMSPRingPortWTRTime		OBJECT-TYPE
+		SYNTAX INTEGER
+		MAX-ACCESS read-create
+		STATUS current
+		DESCRIPTION
+			"The time to wait before to restore the nominal behaviour ."
+		::= { opticsIMMSPRingPortEntry 8 }
+	
+	opticsIMMSPRingPortRowStatus		OBJECT-TYPE
+	SYNTAX RowStatus   
+      		MAX-ACCESS read-create
+      		STATUS current
+      		DESCRIPTION
+         		"This object is the RowStatus for creating or deleting MSPRing ports belonging to a MSPRing gropu."
+		::= { opticsIMMSPRingPortEntry 9 }
+
+
+
+
+
+
+--
+-- OPTICSIM-MSPRing-MC DEFINITIONS ::= BEGIN
+--       IMPORTS
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimRadioMC FROM OPTICSIM-RADIOREG-MIB;
+
+-- opticsIMMSPRingMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0902190000Z"
+--       ORGANIZATION "Alcatel WT"
+--       CONTACT-INFO "Alcatel WT"
+
+--       DESCRIPTION 
+--           "Initial Release of Multi Service Packet Ring (MSPRing) Module Compliance."
+    
+-- ::= { opticsIMMSPRingMCConf 1 }
+
+opticsIMMSPRingMCConf     OBJECT IDENTIFIER ::= { opticsimRadioMC 8 }
+opticsIMMSPRingMCCompl    OBJECT IDENTIFIER ::= { opticsIMMSPRingMCConf     1 }
+opticsIMMSPRingMCGroup    OBJECT IDENTIFIER ::= { opticsIMMSPRingMCConf     2 }
+
+opticsIMMSPRingMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMMSPRingMib"
+
+       MODULE -- opticsIMMSPRingMib
+
+MANDATORY-GROUPS { opticsIMMSPRingGroup }
+
+GROUP opticsIMMSPRingGroup 
+      DESCRIPTION 
+          " This group describes the manadtory objects related to the MSPRing and MSPRingPort management. "
+
+::= { opticsIMMSPRingMCCompl    1 }
+
+
+opticsIMMSPRingGroup OBJECT-GROUP
+      OBJECTS { opticsIMCurrentMSPRingInstanceNumber,
+		opticsIMMSPRingNbrSelectedPorts,
+		opticsIMMSPRingInsertDirection,
+		opticsIMMSPRingDropDirection, 
+		opticsIMMSPRingAvailableBandwidth,				 		
+	        opticsIMMSPRingRowStatus,
+		opticsIMMSPRingPortType,		
+		opticsIMMSPRingPortSwitchCommands,	
+		opticsIMMSPRingPortSwitchCriteria,
+		opticsIMMSPRingPortSwitchStatus,
+		opticsIMMSPRingPortTxDirectionRole,
+		opticsIMMSPRingPortRxDirectionRole,			
+		opticsIMMSPRingPortWTRTime,
+	        opticsIMMSPRingPortRowStatus
+              }
+      STATUS current 
+      DESCRIPTION 
+         " This group describes the Multi Service Packet Ring (MSPRing)k mandatory objects." 
+::= { opticsIMMSPRingMCGroup    1 }
+
+END

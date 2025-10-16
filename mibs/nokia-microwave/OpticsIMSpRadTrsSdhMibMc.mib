@@ -1,0 +1,532 @@
+OPTICSIM-RADIO-TRS-SDH-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, 
+       Integer32, Unsigned32 FROM SNMPv2-SMI
+       TruthValue FROM SNMPv2-TC
+       ifIndex FROM IF-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP FROM SNMPv2-CONF
+       opticsimRadioMib, opticsimRadioMC FROM OPTICSIM-RADIOREG-MIB
+       OpticsIMRadioChannelNumber, OpticsIMStmLevel FROM OPTICSIM-COMMON-TC
+       TsdimOperationalState FROM TSDIM-SNMP-TC;
+
+ opticsIMRadioTrsSdhMib MODULE-IDENTITY
+       LAST-UPDATED "0510270000Z"
+       ORGANIZATION "Alcatel TND"
+       CONTACT-INFO "Alcatel TND"
+       DESCRIPTION
+                " deprecated opticsIMRadioSynchroRole object."
+       REVISION "0211050000Z"
+       DESCRIPTION
+                " txSquelched object removed from radioSPITTPBid entry."
+       REVISION "0205100000Z"
+       DESCRIPTION
+           " Added the operationalState and asapIndex objects in the rfcohTTPBid entry. Radio synchro 
+             objects moved from RADIO-NE-MIB."
+       REVISION "0201250000Z"
+       DESCRIPTION
+                "Initial Release of Radio SDH Transmission MIB."
+ ::= {  opticsimRadioMib 2}
+
+
+opticsIMRadioTrsSdhMibObject     OBJECT IDENTIFIER ::= { opticsIMRadioTrsSdhMib 1 }
+
+
+
+opticsIMRadioSPITTPBidBaseTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMRadioSPITTPBidBaseEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          " This table represents the process of converting the incoming radio frequency signal into an 
+            internal logic level STM-N signal and vice-versa. This process is composed of different 
+            subfunctions: Rx and Demodulation subfunctions in sink side, Tx and Modulation subfunctions in 
+            source side. "
+::= { opticsIMRadioTrsSdhMibObject 1 }
+
+opticsIMRadioSPITTPBidBaseEntry OBJECT-TYPE
+     SYNTAX						OpticsIMRadioSPITTPBidBaseEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the opticsIMRadioSPITTPBidTable table. Each entry corresponds to a Radio 
+            Synchronous Physical Interface (RSPI). "
+     INDEX   { ifIndex }
+::= { opticsIMRadioSPITTPBidBaseTable 1 } 
+
+OpticsIMRadioSPITTPBidBaseEntry ::= SEQUENCE {
+  radioSPITTPBidRadioChannelNumber		OpticsIMRadioChannelNumber,
+  radioSPITTPBidUnmodulatedCarrier			TruthValue,
+  radioSPITTPBidRxCarrier						INTEGER,
+  radioSPITTPBidStmLevel						OpticsIMStmLevel,
+  radioSPITTPBidSubEquippedSTM1			TruthValue,
+  radioSPITTPBidOperationalState				TsdimOperationalState,
+  radioSPITTPBidAsapIndex						Integer32
+  }
+
+radioSPITTPBidRadioChannelNumber OBJECT-TYPE
+     SYNTAX					OpticsIMRadioChannelNumber
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+         "See Textual Conventions."
+::= { opticsIMRadioSPITTPBidBaseEntry 1 }
+
+radioSPITTPBidUnmodulatedCarrier OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          "This object specifies if the carrier is unmodulated. When this is detected an Abnormal Condition 
+           indication is generated."
+::= { opticsIMRadioSPITTPBidBaseEntry 3 }
+
+radioSPITTPBidRxCarrier OBJECT-TYPE
+     SYNTAX INTEGER {
+         main (1),
+         reused (2) 
+         }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          "This object specifies the carrier state."
+::= { opticsIMRadioSPITTPBidBaseEntry 4 }
+
+radioSPITTPBidStmLevel OBJECT-TYPE
+     SYNTAX					OpticsIMStmLevel 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMRadioSPITTPBidBaseEntry 5 }
+
+radioSPITTPBidSubEquippedSTM1 OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " This object is used to indicate that the signal received, transmitted or received and transmitted at    
+         radio interface is a sub STM-1 signal (true value)."
+::= { opticsIMRadioSPITTPBidBaseEntry 6 }
+
+radioSPITTPBidOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMRadioSPITTPBidBaseEntry 7 }
+
+radioSPITTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this radio physical port."
+::= { opticsIMRadioSPITTPBidBaseEntry 8 }
+
+
+
+
+opticsIMRadioSPITTPBidLHExtTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMRadioSPITTPBidLHExtEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          " This table represents an extension of the opticsIMRadioSPITTPBidTable and is used to manage 
+            additional functionalities related to LH specific configurations not defined in the radio SPI base 
+             table. "
+::= { opticsIMRadioTrsSdhMibObject 2 }
+
+opticsIMRadioSPITTPBidLHExtEntry OBJECT-TYPE
+     SYNTAX						OpticsIMRadioSPITTPBidLHExtEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the opticsIMRadioSPITTPBidLHExtTable table. Each entry corresponds to a Radio 
+            Synchronous Physical Interface (RSPI). "
+     INDEX     { ifIndex }
+::= { opticsIMRadioSPITTPBidLHExtTable 1 } 
+
+OpticsIMRadioSPITTPBidLHExtEntry ::= SEQUENCE {
+  radioSPITTPBidSquelchDiversity					TruthValue,
+  radioSPITTPBidSquelchMain						TruthValue,
+  radioSPITTPBidSquelchReused					TruthValue,
+  radioSPITTPBidEqualizationDelayAlignment	INTEGER,
+  radioSPITTPBidEqualizationDelayMain			Integer32,
+  radioSPITTPBidEqualizationDelayDiversity		Integer32,
+  radioSPITTPBidEqualizationDelayReused		Integer32,
+  radioSPITTPBidVcoRole							INTEGER,
+  radioSPITTPBidVcoStatus							INTEGER
+  }
+
+radioSPITTPBidSquelchDiversity OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          " This object specifies if the diversity signal is squelched in a Space Diversity configuration 
+            (squelched=true).
+            When this signal is squelched an Abnormal Condition indication is generated. "
+::= { opticsIMRadioSPITTPBidLHExtEntry 1 }
+
+radioSPITTPBidSquelchMain OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          " This object specifies if the main signal is squelched in a Space Diversity configuration 
+            (squelched=true). 
+            When this signal is squelched an Abnormal Condition indication is generated.  "
+::= { opticsIMRadioSPITTPBidLHExtEntry 2 }
+
+radioSPITTPBidSquelchReused OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          " This object specifies if the reused signal is squelched in a Frequency Reuse configuration 
+            (squelched=true).
+            When this signal is squelched an Abnormal Condition indication is generated.  "
+::= { opticsIMRadioSPITTPBidLHExtEntry 3 }
+
+radioSPITTPBidEqualizationDelayAlignment OBJECT-TYPE
+     SYNTAX INTEGER {
+         equalizing  (1),
+         notEqualizing (2) 
+         }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          "This object is used to trigger the start of the alignment procedure of the equalization delays in 
+           case of  Space Diversity  configuration. 
+           When the procedure has been completed, the agent has to change the value back to 
+           notEqualizing 
+           In case of success of the procedure the number of delays inserted on each signal are indicated in 
+           the objects equalizationMainDiversity and equalizationDelayDiversity "
+::= { opticsIMRadioSPITTPBidLHExtEntry 4 }
+
+radioSPITTPBidEqualizationDelayDiversity OBJECT-TYPE
+     SYNTAX					Integer32
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          "This object specifies the number of delays inserted on the diversity signal in order to equalize this 
+           signal with the main and, eventually, with the xpic one(s). "
+::= { opticsIMRadioSPITTPBidLHExtEntry 5 }
+
+radioSPITTPBidEqualizationDelayMain OBJECT-TYPE
+     SYNTAX					Integer32
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          "This object specifies the number of delays inserted on the main signal in order to equalize this 
+           signal with the diversity and/or the xpic one(s). "
+::= { opticsIMRadioSPITTPBidLHExtEntry 6 }
+
+radioSPITTPBidEqualizationDelayReused OBJECT-TYPE
+     SYNTAX					Integer32
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          " This object specifies the number of delays inserted on the reused signal in order to equalize this 
+           signal with the main and, eventually, with the diversity one(s). "
+::= { opticsIMRadioSPITTPBidLHExtEntry 7 }
+
+radioSPITTPBidVcoRole OBJECT-TYPE
+     SYNTAX INTEGER {
+         master   (1),
+         slave   (2) 
+         }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          "This object specifies the role of the VCO (master or slave) when Frequency Reuse configuration 
+           with XPIC in long haul applications is supported."
+::= { opticsIMRadioSPITTPBidLHExtEntry 8 }
+
+radioSPITTPBidVcoStatus OBJECT-TYPE
+     SYNTAX INTEGER {
+         internalVcoActive  (1),
+         externalVcoActive  (2) 
+         }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          " This object specifies the status of the VCO when Frequency Reuse configuration with XPIC in 
+            long haul applications is supported: always  internalVcoActive in case of master role,   
+            internalVcoActive or externalVcoActive in case of slave role. "
+::= { opticsIMRadioSPITTPBidLHExtEntry 9 }
+
+
+opticsIMRadioSPITTPBidUHExtTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMRadioSPITTPBidUHExtEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          " This table represents an extension of the opticsIMRadioSPITTPBidTable and is used to manage 
+            additional functionalities related to UH specific configurations not defined in the radio SPI base 
+            table. "
+::= { opticsIMRadioTrsSdhMibObject 3 }
+
+opticsIMRadioSPITTPBidUHExtEntry OBJECT-TYPE
+     SYNTAX						OpticsIMRadioSPITTPBidUHExtEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the opticsIMRadioSPITTPBidUHExtTable table. Each entry corresponds to a Radio 
+            Synchronous Physical Interface (RSPI). "
+     INDEX     { ifIndex }
+::= { opticsIMRadioSPITTPBidUHExtTable 1 } 
+
+OpticsIMRadioSPITTPBidUHExtEntry ::= SEQUENCE {
+  radioSPITTPBidODUServiceKit				INTEGER,
+  radioSPITTPBidVcoProtectionStatus			INTEGER
+  }
+
+radioSPITTPBidODUServiceKit OBJECT-TYPE
+     SYNTAX INTEGER {
+         connected (1),
+         notConnected (2)
+         }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          "This object specifies if the ODU Service Kit is connected. When this is detected an Abnormal 
+           Condition indication is generated."
+::= { opticsIMRadioSPITTPBidUHExtEntry 1 }
+
+radioSPITTPBidVcoProtectionStatus OBJECT-TYPE
+     SYNTAX INTEGER {
+         active (1),
+         stand-by (2) 
+         }
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+          "This object specifies the status of the VCO signal in a VCO protection when Frequency Reuse 
+           configuration with XPIC in urban applications is supported."
+::= { opticsIMRadioSPITTPBidUHExtEntry 2 }
+
+
+opticsIMRfcohTTPBidTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMRfcohTTPBidEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          " This table represents the process of termination and origination of the Radio Frame 
+            Complementary OverHead (RFCOH). "
+::= { opticsIMRadioTrsSdhMibObject 4 }
+
+opticsIMRfcohTTPBidEntry OBJECT-TYPE
+     SYNTAX						OpticsIMRfcohTTPBidEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the opticsIMRfcohTTPBidTable table. "
+     INDEX   { ifIndex }
+::= { opticsIMRfcohTTPBidTable 1 } 
+
+OpticsIMRfcohTTPBidEntry ::= SEQUENCE {
+  rfcohTTPBidChannelIDExpectedMode		INTEGER,
+  rfcohTTPBidChannelIDExpectedValue		Unsigned32,
+  rfcohTTPBidChannelIDSentValue				Unsigned32,
+  rfcohTTPBidOperationalState					TsdimOperationalState,
+  rfcohTTPBidAsapIndex							Integer32
+  }
+
+rfcohTTPBidChannelIDExpectedMode OBJECT-TYPE
+     SYNTAX INTEGER {
+          enabled (1),
+          disabled (2)
+          }
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the mode of the expected radio channel trace identifier. 
+          If the disabled mode is selected the mismatch detection is disabled. If the enabled mode is 
+          selected the expected value is contained in the associated rfcohTTPBidChannelIDExpectedValue 
+          object."
+::= { opticsIMRfcohTTPBidEntry 1 }
+
+rfcohTTPBidChannelIDExpectedValue OBJECT-TYPE
+     SYNTAX					Unsigned32 (0..63)
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the value of the expected radio channel trace identifier.
+          It is used only if the functionality is enabled (enabled mode is selected in the associated  
+          rfcohTTTBidChannelIDExpectedMode object."
+::= { opticsIMRfcohTTPBidEntry 2 }
+
+rfcohTTPBidChannelIDSentValue OBJECT-TYPE
+     SYNTAX					Unsigned32 (0..63)
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the value of the outgoing radio channel trace identifier that has to be sent."
+::= { opticsIMRfcohTTPBidEntry 3 }
+
+rfcohTTPBidOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMRfcohTTPBidEntry 4 }
+
+rfcohTTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this rfcohTTP."
+::= { opticsIMRfcohTTPBidEntry 5 }
+
+
+opticsIMRadioSynchroMngt OBJECT IDENTIFIER ::= { opticsIMRadioTrsSdhMibObject 5 }
+
+
+opticsIMRadioSynchroRole OBJECT-TYPE
+     SYNTAX INTEGER {
+         localClock  (1),
+         receivedRadioSignalClock  (2),
+         receivedLineSignalClock  (3),
+         automatic  (4)
+         }
+     MAX-ACCESS			read-write
+     STATUS					deprecated
+     DESCRIPTION
+          "This object specifies the source of the clock on which the transmitted signal has to be 
+           synchronized:
+            -      localClock: the clock is generated internally to the NE,
+-      receivedRadioSignalClock: the clock is obtained by the signal received from the radio   
+       physical port,
+- receivedLineSignalClock: the clock is obtained by the signal received from the line physical 
+port,
+- automatic:no behaviour is forced, the clock is generated according to the automatic way of 
+       working of the equipment. "
+::= { opticsIMRadioSynchroMngt 1 }
+
+
+
+-- OPTICSIM-RADIO-TRS-SDH-MC DEFINITIONS ::= BEGIN
+--       IMPORTS
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimRadioMC FROM OPTICSIM-RADIOREG-MIB;
+
+
+-- opticsIMRadioTrsSdhMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0205100000Z"
+--       ORGANIZATION "Alcatel TND"
+--       CONTACT-INFO "Alcatel TND"
+--       DESCRIPTION
+--           " Added the operationalState and asapIndex in the rfcohTTPBid entry. Radio Synchro 
+--             objects moved from RADIO-NE-MIB. "
+--       REVISION "0201250000Z"
+--       DESCRIPTION 
+--           "Initial Release of Radio SDH Module Compliance."
+    
+-- ::= { opticsIMRadioTrsSdhMCConf 1 }
+
+opticsIMRadioTrsSdhMCConf         OBJECT IDENTIFIER ::= { opticsimRadioMC 2 }
+opticsIMRadioTrsSdhMCCompl      OBJECT IDENTIFIER ::= { opticsIMRadioTrsSdhMCConf 1 }
+opticsIMRadioTrsSdhMCGroup      OBJECT IDENTIFIER ::= { opticsIMRadioTrsSdhMCConf 2 }
+
+opticsIMRadioTrsSdhMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMRadioTrsSdhMib. "
+
+       MODULE -- opticsIMRadioTrsSdhMib  
+
+MANDATORY-GROUPS { opticsIMRadioSPITTPGroup }
+
+GROUP opticsIMRadioSPITTPUHExtGroup
+      DESCRIPTION
+          " This group describes the Radio SPI objects related to the UH applications."
+
+GROUP opticsIMRadioSPITTPLHExtGroup
+      DESCRIPTION
+          " This group describes the Radio SPI objects related to the LH applications."
+
+GROUP opticsIMRfcohTTPGroup
+      DESCRIPTION
+          " This group describes the RFCOH mandatory objects."
+
+GROUP opticsIMOptRadioSynchroGroup
+      DESCRIPTION 
+          " This group describes the Radio NE synchronization optional objects."
+
+::= { opticsIMRadioTrsSdhMCCompl 1 }
+
+
+opticsIMRadioSPITTPGroup OBJECT-GROUP
+      OBJECTS { radioSPITTPBidRadioChannelNumber,
+                          radioSPITTPBidUnmodulatedCarrier,
+                          radioSPITTPBidRxCarrier,
+                          radioSPITTPBidStmLevel,
+                          radioSPITTPBidSubEquippedSTM1,
+                          radioSPITTPBidOperationalState,
+                          radioSPITTPBidAsapIndex
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Radio SPI mandatory objects." 
+::= { opticsIMRadioTrsSdhMCGroup 1 }
+
+opticsIMRadioSPITTPLHExtGroup OBJECT-GROUP
+      OBJECTS { radioSPITTPBidSquelchDiversity,
+                          radioSPITTPBidSquelchMain,
+                          radioSPITTPBidSquelchReused,
+                          radioSPITTPBidEqualizationDelayAlignment,
+                          radioSPITTPBidEqualizationDelayMain,
+                          radioSPITTPBidEqualizationDelayDiversity,
+                          radioSPITTPBidEqualizationDelayReused,
+                          radioSPITTPBidVcoRole,
+                          radioSPITTPBidVcoStatus
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Radio SPI objects related to the LH applications." 
+::= { opticsIMRadioTrsSdhMCGroup 2 }
+
+opticsIMRadioSPITTPUHExtGroup OBJECT-GROUP
+      OBJECTS { radioSPITTPBidODUServiceKit,
+                          radioSPITTPBidVcoProtectionStatus
+                          }
+STATUS current 
+      DESCRIPTION 
+          " This group describes the Radio SPI objects related to the UH applications." 
+::= { opticsIMRadioTrsSdhMCGroup 3 }
+
+opticsIMRfcohTTPGroup OBJECT-GROUP
+      OBJECTS { rfcohTTPBidChannelIDExpectedMode,
+                          rfcohTTPBidChannelIDExpectedValue,
+                          rfcohTTPBidChannelIDSentValue,
+                          rfcohTTPBidOperationalState,
+                          rfcohTTPBidAsapIndex
+                          }
+STATUS current 
+      DESCRIPTION 
+          " This group describes the RFCOH mandatory objects." 
+::= { opticsIMRadioTrsSdhMCGroup 4 }
+
+
+opticsIMOptRadioSynchroGroup OBJECT-GROUP
+      OBJECTS { opticsIMRadioSynchroRole }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Radio NE synchronization optional objects." 
+::= { opticsIMRadioTrsSdhMCGroup 5 }
+
+
+END
+
+
+
+
+
+
+

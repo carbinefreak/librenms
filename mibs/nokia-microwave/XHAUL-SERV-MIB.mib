@@ -1,0 +1,913 @@
+XHAUL-SERV-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    NOTIFICATION-TYPE, Gauge32,
+    Integer32, Unsigned32, IpAddress,
+    TimeTicks, Counter64, Counter32             FROM SNMPv2-SMI
+
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP                          FROM SNMPv2-CONF
+
+    TEXTUAL-CONVENTION, DisplayString,
+    RowStatus, MacAddress, TimeStamp,
+    TruthValue, RowPointer, DateAndTime         FROM SNMPv2-TC
+
+    InterfaceIndex, InterfaceIndexOrZero        FROM IF-MIB
+
+    InetAddressPrefixLength,
+    InetAddressType, InetAddress,
+    InetAddressIPv4, InetAddressIPv6,
+    InetAutonomousSystemNumber                  FROM INET-ADDRESS-MIB
+
+    ServiceAdminStatus, ServiceOperStatus,
+    XhaulPortID, XhaulEncapVal,
+    XhaulServId, XhaulCustId, TNamedItem,
+    TLNamedItem, TLNamedItemOrEmpty,
+    XhaulVRtrIDOrZero, QTag, QTagOrZero,
+    SdpBindId, TNamedItemOrEmpty,
+    TPortSchedulerPIR,
+    XhaulActionType,
+    TCIRRate, TPIRRate,
+    XhaulEnabledDisabled,
+    TPolicyStatementNameOrEmpty,
+    XhaulVPNRouteDistinguisher,
+    XhaulManagedRouteStatus,
+    XhaulAdminState,
+    XhaulSubIdentStringOrEmpty, 
+    XhaulSubProfileStringOrEmpty,
+    XhaulSlaProfileStringOrEmpty, 
+    XhaulAppProfileStringOrEmpty,
+    XhaulAncpStringOrZero,
+    XhaulSubMgtIntDestIdOrEmpty,
+    XhaulDefSubIdSource,
+    TIngressQueueId, TBurstSize,
+    TBurstPercentOrDefault,
+    XhaulBgpAutonomousSystem,
+    BgpPeeringStatus, SvcISID, XhaulTlsGroupId,
+    XhaulSpokeSdpId, XhaulSpokeSdpIdOrZero, XhaulLdpFECType,
+    XhaulPwGlobalId, XhaulPwGlobalIdOrZero,
+    XhaulMsPwPeSignaling, XhaulPwPathHopId,
+    XhaulSvcOperGrpCreationOrigin,
+    XhaulAccessLoopEncapDataLink, 
+    XhaulAccessLoopEncaps1,
+    XhaulAccessLoopEncaps2,    
+    XhaulOperGrpHoldUpTime,XhaulOperGrpHoldDownTime,
+    XhaulAiiType, 
+    TDirection,
+    TQosOverrideType,
+    THsmdaWrrWeightOverride,
+    TPIRRateOverride,
+    TCIRRateOverride,
+    TBurstSizeBytesOverride, TPortSchedulerAggRateLimitPIR,
+    TSiteOperStatus, XhaulSpbFdbLocale, XhaulSpbFdbState,
+    XhaulSpbFid, XhaulSpbFidOrZero, XhaulSpbBridgePriority,
+    TItemDescription, TPolicyID,  THPolVirtualScheCIRRate,
+    THPolVirtualSchePIRRate, TItemScope,
+    TQosIngressPolicyID,
+    XhaulBfdIntfSessOperState,
+    XhaulCreateOrigin, XhaulISID,
+       XhaulRadiusFramedRouteMetric,
+       XhaulRadiusFramedRoutePreference,
+       XhaulRadiusFramedRouteTag
+                                                FROM XHAUL-TC-MIB
+		
+       xhaulim, xhaulBasicMib			FROM XHAUL-BASICREG-MIB
+
+--   timetraSRMIBModules, XhaulSRObjs,
+--   XhaulSRNotifyPrefix, XhaulSRConfs             FROM TIMETRA-GLOBAL-MIB
+
+--    XhaulCardSlotNum, XhaulMDASlotNum             FROM TIMETRA-CHASSIS-MIB
+
+--  tVirtualSchedulerName,
+--  tSchedulerPolicyName,
+--  tQosIngQGroupName                           FROM XHAUL-QOS-MIB
+
+-- TEntryId, TFilterID                         FROM TIMETRA-FILTER-MIB
+   
+    ;
+
+
+xhaulServicesMIBModule   MODULE-IDENTITY
+        LAST-UPDATED "201705200000Z"
+        ORGANIZATION "Nokia"
+        CONTACT-INFO
+            "Nokia Xhaul Support "
+    DESCRIPTION
+        "This document is the SNMP MIB module to manage and provision
+        the various services of the NOKIA X-HAUL devices."
+
+--
+--  Revision History
+--
+ 
+    REVISION        "201705200000Z"
+    DESCRIPTION     "Rev 0.1                20 May 2017 00:00
+                     Initial version of the XHAUL-SERV-MIB."
+
+    ::= { xhaulBasicMib 5 }
+
+-- --------------------------------------------------------------------
+--      XHAUL-SERV-MIB organisation
+-- --------------------------------------------------------------------
+
+xhaulServMib            OBJECT IDENTIFIER ::= { xhaulim 4 }
+
+xhaulServObjs 		   OBJECT IDENTIFIER ::= { xhaulServMib  1}
+  xhaulSvcObjs             OBJECT IDENTIFIER ::= { xhaulServObjs 2 }
+
+xhaulServNotifications   OBJECT IDENTIFIER ::= { xhaulServMib  2 }
+svcTraps        OBJECT IDENTIFIER ::= { xhaulServNotifications 2 }
+
+xhaulServConformance       OBJECT IDENTIFIER ::= { xhaulServMib 99 }
+  xhaulSvcConformance      OBJECT IDENTIFIER ::= { xhaulServConformance 2 }
+
+
+-- --------------------------------------------------------------------
+--      XHAUL-SERV-MIB Textual Conventions
+-- --------------------------------------------------------------------
+
+ArpHostInfoOrigin ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Indicates the originator of the provided information."
+    SYNTAX          INTEGER {
+                        none            (0),
+                        radius          (2),
+                        default         (5) 
+                    }
+
+ServObjName ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "ASCII string used to name various service
+                     objects."
+    SYNTAX          DisplayString (SIZE (0..32))
+
+ServObjDesc ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "ASCII string used to describe various service
+                     objects."
+    SYNTAX          DisplayString (SIZE (0..80))
+
+ServObjLongDesc ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Long ASCII string used to describe various service
+                     objects."
+    SYNTAX          DisplayString (SIZE (0..160))
+
+ServType ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "This textual convention is used to specify the
+                     type of a given service."
+    SYNTAX          INTEGER {
+                        unknown (0), -- Unknown service type
+                        epipe   (1), -- Ethernet pipe
+                        p3pipe  (2), -- POS pipe
+                        tls     (3), -- Virtual private LAN service (VPLS)
+                        vprn    (4), -- Virtual private routed network
+                        ies     (5), -- Internet enhanced service
+                        mirror  (6), -- Mirror service
+                        apipe   (7), -- ATM pipe service
+                        fpipe   (8), -- FR pipe service
+                        ipipe   (9), -- IP interworking pipe service
+                        cpipe   (10),-- Circuit Emulation pipe service
+                        intTls  (11) -- Internal VPLS service
+                    }
+
+VpnId ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "A number used to identify a VPN. In general
+                     each service corresponds to a single VPN, but
+                     under some circumstances a VPN may be composed
+                     of multiple services."
+    SYNTAX          Unsigned32 (0|1..2147483647)
+
+SdpId ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "A 16-bit number used to identify a Service
+                     Distribution Point. This ID must be unique only
+                     within the ESR where it is defined. The value 0
+                     is used as the null ID."
+    SYNTAX          Unsigned32 (0|1..17407)
+
+SdpTemplateId ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "A number used to uniquely identify a template 
+                     for the creation of a Service Destination Point.
+                     The value 0 is used as the null ID."
+    SYNTAX          Unsigned32 (0|1..2147483647)
+
+PWTemplateId ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "A number used to uniquely identify an pseudowire (PW)
+                     template for the creation of a Service Destination
+                     Point. The value 0 is used as the null ID."
+    SYNTAX          Unsigned32 (0|1..2147483647)
+
+TlsBpduTranslation ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "This textual convention is used to specify whether
+                     received L2 Protocol Tunnel pdu's are translated
+                     before being sent out on a port or sap."
+    SYNTAX          INTEGER {
+                        auto     (1),
+                        disabled (2),
+                        pvst     (3),
+                        stp      (4),
+                        pvst-rw  (5),
+                        auto-rw  (6)
+                    }
+
+TlsLimitMacMoveLevel ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "This textual convention is used to specify the hierarchy
+                     in which spoke-SDPs are blocked when a MAC-move limit is
+                     exceeded. When a MAC is moving among multiple SAPs or
+                     spoke-SDPs, the SAP bind or spoke-SDP bind with the
+                     lower level is blocked first. (tertiary is the lowest)"
+    SYNTAX          INTEGER {
+                        primary   (1),
+                        secondary (2),
+                        tertiary  (3)
+                    }
+
+TlsLimitMacMove  ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "This textual convention is used to specify the behavior
+                     when the re-learn rate specified by svcTlsMacMoveMaxRate
+                     is exceeded.
+
+                     A value of 'blockable' specifies that the agent will
+                     monitor the MAC relearn rate on a SAP or SDP Bind and
+                     it will block it when the re-learn rate specified by
+                     svcTlsMacMoveMaxRate is exceeded. A value of 'nonBlockable'
+                     specifies that the  SAP or SDP Bind will not be blocked,
+                     and another blockable SAP or SDP Bind will be blocked
+                     instead."
+    SYNTAX          INTEGER {
+                        blockable    (1),
+                        nonBlockable (2)
+                    }
+
+SdpBindVcType  ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "This textual convention is used to specify the type of
+                     virtual circuit (VC) associated with the SDP binding.
+                     The value 'vpls' is no longer supported."
+    SYNTAX          INTEGER {
+                        undef      (1),
+                        ether      (2),
+                        --vpls     (3) obsolete
+                        vlan       (4),
+                        mirror     (5),
+                        atmSdu     (6),
+                        atmCell    (7),
+                        atmVcc     (8),
+                        atmVpc     (9),
+                        frDlci     (10),
+                        ipipe      (11),
+                        satopE1    (12),
+                        satopT1    (13),
+                        satopE3    (14),
+                        satopT3    (15),
+                        cesopsn    (16),
+                        cesopsnCas (17)
+                    }
+
+StpExceptionCondition ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "This textual convention is used to specify an
+                     STP exception condition encountered on an
+                     interface
+                     - none : no exception condition found.
+                     - oneWayCommuniation : The neighbor RSTP peer on this link
+                                            is not able to detect our presence.
+                     - downstreamLoopDetected : A loop is detected on this
+                       link."
+    SYNTAX          INTEGER {
+                        none                   (1),
+                        oneWayCommuniation     (2),
+                        downstreamLoopDetected (3)
+                    }
+
+LspIdList ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Each group of four octets in this string specify
+                     a 32-bit LSP ID, which corresponds to the
+                     vRtrMplsLspIndex of the given MPLS LSP. The LSP
+                     IDs are stored in network byte order; i.e. octet
+                     N corresponds to the most significant 8 bits of
+                     the LSP ID, and octet N+3 correspond to the least
+                     significant 8 bits. The list is terminated by the
+                     null LSP ID. The LSP IDs in this list are not
+                     required to be sorted in any specific order. The
+                     list is large enough to hold up to 16 LSP IDs,
+                     plus the null terminator."
+    SYNTAX          OCTET STRING (SIZE (0..68))
+
+BridgeId ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "The Bridge-Identifier used by the Spanning Tree
+                     Protocol to uniquely identify a bridge. The first
+                     two octets represent the bridge priority (in big
+                     endian format) while the remaining six octets
+                     represent the main MAC address of the bridge."
+    SYNTAX          OCTET STRING (SIZE (8))
+
+TSapIngQueueId ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "The value used to uniquely identify a SAP ingress queue.
+                     The actual valid values are those defined in the given
+                     SAP ingress QoS policy."
+    SYNTAX          Unsigned32 (1..32)
+
+TSapEgrQueueId ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "The value used to uniquely identify a SAP egress queue.
+                     The actual valid values are those defined in the given
+                     SAP egress QoS policy."
+    SYNTAX          Unsigned32 (1..8)
+
+TStpPortState ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "The value used to specify the port state as defined
+                     by application of the Spanning Tree Protocol. This
+                     state controls what action a port takes on reception
+                     of a frame."
+    SYNTAX          INTEGER {
+                        disabled   (1),
+                        blocking   (2),
+                        listening  (3),
+                        learning   (4),
+                        forwarding (5),
+                        broken     (6),
+                        discarding (7)
+                    }
+
+StpPortRole ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "the stp portrole defined by the Rapid Spanning Tree
+                     Protocol."
+
+    SYNTAX          INTEGER {
+                        master     (0),
+                        root       (1),
+                        designated (2),
+                        alternate  (3),
+                        backup     (4),
+                        disabled   (5)
+                    }
+
+StpProtocol ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "indicates all possible version of the stp protocol."
+    SYNTAX          INTEGER {
+                        notApplicable (0),
+                        stp           (1),
+                        rstp          (2),
+                        mstp          (3)
+                    }
+
+MfibLocation ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "MfibLocation represents the type of local 'interface':
+                     -'sap': sap interface
+                     -'sdp': mesh-sdp or spoke-sdp interface."
+    SYNTAX          INTEGER {
+                        sap (1),
+                        sdp (2)
+                    }
+
+MfibGrpSrcFwdOrBlk ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "MfibGrpSrcFwdOrBlk describes whether traffic for the
+                     related source-group is to be forwarded or blocked."
+    SYNTAX          INTEGER {
+                        forward (1),
+                        block   (2)
+                    }
+
+MvplsPruneState ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Managed VPLS (mVPLS): state of a SAP or spoke-SDP in a
+                     user VPLS (uVPLS).
+                     - notApplicable :
+                       the SAP or spoke SDP of a uVPLS is not managed by a SAP
+                       or spoke SDP of a mVPLS.
+                     - notPruned:
+                       the SAP or spoke SDP of a uVPLS is managed by a mVPLS,
+                       but the link is not pruned.
+                     -pruned
+                       the SAP or spoke SDP of a uVPLS is managed by a mVPLS,
+                       but the link is pruned as a result of an STP decision
+                       taken in the STP instance running in the mVPLS."
+    SYNTAX          INTEGER {
+                        notApplicable (1),
+                        notPruned     (2),
+                        pruned        (3)
+                    }
+
+TQosQueueAttribute ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Indicates attributes of a QoS queue"
+    SYNTAX          BITS {
+                        cbs          (0),
+                        cir          (1),
+                        cirAdaptRule (2),
+                        mbs          (3),
+                        pir          (4),
+                        pirAdaptRule (5),
+                        hiPrioOnly   (6),
+                        avgOverhead  (7), --egress only
+                        weight       (8),
+                        cirWeight    (9),
+                        pirPercent   (10),
+                        cirPercent   (11)
+                    }
+
+TVirtSchedAttribute ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Indicates attributes of a virtual scheduler"
+    SYNTAX          BITS {
+                        cir       (0),
+                        pir       (1),
+                        summedCir (2)
+                    }
+
+MstiInstanceId ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "indicates all possible multiple spanning tree instances,
+                     not including the CIST."
+    SYNTAX          Unsigned32 (1..4094)
+
+MstiInstanceIdOrZero ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "indicates all possible multiple spanning tree instances,
+                     including the CIST (for which case the value '0' is 
+                     reserved)."
+    SYNTAX          Unsigned32 (0..4094)
+
+DhcpLseStateInfoOrigin ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Indicates the originator of the provided information."
+    SYNTAX          INTEGER {
+                        none            (0),
+                        dhcp            (1),
+                        radius          (2),
+                        retailerRadius  (3),
+                        retailerDhcp    (4),
+                        default         (5), 
+                        localUserDb     (6),
+                        gtp             (7), -- GPRS Tunneling Protocol, WLAN GW
+                        localPool       (8),
+                        wpp             (9),
+                        diameter       (10),
+                        dtc            (11)
+                    }
+
+IAIDType ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Indicates the type of the addresses that are associated
+                     with the Identity Association ID (IAID)"
+    SYNTAX          INTEGER {
+                        undefined     (0),
+                        temporary     (1), -- IAID for temporary addresses,
+                                           -- as defined in RFC 3041
+                        non-temporary (2), -- IAID for non-temporary addresses
+                        prefix        (3)  -- IAID for prefixes
+                    }
+
+TdmOptionsSigPkts ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Encodes support for the cpipe circuit emulation (CE)
+                     application signaling packets:
+                     - 'noSigPkts' :
+                       for a cpipe that does not use signalling packets.
+                     - 'dataPkts' :
+                       for a cpipe carrying TDM data packets and expecting CE
+                       application signalling packets in a separate cpipe.
+                     - 'sigPkts' :
+                       for a cpipe carrying CE application signalling packets
+                       with the data packets in a separate cpipe.
+                     - 'dataAndSigPkts' :
+                       for a cpipe carrying TDM data and CE application
+                       signalling on the same cpipe."
+
+    SYNTAX          INTEGER {
+                        noSigPkts      (0),
+                        dataPkts       (1),
+                        sigPkts        (2),
+                        dataAndSigPkts (3)
+                    }
+
+TdmOptionsCasTrunkFraming ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "Encodes the CEM SAPs CAS trunk framing type:
+                     - 'noCas' :
+                       for all CEM SAPs except 'nxDS0WithCas'.
+                     - 'e1Trunk' :
+                       for a 'nxDS0WithCas' SAP with E1 trunk.
+                     - 't1EsfTrunk' :
+                       for a 'nxDS0WithCas' SAP with T1 ESF trunk.
+                     - 't1SfTrunk' :
+                       for a 'nxDS0WithCas' SAP with T1 SF trunk."
+    SYNTAX          INTEGER {
+                        noCas      (0),
+                        e1Trunk    (1),
+                        t1EsfTrunk (2),
+                        t1SfTrunk  (3)
+                    }
+
+CemSapReportAlarm ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The CemSapReportAlarm data type indicates the type of CEM SAP alarm:
+         strayPkts     - receiving stray packets.
+         malformedPkts - detecting malformed packets.
+         pktLoss       - experiencing packet loss.
+         bfrOverrun    - experiencing jitter buffer overrun.
+         bfrUnderrun   - experiencing jitter buffer underrun.
+         rmtPktLoss    - remote packet loss indication.
+         rmtFault      - remote TDM fault indication.
+         rmtRdi        - remote RDI indication."
+    SYNTAX          BITS {
+                        notUsed       (0),
+                        strayPkts     (1),
+                        malformedPkts (2),
+                        pktLoss       (3),
+                        bfrOverrun    (4),
+                        bfrUnderrun   (5),
+                        rmtPktLoss    (6),
+                        rmtFault      (7),
+                        rmtRdi        (8)
+                    }
+ 
+CemSapEcid ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     "The Emulated Circuit Identifier (ECID) is a 20 bit
+                     unsigned binary field containing an identifier for the
+                     circuit being emulated.  ECIDs have local significance
+                     only and are associated with a specific MAC address.
+                     Therefore the SAP can have a different ECID for each
+                     direction."
+    SYNTAX          Unsigned32 (0..1048575)
+                     
+SdpBFHundredthsOfPercent ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The percentage of total SDP bandwidth reserved for SDP bindings 
+         with two decimal places accuracy."
+    SYNTAX      Integer32 (1..10000)
+
+SdpBindBandwidth ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "The required SDP binding bandwidth, in kbps."
+    SYNTAX       Unsigned32 (0..100000000)
+
+
+L2ptProtocols ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The L2ptProtocols indicates which L2 protocols should have their tunnels
+         terminated when 'L2ptTermination' is enabled.
+         stp           - spanning tree protocols stp/mstp/pvst/rstp
+         cdp           - cisco discovery protocol
+         vtp           - virtual trunk protocol
+         dtp           - dynamic trunking protocol     
+         pagp          - port aggregation protocol
+         udld          - unidirectional link detection"
+
+    SYNTAX          BITS {
+                        stp       (0),
+                        cdp       (1),
+                        vtp       (2),
+                        dtp       (3),
+                        pagp      (4),
+                        udld      (5)
+                    }
+
+ConfigStatus ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The ConfigStatus indicates the status of the configuration for
+         the purpose of notifications."
+    SYNTAX          INTEGER {
+                        created  (1),
+                        modified (2),
+                        deleted  (3)
+                    }
+
+ServAccessLocation ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     
+            "ServAccessLocation represents the type of local 'access point':
+                     -'sap'  : sap 
+                     -'spoke': spoke-sdp ."
+    SYNTAX          INTEGER {
+                        sap (1),
+                        spoke (2)
+                    }
+
+ServShcvOperState ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION     
+            "ServShcvOperState represents the operational state 
+              of the subscriber host connectivity verification."
+    SYNTAX          INTEGER {
+                        disabled  (1),
+                        undefined (2),
+                        down      (3),
+                        up        (4)
+                    }
+
+TMrpPolicyDefaultAction ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "action to take on the traffic when no mrp-policy filter entry matches.
+
+         when set to block(1), no MMRP attributes will be advertised unless 
+         there is a specific mrp-policy entry which causes them to be advertised
+         on this SAP/SDP.
+
+         when set to allow(2), all MMRP attributes will be advertised unless 
+         there is a specific mrp-policy entry which causes them to be blocked
+         on this SAP/SDP.
+        "
+    SYNTAX INTEGER { block(1), allow(2) }
+
+TMrpPolicyAction ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "action to take on the traffic when the mrp-policy filter entry matches.
+
+         when set to block(1) the matching MMRP attributes will not be 
+         advertised on this SAP/SDP. 
+
+         when set to allow(2) the matching MMRP attributes will be 
+         advertised on this SAP/SDP. 
+
+         when set to end-station(3) an end-station emulation is present on this 
+         SAP/SDP for the MMRP attributes related with matching ISIDs. 
+
+         When set to none(0) the mrp-policy entry will be considered incomplete
+         and hence rendered inactive.
+        "
+    SYNTAX INTEGER { none(0), block(1), allow(2), end-station(3) }
+    
+XhaulSiteId ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "A number used to identify a site. This ID must be unique within the
+        service-domain.
+        
+        The value of -1 is used as 'undefined'."
+    SYNTAX       Integer32 (-1|1..65535)
+    
+
+-- --------------------------------------------------------------------
+-- Objects in the XHAUL-SERV-MIB
+-- --------------------------------------------------------------------
+
+-- --------------------------------------------------------------------
+-- Service related objects
+-- --------------------------------------------------------------------
+-- ------------------------------
+-- xhaulSvcObjs group
+-- ------------------------------
+svcNumEntries OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The current number of services configured on this node."
+    ::= { xhaulSvcObjs 1 }
+
+-- --------------------------------
+-- Base Service Table
+-- --------------------------------
+svcBaseInfoTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF SvcBaseInfoEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "A table that contains basic service information."
+    ::= { xhaulSvcObjs 2 }
+
+svcBaseInfoEntry OBJECT-TYPE
+    SYNTAX          SvcBaseInfoEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "Basic information about a specific service."
+    INDEX           { svcId }
+    ::= { svcBaseInfoTable 1 }
+
+SvcBaseInfoEntry ::=
+    SEQUENCE {
+        svcId                 XhaulServId,
+        svcRowStatus          RowStatus,
+        svcType               ServType,     
+        svcIpRouting          XhaulEnabledDisabled,
+        svcDescription        ServObjDesc,
+        svcMtu                INTEGER,
+        svcAdminStatus        ServiceAdminStatus,
+        svcOperStatus         ServiceOperStatus,
+        svcNumSaps            Integer32,
+        svcNumSdps            Integer32,
+        svcLastMgmtChange     TimeStamp,      
+        svcVRouterId          XhaulVRtrIDOrZero,       
+        svcLastStatusChange   TimeStamp,       
+        svcName               TLNamedItemOrEmpty
+    }
+
+svcId OBJECT-TYPE
+    SYNTAX          XhaulServId
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of the object svcId specifies the
+                     Service identifier. This value should be unique within the
+                     service domain."
+    ::= { svcBaseInfoEntry 1 }
+
+svcRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "This value of the object  svcRowStatus specifies the
+                     status of this row.
+
+                     To delete an entry from this table, the corresponding
+                     service must be administratively down, have no SAP's
+                     defined on it, and have no SDP bindings.
+
+                     For svcType 'vprn', the service can be associated
+                     with a routing instance by specifying svcVRouterId
+                     during the creation of the service."
+
+    ::= { svcBaseInfoEntry 2 }
+
+svcType OBJECT-TYPE
+    SYNTAX          ServType
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The value of the object svcType specifies the service
+                     type: e.g. epipe, tls, etc. The value of this object
+                     must be specified when the row is created and cannot be
+                     changed while the row status is 'active'."
+    ::= { svcBaseInfoEntry 3 }
+
+svcIpRouting OBJECT-TYPE
+    SYNTAX          XhaulEnabledDisabled 
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The value of the object svcIpRouting specifies, for a
+                     'tls' service, whether IP routing is enabled.
+                     For 'epipe', 'p3pipe', 'apipe', 'fpipe', 'ipipe'
+                     and 'cpipe' services, this object cannot be set and has
+                     the value 'disabled', whereas for 'vprn' and 'ies'
+                     services the value is 'enabled' and cannot be set either.
+                     For 'tls' services the value of this object must be
+                     specified when the row is created and cannot be changed
+                     while the row status is 'active'."
+    ::= { svcBaseInfoEntry 5 }
+
+svcDescription OBJECT-TYPE
+    SYNTAX          ServObjDesc
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The value of the object svcDescription specifiers an
+                     optional, generic information about this service."
+    DEFVAL          { "" }
+    ::= { svcBaseInfoEntry 6 }
+
+svcMtu OBJECT-TYPE
+    SYNTAX          INTEGER (0..9194)
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The value of the object svcMtu specifies the largest frame
+                     size (in octets) that this service can handle.
+
+                     Setting svcMtu to a value of zero (0), causes the agent
+                     to recalculate the default MTU size.
+
+                     The default value of this object depends on the service
+                     type:
+                     1514 octets for epipe, p3pipe and tls, 1508 for apipe
+                     and fpipe, and 1500 octets for vprn, ipipe and ies, 1514
+                     octets for cpipe."
+    ::= { svcBaseInfoEntry 7 }
+
+svcAdminStatus OBJECT-TYPE
+    SYNTAX          ServiceAdminStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The value of the object svcAdminStatus specifies the
+                     desired state of this service."
+    DEFVAL          { down }
+    ::= { svcBaseInfoEntry 8 }
+
+svcOperStatus OBJECT-TYPE
+    SYNTAX          ServiceOperStatus
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of the object svcOperStatus indicates the
+                     operating state of this service. The requirements for a
+                     service to be operationally up depend on the service type:
+
+                     epipe, p3pipe, apipe, fpipe, ipipe and cpipe services are
+                     'up' when the service is administratively up and either
+                     both SAP's or a SAP and a spoke SDP Bind are operationally
+                     up.
+
+                     tls services are 'up' when the service is
+                     administratively up and either at least one SAP or
+                     spoke SDP Bind or one mesh SDP Bind is operationally up.
+
+                     ies services are 'up' when the service is
+                     administratively up and at least one interface is
+                     operationally up.
+                     
+                     vprn services are 'up' when the service is
+                     administratively up however routing functionality is
+                     available only when XHAUL-VRTR-MIB::vRtrOperState is
+                     'up'."
+    ::= { svcBaseInfoEntry 9 }
+
+svcNumSaps OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of the object svcNumSaps indicates the number of
+                     SAPs defined on this service."
+    ::= { svcBaseInfoEntry 10 }
+
+svcNumSdps OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of the object svcNumSdps indicates the number of
+                     SDPs bound to this service."
+    ::= { svcBaseInfoEntry 11 }
+
+svcLastMgmtChange OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of of the object svcLastMgmtChange indicates
+                     the value of sysUpTime at the time of the most recent
+                     management-initiated change to this service."
+    ::= { svcBaseInfoEntry 12 }
+
+svcVRouterId OBJECT-TYPE
+    SYNTAX          XhaulVRtrIDOrZero
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The value of the object svcVRouterId specifies, for a IES
+                     or VPRN service the associated virtual router instance
+                     where its interfaces are defined.
+
+                     This object has a special significance for the VPRN
+                     service as it can be used to associate the service to a
+                     specific virtual router instance.
+
+                     If no routing instance is specified or a value of zero (0)
+                     is specified, the agent will assign the vRtrID index value
+                     that would have been returned by the vRtrNextVRtrID object
+                     in the XHAUL-VRTR-MIB. The agent supports an SNMP SET
+                     operation to the svcVRouterId object only during
+                     row creation."
+    DEFVAL { 0 }
+    ::= { svcBaseInfoEntry 15 }
+
+
+svcLastStatusChange OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of the object svcLastStatusChange indicates the
+                     value of sysUpTime at the time of the most recent
+                     operating status change to his service."
+    ::= { svcBaseInfoEntry 17 }
+
+
+svcName OBJECT-TYPE
+    SYNTAX          TLNamedItemOrEmpty
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The value of the svcName specifies the name of the service.
+                     This value should be unique within the service domain."
+    DEFVAL { ''H }
+    ::= { svcBaseInfoEntry 29 }   
+    
+
+
+-- ----------------------------------------------------------------------------
+-- Conformance Information
+-- ----------------------------------------------------------------------------
+
+xhaulSvcCompliances  OBJECT IDENTIFIER ::= { xhaulSvcConformance 1 }
+xhaulSvcGroups       OBJECT IDENTIFIER ::= { xhaulSvcConformance 2 }
+
+-- ----------------------------------------------
+-- Compliance Statements
+-- ----------------------------------------------
+
+
+END

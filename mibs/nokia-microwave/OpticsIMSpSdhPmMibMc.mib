@@ -1,0 +1,3820 @@
+OPTICSIM-SDH-PM-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, 
+       Integer32, Unsigned32, Gauge32 FROM SNMPv2-SMI
+       RowStatus FROM SNMPv2-TC
+       ifIndex FROM IF-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP FROM SNMPv2-CONF
+       OpticsIMPmIndex, OpticsIMPmElapsedTime, OpticsIMPmGranularityPeriod,
+       OpticsIMPmMaxSuppressedIntervals, OpticsIMPmNumSuppressedIntervals, 
+       OpticsIMPmSuspectIntervalFlag, OpticsIMPmThresholdDataInstance, 
+       OpticsIMPmPeriodTime, OpticsIMThrIndexNext2 FROM  OPTICSIM-COMMON-TC
+       opticsimSdhPdhMib,opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB
+       TsdimManagerType, OpticsIMUserLabel FROM TSDIM-SNMP-TC;
+
+ opticsIMSdhPmMib MODULE-IDENTITY
+       LAST-UPDATED "1509040000Z"
+       ORGANIZATION "Alcatel TND"
+       CONTACT-INFO "Alcatel TND"
+       DESCRIPTION
+        "	D.Spreafico: 
+	- added pmRsMonitoringCDLps to opticsIMRsMonitoringCurrentDataTable
+     - added pmRsMonitoringHDLps to opticsIMRsMonitoringHistoryDataTable
+	- added pmRsMonitoringLpsHighThr and pmRsMonitoringLpsLowThr          to opticsIMRsMonitoringThresholdDataTable 
+	- added pmRsMonitoringOfsHighThr, pmRsMonitoringOfsLowThr, pmRsMonitoringLpsHighThr and pmRsMonitoringLpsLowhThr on 
+opticsIMRsMonitoringThresholdDataTable "
+
+       REVISION "1009300000Z"
+       DESCRIPTION
+                "Updating for some compilation bugs"
+
+       REVISION "1004010000Z"
+       DESCRIPTION
+                "Added opticsIMRsMonitoringCurrentDataTable, opticsIMRsMonitoringHistoryDataTable and opticsIMRsMonitoringThresholdDataTable"
+
+       REVISION "0808070000Z"
+       DESCRIPTION
+                "Fixed inconsistency in GROUP name"
+
+       REVISION "0404300000Z"
+       DESCRIPTION
+                "Added new table for Multiplex Section and SDH Vc4 and Vc3 Performance Monitoring."
+
+       REVISION "0303140000Z"
+       DESCRIPTION
+                "Change of some syntax types due to renaming of Common PM Textual Conventions."
+
+       REVISION "0201250000Z"
+       DESCRIPTION
+                "Import of TSDIM-PM-MIB substituted by OPTICSIM-COMMON-TC, deletion of  
+                 pmRsUasHighThr,  pmRsUasLowThr, pmRsOfsHighThr and pmRsOfsLowThr objects"
+
+       REVISION "0110190000Z"
+       DESCRIPTION
+                "Initial Release of SDH PM MIB"
+ ::= {  opticsimSdhPdhMib  5}
+
+
+opticsIMSdhPmMibObject      OBJECT IDENTIFIER ::= { opticsIMSdhPmMib 1 }
+
+
+opticsIMRsCurrentDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMRsCurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+             "This table contains the current data for the SDH Regenerator  Section. "
+::= { opticsIMSdhPmMibObject 1 }
+
+opticsIMRsCurrentDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMRsCurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry of the SDH regenerator section current data table. 
+
+            An unavailable condition starts when 10 consecutive severely errored seconds have been 
+            detected; these 10 seconds belong to the unavailable time. An unavailable condition 
+            ends when 10 consecutive seconds with no severely errored second are detected. 
+            These 10 seconds belong to  the available time.   
+            If an unavailable period is ending then the UAT Clear shall be sent.
+
+            These performance event counts are inhibited during unavailable time.
+
+            In the objects where a Default Value is specified, the write operation is allowed only to the 
+            indicated default value.
+            The write operation to one counter is applied to all the counters of all the the associated objects, 
+            which have a defined default."
+       INDEX          {  ifIndex, pmRsCDIndex}
+       ::= { opticsIMRsCurrentDataTable 1 }   
+
+OpticsIMRsCurrentDataEntry ::= SEQUENCE {
+   pmRsCDIndex                                OpticsIMPmIndex,
+   pmRsCDElapsedTime                    OpticsIMPmElapsedTime,
+   pmRsCDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmRsCDMaxSuppressedIntervals OpticsIMPmMaxSuppressedIntervals, 
+   pmRsCDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals,
+   pmRsCDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmRsCDThresholdDataInstance   OpticsIMPmThresholdDataInstance,
+   pmRsCDStartByOS                       TsdimManagerType,
+   pmRsCDSes                                  Gauge32,
+   pmRsCDUas                                  Gauge32,
+   pmRsCDBbe                                  Gauge32,
+   pmRsCDEs                                    Gauge32,
+   pmRsCDOfs                                   Gauge32,
+   pmRsCDRowStatus                       RowStatus,
+   pmRsCDAsapIndex                       Integer32
+   }
+
+pmRsCDIndex OBJECT-TYPE
+       SYNTAX OpticsIMPmIndex
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "See Textual Conventions."
+::= { opticsIMRsCurrentDataEntry 1 }
+
+pmRsCDElapsedTime OBJECT-TYPE
+       SYNTAX OpticsIMPmElapsedTime
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsCurrentDataEntry 2 }
+
+pmRsCDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsCurrentDataEntry 3 }
+
+pmRsCDMaxSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmMaxSuppressedIntervals
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsCurrentDataEntry 4 }
+
+pmRsCDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsCurrentDataEntry 5 }
+
+pmRsCDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+       DEFVAL {1} -- True
+::= { opticsIMRsCurrentDataEntry 6 }
+
+pmRsCDThresholdDataInstance OBJECT-TYPE
+       SYNTAX  OpticsIMPmThresholdDataInstance
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsCurrentDataEntry 7 }
+
+pmRsCDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMRsCurrentDataEntry 8 }
+
+pmRsCDSes OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+       DEFVAL {0} 
+::= { opticsIMRsCurrentDataEntry 9 }
+
+pmRsCDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+       DEFVAL {0} 
+::= { opticsIMRsCurrentDataEntry 10 }
+
+pmRsCDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+       DEFVAL {0} 
+::= { opticsIMRsCurrentDataEntry 11 }
+
+pmRsCDEs  OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+       DEFVAL {0} 
+::= { opticsIMRsCurrentDataEntry 12 }
+
+pmRsCDOfs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of OFS."
+       DEFVAL {0} 
+::= { opticsIMRsCurrentDataEntry 13 }
+
+pmRsCDRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+         "When an entry of this table is deleted the corresponding entries of HD table are deleted.
+
+          When an entry of this table is put to not in service, the measures of this CD are frozen, that is all
+          the counters are stopped."
+::= { opticsIMRsCurrentDataEntry 14 }
+
+pmRsCDAsapIndex OBJECT-TYPE
+       SYNTAX Integer32 
+       MAX-ACCESS read-create 
+       STATUS current
+       DESCRIPTION
+         "It indicates the ASAP object associated to this CD."
+::= { opticsIMRsCurrentDataEntry 15 }
+
+opticsIMRsHistoryDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMRsHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the History data for the SDH Regenerator Section. "
+::= { opticsIMSdhPmMibObject 2 }
+
+opticsIMRsHistoryDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMRsHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "One entry of this table is created at the end of the time interval of the related CD (defined by 
+            granularity Period).
+
+            At most n entries of opticsIMRsHistoryDataTable can be created indexed by the indexes of the 
+            corresponding CD entry and by the time of the measure (pmRsHDPeriodEndTime). 
+
+            This set of n entries is wrapped, when the n+1 measure is provided. 
+            The n+1 measure is written in the row of the table indexed by the smallest value of 
+             PeriodEndTime. "
+       INDEX       { ifIndex, pmRsCDIndex, pmRsHDPeriodEndTime }
+::= { opticsIMRsHistoryDataTable 1 }
+
+OpticsIMRsHistoryDataEntry ::= SEQUENCE {
+   pmRsHDElapsedTime                    OpticsIMPmElapsedTime,
+   pmRsHDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmRsHDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals, 
+   pmRsHDPeriodEndTime                OpticsIMPmPeriodTime,
+   pmRsHDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmRsHDStartByOS                        TsdimManagerType,
+   pmRsHDSes                                   Gauge32,
+   pmRsHDUas                                   Gauge32,
+   pmRsHDBbe                                   Gauge32,
+   pmRsHDEs                                     Gauge32,
+   pmRsHDOfs                                    Gauge32
+   }
+
+pmRsHDElapsedTime OBJECT-TYPE
+     SYNTAX OpticsIMPmElapsedTime
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+          "See Textual Conventions."
+::= { opticsIMRsHistoryDataEntry 1 }
+
+pmRsHDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsHistoryDataEntry 2 }
+
+pmRsHDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsHistoryDataEntry 3 }
+
+pmRsHDPeriodEndTime OBJECT-TYPE
+       SYNTAX OpticsIMPmPeriodTime
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsHistoryDataEntry 4 }
+
+pmRsHDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsHistoryDataEntry 5 }
+
+pmRsHDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMRsHistoryDataEntry 6 }
+
+pmRsHDSes     OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+::= { opticsIMRsHistoryDataEntry 7 }
+
+pmRsHDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+::= { opticsIMRsHistoryDataEntry 8 }
+
+pmRsHDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+::= { opticsIMRsHistoryDataEntry 9 }
+
+pmRsHDEs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+::= { opticsIMRsHistoryDataEntry 10 }
+
+pmRsHDOfs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of OFS."
+::= { opticsIMRsHistoryDataEntry 11 }
+
+
+opticsIMRsThresholdDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMRsThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the Threshold Data used for the SDH Regenerator Section PM. "
+::= { opticsIMSdhPmMibObject 3 }
+
+opticsIMRsThresholdDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMRsThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry in the RS Threshold Data table. "
+       INDEX          {  pmRsThrIndex }
+::= { opticsIMRsThresholdDataTable 1 }
+
+OpticsIMRsThresholdDataEntry ::= SEQUENCE {
+   pmRsThrIndex             Integer32,
+   pmRsSesHighThr        Unsigned32,
+   pmRsSesLowThr         Unsigned32,
+   pmRsBbeHighThr        Unsigned32,
+   pmRsBbeLowThr         Unsigned32,
+   pmRsEsHighThr          Unsigned32,
+   pmRsEsLowThr           Unsigned32,
+   pmRsUserLabel           OpticsIMUserLabel,
+   pmRsRowStatus          RowStatus
+   }
+
+pmRsThrIndex OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "The index of this table."
+::= { opticsIMRsThresholdDataEntry 1 }
+
+pmRsSesHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMRsThresholdDataEntry 2 }
+
+pmRsSesLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMRsThresholdDataEntry 3 }
+
+pmRsBbeHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMRsThresholdDataEntry 6 }
+
+pmRsBbeLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMRsThresholdDataEntry 7 }
+
+pmRsEsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMRsThresholdDataEntry 8 }
+
+pmRsEsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMRsThresholdDataEntry 9 }
+
+pmRsUserLabel OBJECT-TYPE
+       SYNTAX OpticsIMUserLabel
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsThresholdDataEntry 12 }
+
+pmRsRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The deletion of this entry is refused in case one or more CD
+          entries point to this object (by means of   pmRsCDThresholdDataInstance)."
+::= { opticsIMRsThresholdDataEntry 13 }
+
+
+opticsIMRsThrIndexNext OBJECT-TYPE
+       SYNTAX OpticsIMThrIndexNext2
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions (in this case it is applied to SDH  Regenerator Section)."
+::= { opticsIMSdhPmMibObject 6 }
+
+opticsIMMsNECurrentDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMMsNECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+             "This table contains the current data for the SDH Multiplex Section Near End."
+::= { opticsIMSdhPmMibObject 7 }
+
+opticsIMMsNECurrentDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMMsNECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry of the SDH multiplex section Near End current data table. 
+
+            An unavailable condition starts when 10 consecutive severely errored seconds have been 
+            detected; these 10 seconds belong to the unavailable time. An unavailable condition 
+            ends when 10 consecutive seconds with no severely errored second are detected. 
+            These 10 seconds belong to  the available time.   
+            If an unavailable period is ending then the UAT Clear shall be sent.
+
+            These performance event counts are inhibited during unavailable time.
+
+            In the objects where a Default Value is specified, the write operation is allowed only to the 
+            indicated default value.
+            The write operation to one counter is applied to all the counters of all the the associated objects, 
+            which have a defined default."
+       INDEX          {  ifIndex, pmMsNECDIndex}
+       ::= { opticsIMMsNECurrentDataTable 1 }   
+
+OpticsIMMsNECurrentDataEntry ::= SEQUENCE {
+   pmMsNECDIndex                                OpticsIMPmIndex,
+   pmMsNECDElapsedTime                    OpticsIMPmElapsedTime,
+   pmMsNECDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmMsNECDMaxSuppressedIntervals OpticsIMPmMaxSuppressedIntervals, 
+   pmMsNECDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals,
+   pmMsNECDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmMsNECDThresholdDataInstance   OpticsIMPmThresholdDataInstance,
+   pmMsNECDStartByOS                       TsdimManagerType,
+   pmMsNECDSes                                  Gauge32,
+   pmMsNECDUas                                  Gauge32,
+   pmMsNECDBbe                                  Gauge32,
+   pmMsNECDEs                                    Gauge32,
+   pmMsNECDRowStatus                       RowStatus,
+   pmMsNECDAsapIndex                       Integer32
+   }
+
+pmMsNECDIndex OBJECT-TYPE
+       SYNTAX OpticsIMPmIndex
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "See Textual Conventions."
+::= { opticsIMMsNECurrentDataEntry 1 }
+
+pmMsNECDElapsedTime OBJECT-TYPE
+       SYNTAX OpticsIMPmElapsedTime
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNECurrentDataEntry 2 }
+
+pmMsNECDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNECurrentDataEntry 3 }
+
+pmMsNECDMaxSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmMaxSuppressedIntervals
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNECurrentDataEntry 4}
+
+pmMsNECDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNECurrentDataEntry 5 }
+
+pmMsNECDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+       DEFVAL {1} -- True
+::= { opticsIMMsNECurrentDataEntry 6 }
+
+pmMsNECDThresholdDataInstance OBJECT-TYPE
+       SYNTAX  OpticsIMPmThresholdDataInstance
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNECurrentDataEntry 7 }
+
+pmMsNECDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMMsNECurrentDataEntry 8 }
+
+pmMsNECDSes OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+       DEFVAL {0} 
+::= { opticsIMMsNECurrentDataEntry 9 }
+
+pmMsNECDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+       DEFVAL {0} 
+::= { opticsIMMsNECurrentDataEntry 10 }
+
+pmMsNECDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+       DEFVAL {0} 
+::= { opticsIMMsNECurrentDataEntry 11 }
+
+pmMsNECDEs  OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+       DEFVAL {0} 
+::= { opticsIMMsNECurrentDataEntry 12 }
+
+pmMsNECDRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+         "When an entry of this table is deleted the corresponding entries of HD table are deleted.
+
+          When an entry of this table is put to not in service, the measures of this CD are frozen, that is all
+          the counters are stopped."
+::= { opticsIMMsNECurrentDataEntry 13 }
+
+pmMsNECDAsapIndex OBJECT-TYPE
+       SYNTAX Integer32 
+       MAX-ACCESS read-create 
+       STATUS current
+       DESCRIPTION
+         "It indicates the ASAP object associated to this CD."
+::= { opticsIMMsNECurrentDataEntry 14 }
+
+ 
+
+opticsIMMsNEHistoryDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMMsNEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the History data for the SDH Multiplex Section Near End."
+::= { opticsIMSdhPmMibObject 8 }
+
+opticsIMMsNEHistoryDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMMsNEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+             "One entry of this table is created at the end of the time interval of the related CD (defined by 
+            granularity Period).
+
+            At most n entries of opticsIMMsNEHistoryDataTable can be created indexed by the indexes of 
+            the corresponding CD entry and by the time of the measure (pmMsNEHDPeriodEndTime). 
+
+            This set of n entries is wrapped, when the n+1 measure is provided. 
+            The n+1 measure is written in the row of the table indexed by the smallest value of 
+             PeriodEndTime. "
+       INDEX       { ifIndex, pmMsNECDIndex, pmMsNEHDPeriodEndTime }
+::= { opticsIMMsNEHistoryDataTable 1 }
+
+OpticsIMMsNEHistoryDataEntry ::= SEQUENCE {
+   pmMsNEHDElapsedTime                    OpticsIMPmElapsedTime,
+   pmMsNEHDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmMsNEHDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals, 
+   pmMsNEHDPeriodEndTime                OpticsIMPmPeriodTime,
+   pmMsNEHDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmMsNEHDStartByOS                        TsdimManagerType,
+   pmMsNEHDSes                                   Gauge32,
+   pmMsNEHDUas                                   Gauge32,
+   pmMsNEHDBbe                                   Gauge32,
+   pmMsNEHDEs                                     Gauge32
+}
+
+pmMsNEHDElapsedTime OBJECT-TYPE
+     SYNTAX OpticsIMPmElapsedTime
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+          "See Textual Conventions."
+::= { opticsIMMsNEHistoryDataEntry 1 }
+
+pmMsNEHDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNEHistoryDataEntry 2 }
+
+pmMsNEHDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNEHistoryDataEntry 3 }
+
+pmMsNEHDPeriodEndTime OBJECT-TYPE
+       SYNTAX OpticsIMPmPeriodTime
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNEHistoryDataEntry 4 }
+
+pmMsNEHDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNEHistoryDataEntry 5 }
+
+pmMsNEHDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMMsNEHistoryDataEntry 6 }
+
+pmMsNEHDSes     OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+::= { opticsIMMsNEHistoryDataEntry 7 }
+
+pmMsNEHDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+::= { opticsIMMsNEHistoryDataEntry 8 }
+
+pmMsNEHDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+::= { opticsIMMsNEHistoryDataEntry 9 }
+
+pmMsNEHDEs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+::= { opticsIMMsNEHistoryDataEntry 10 }
+
+opticsIMMsNEThresholdDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMMsNEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the Threshold Data used for the SDH Multiplex Section Near End PM. "
+::= { opticsIMSdhPmMibObject 9 }
+
+opticsIMMsNEThresholdDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMMsNEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry in the RS Threshold Data table. "
+       INDEX          {  pmMsNEThrIndex }
+::= { opticsIMMsNEThresholdDataTable 1 }
+
+OpticsIMMsNEThresholdDataEntry ::= SEQUENCE {
+   pmMsNEThrIndex             Integer32,
+   pmMsNESesHighThr        Unsigned32,
+   pmMsNESesLowThr         Unsigned32,
+   pmMsNEBbeHighThr        Unsigned32,
+   pmMsNEBbeLowThr         Unsigned32,
+   pmMsNEEsHighThr          Unsigned32,
+   pmMsNEEsLowThr           Unsigned32,
+   pmMsNEUserLabel           OpticsIMUserLabel,
+   pmMsNERowStatus          RowStatus
+   }
+
+pmMsNEThrIndex OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "The index of this table."
+::= { opticsIMMsNEThresholdDataEntry 1 }
+
+pmMsNESesHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMMsNEThresholdDataEntry 2 }
+
+pmMsNESesLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMMsNEThresholdDataEntry 3 }
+
+pmMsNEBbeHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMMsNEThresholdDataEntry 6 }
+
+pmMsNEBbeLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMMsNEThresholdDataEntry 7 }
+
+pmMsNEEsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMMsNEThresholdDataEntry 8 }
+
+pmMsNEEsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMMsNEThresholdDataEntry 9 }
+
+pmMsNEUserLabel OBJECT-TYPE
+       SYNTAX OpticsIMUserLabel
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsNEThresholdDataEntry 12 }
+
+pmMsNERowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The deletion of this entry is refused in case one or more CD
+          entries point to this object (by means of   pmMsNECDThresholdDataInstance)."
+::= { opticsIMMsNEThresholdDataEntry 13 }
+
+
+opticsIMMsNEThrIndexNext OBJECT-TYPE
+       SYNTAX OpticsIMThrIndexNext2
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions (in this case it is applied to SDH  Multiplex Section)."
+::= { opticsIMSdhPmMibObject 10 }
+
+opticsIMMsFECurrentDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMMsFECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+             "This table contains the current data for the SDH Multiplex Section Far End."
+::= { opticsIMSdhPmMibObject 11 }
+
+opticsIMMsFECurrentDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMMsFECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry of the SDH multiplex section Far End current data table. 
+
+            An unavailable condition starts when 10 consecutive severely errored seconds have been 
+            detected; these 10 seconds belong to the unavailable time. An unavailable condition 
+            ends when 10 consecutive seconds with no severely errored second are detected. 
+            These 10 seconds belong to  the available time.   
+            If an unavailable period is ending then the UAT Clear shall be sent.
+
+            These performance event counts are inhibited during unavailable time.
+
+            In the objects where a Default Value is specified, the write operation is allowed only to the 
+            indicated default value.
+            The write operation to one counter is applied to all the counters of all the the associated objects, 
+            which have a defined default."
+       INDEX          {  ifIndex, pmMsFECDIndex}
+       ::= { opticsIMMsFECurrentDataTable 1 }   
+
+OpticsIMMsFECurrentDataEntry ::= SEQUENCE {
+   pmMsFECDIndex                                OpticsIMPmIndex,
+   pmMsFECDElapsedTime                    OpticsIMPmElapsedTime,
+   pmMsFECDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmMsFECDMaxSuppressedIntervals OpticsIMPmMaxSuppressedIntervals, 
+   pmMsFECDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals,
+   pmMsFECDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmMsFECDThresholdDataInstance   OpticsIMPmThresholdDataInstance,
+   pmMsFECDStartByOS                       TsdimManagerType,
+   pmMsFECDSes                                  Gauge32,
+   pmMsFECDUas                                  Gauge32,
+   pmMsFECDBbe                                  Gauge32,
+   pmMsFECDEs                                    Gauge32,
+   pmMsFECDRowStatus                       RowStatus,
+   pmMsFECDAsapIndex                       Integer32
+   }
+
+pmMsFECDIndex OBJECT-TYPE
+       SYNTAX OpticsIMPmIndex
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "See Textual Conventions."
+::= { opticsIMMsFECurrentDataEntry 1 }
+
+pmMsFECDElapsedTime OBJECT-TYPE
+       SYNTAX OpticsIMPmElapsedTime
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFECurrentDataEntry 2 }
+
+pmMsFECDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFECurrentDataEntry 3 }
+
+pmMsFECDMaxSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmMaxSuppressedIntervals
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFECurrentDataEntry 4}
+
+pmMsFECDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFECurrentDataEntry 5 }
+
+pmMsFECDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+       DEFVAL {1} -- True
+::= { opticsIMMsFECurrentDataEntry 6 }
+
+pmMsFECDThresholdDataInstance OBJECT-TYPE
+       SYNTAX  OpticsIMPmThresholdDataInstance
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFECurrentDataEntry 7 }
+
+pmMsFECDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMMsFECurrentDataEntry 8 }
+
+pmMsFECDSes OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+       DEFVAL {0} 
+::= { opticsIMMsFECurrentDataEntry 9 }
+
+pmMsFECDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+       DEFVAL {0} 
+::= { opticsIMMsFECurrentDataEntry 10 }
+
+pmMsFECDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+       DEFVAL {0} 
+::= { opticsIMMsFECurrentDataEntry 11 }
+
+pmMsFECDEs  OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+       DEFVAL {0} 
+::= { opticsIMMsFECurrentDataEntry 12 }
+
+pmMsFECDRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+         "When an entry of this table is deleted the corresponding entries of HD table are deleted.
+
+          When an entry of this table is put to not in service, the measures of this CD are frozen, that is all
+          the counters are stopped."
+::= { opticsIMMsFECurrentDataEntry 13 }
+
+pmMsFECDAsapIndex OBJECT-TYPE
+       SYNTAX Integer32 
+       MAX-ACCESS read-create 
+       STATUS current
+       DESCRIPTION
+         "It indicates the ASAP object associated to this CD."
+::= { opticsIMMsFECurrentDataEntry 14 }
+
+
+opticsIMMsFEHistoryDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMMsFEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the History data for the SDH Multiplex Section Far End."
+::= { opticsIMSdhPmMibObject 12 }
+
+opticsIMMsFEHistoryDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMMsFEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "One entry of this table is created at the end of the time interval of the related CD (defined by 
+            granularity Period).
+            At most n entries of opticsIMMsFEHistoryDataTable can be created indexed by the indexes of the 
+            corresponding CD entry and by the time of the measure (pmMsFEHDPeriodEndTime). 
+            This set of n entries is wrapped, when the n+1 measure is provided. 
+            The n+1 measure is written in the row of the table indexed by the smallest value of 
+             PeriodEndTime. "
+       INDEX       { ifIndex, pmMsFECDIndex, pmMsFEHDPeriodEndTime }
+::= { opticsIMMsFEHistoryDataTable 1 }
+
+OpticsIMMsFEHistoryDataEntry ::= SEQUENCE {
+   pmMsFEHDElapsedTime                    OpticsIMPmElapsedTime,
+   pmMsFEHDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmMsFEHDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals, 
+   pmMsFEHDPeriodEndTime                OpticsIMPmPeriodTime,
+   pmMsFEHDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmMsFEHDStartByOS                        TsdimManagerType,
+   pmMsFEHDSes                                   Gauge32,
+   pmMsFEHDUas                                   Gauge32,
+   pmMsFEHDBbe                                   Gauge32,
+   pmMsFEHDEs                                     Gauge32
+}
+
+pmMsFEHDElapsedTime OBJECT-TYPE
+     SYNTAX OpticsIMPmElapsedTime
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+          "See Textual Conventions."
+::= { opticsIMMsFEHistoryDataEntry 1 }
+
+pmMsFEHDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFEHistoryDataEntry 2 }
+
+pmMsFEHDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFEHistoryDataEntry 3 }
+
+pmMsFEHDPeriodEndTime OBJECT-TYPE
+       SYNTAX OpticsIMPmPeriodTime
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFEHistoryDataEntry 4 }
+
+pmMsFEHDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFEHistoryDataEntry 5 }
+
+pmMsFEHDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMMsFEHistoryDataEntry 6 }
+
+pmMsFEHDSes     OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+::= { opticsIMMsFEHistoryDataEntry 7 }
+
+pmMsFEHDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+::= { opticsIMMsFEHistoryDataEntry 8 }
+
+pmMsFEHDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+::= { opticsIMMsFEHistoryDataEntry 9 }
+
+pmMsFEHDEs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+::= { opticsIMMsFEHistoryDataEntry 10 }
+
+opticsIMMsFEThresholdDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMMsFEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the Threshold Data used for the SDH Multiplex Section Far End PM. "
+::= { opticsIMSdhPmMibObject 13 }
+
+opticsIMMsFEThresholdDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMMsFEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry in the MS Far End Threshold Data table. "
+       INDEX          {  pmMsFEThrIndex }
+::= { opticsIMMsFEThresholdDataTable 1 }
+
+OpticsIMMsFEThresholdDataEntry ::= SEQUENCE {
+   pmMsFEThrIndex             Integer32,
+   pmMsFESesHighThr        Unsigned32,
+   pmMsFESesLowThr         Unsigned32,
+   pmMsFEBbeHighThr        Unsigned32,
+   pmMsFEBbeLowThr         Unsigned32,
+   pmMsFEEsHighThr          Unsigned32,
+   pmMsFEEsLowThr           Unsigned32,
+   pmMsFEUserLabel           OpticsIMUserLabel,
+   pmMsFERowStatus          RowStatus
+   }
+
+pmMsFEThrIndex OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "The index of this table."
+::= { opticsIMMsFEThresholdDataEntry 1 }
+
+pmMsFESesHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMMsFEThresholdDataEntry 2 }
+
+pmMsFESesLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMMsFEThresholdDataEntry 3 }
+
+pmMsFEBbeHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMMsFEThresholdDataEntry 6 }
+
+pmMsFEBbeLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMMsFEThresholdDataEntry 7 }
+
+pmMsFEEsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMMsFEThresholdDataEntry 8 }
+
+pmMsFEEsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMMsFEThresholdDataEntry 9 }
+
+pmMsFEUserLabel OBJECT-TYPE
+       SYNTAX OpticsIMUserLabel
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMMsFEThresholdDataEntry 12 }
+
+pmMsFERowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The deletion of this entry is refused in case one or more CD
+          entries point to this object (by means of   pmMsFECDThresholdDataInstance)."
+::= { opticsIMMsFEThresholdDataEntry 13 }
+
+
+opticsIMMsFEThrIndexNext OBJECT-TYPE
+       SYNTAX OpticsIMThrIndexNext2
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions (in this case it is applied to SDH  Multiplex Section)."
+::= { opticsIMSdhPmMibObject 14 }
+
+opticsIMVc4NECurrentDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc4NECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+             "This table contains the current data for the SDH Vc4 Near End "
+::= { opticsIMSdhPmMibObject 15 }
+
+opticsIMVc4NECurrentDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc4NECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry of the SDH Vc4 Near End current data table. 
+            An unavailable condition starts when 10 consecutive severely errored seconds have been 
+            detected; these 10 seconds belong to the unavailable time. An unavailable condition 
+            ends when 10 consecutive seconds with no severely errored second are detected. 
+            These 10 seconds belong to  the available time.   
+            If an unavailable period is ending then the UAT Clear shall be sent.
+            These performance event counts are inhibited during unavailable time.
+            In the objects where a Default Value is specified, the write operation is allowed only to the 
+            indicated default value.
+            The write operation to one counter is applied to all the counters of all the the associated objects, 
+            which have a defined default."
+       INDEX          {  ifIndex, pmVc4NECDIndex}
+       ::= { opticsIMVc4NECurrentDataTable 1 }   
+
+OpticsIMVc4NECurrentDataEntry ::= SEQUENCE {
+   pmVc4NECDIndex                                OpticsIMPmIndex,
+   pmVc4NECDElapsedTime                    OpticsIMPmElapsedTime,
+   pmVc4NECDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmVc4NECDMaxSuppressedIntervals OpticsIMPmMaxSuppressedIntervals, 
+   pmVc4NECDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals,
+   pmVc4NECDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmVc4NECDThresholdDataInstance   OpticsIMPmThresholdDataInstance,
+   pmVc4NECDStartByOS                       TsdimManagerType,
+   pmVc4NECDSes                                  Gauge32,
+   pmVc4NECDUas                                  Gauge32,
+   pmVc4NECDBbe                                  Gauge32,
+   pmVc4NECDEs                                    Gauge32,
+   pmVc4NECDRowStatus                       RowStatus,
+   pmVc4NECDAsapIndex                       Integer32
+   }
+
+pmVc4NECDIndex OBJECT-TYPE
+       SYNTAX OpticsIMPmIndex
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "See Textual Conventions."
+::= { opticsIMVc4NECurrentDataEntry 1 }
+
+pmVc4NECDElapsedTime OBJECT-TYPE
+       SYNTAX OpticsIMPmElapsedTime
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NECurrentDataEntry 2 }
+
+pmVc4NECDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NECurrentDataEntry 3 }
+
+pmVc4NECDMaxSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmMaxSuppressedIntervals
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NECurrentDataEntry 4}
+
+pmVc4NECDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NECurrentDataEntry 5 }
+
+pmVc4NECDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+       DEFVAL {1} -- True
+::= { opticsIMVc4NECurrentDataEntry 6 }
+
+pmVc4NECDThresholdDataInstance OBJECT-TYPE
+       SYNTAX  OpticsIMPmThresholdDataInstance
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NECurrentDataEntry 7 }
+
+pmVc4NECDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMVc4NECurrentDataEntry 8 }
+
+pmVc4NECDSes OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+       DEFVAL {0} 
+::= { opticsIMVc4NECurrentDataEntry 9 }
+
+pmVc4NECDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+       DEFVAL {0} 
+::= { opticsIMVc4NECurrentDataEntry 10 }
+
+pmVc4NECDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+       DEFVAL {0} 
+::= { opticsIMVc4NECurrentDataEntry 11 }
+
+pmVc4NECDEs  OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+       DEFVAL {0} 
+::= { opticsIMVc4NECurrentDataEntry 12 }
+
+pmVc4NECDRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+         "When an entry of this table is deleted the corresponding entries of HD table are deleted.
+          When an entry of this table is put to not in service, the measures of this CD are frozen, that is all
+          the counters are stopped."
+::= { opticsIMVc4NECurrentDataEntry 13 }
+
+pmVc4NECDAsapIndex OBJECT-TYPE
+       SYNTAX Integer32 
+       MAX-ACCESS read-create 
+       STATUS current
+       DESCRIPTION
+         "It indicates the ASAP object associated to this CD."
+::= { opticsIMVc4NECurrentDataEntry 14 }
+
+
+opticsIMVc4NEHistoryDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc4NEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the History data for the SDH Vc4 Near End "
+::= { opticsIMSdhPmMibObject 16 }
+
+opticsIMVc4NEHistoryDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc4NEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "One entry of this table is created at the end of the time interval of the related CD (defined by 
+            granularity Period).
+            At most n entries of opticsIMVc4NEHistoryDataTable can be created indexed by the indexes of the 
+            corresponding CD entry and by the time of the measure (pmVc4NEHDPeriodEndTime). 
+            This set of n entries is wrapped, when the n+1 measure is provided. 
+            The n+1 measure is written in the row of the table indexed by the smallest value of 
+             PeriodEndTime. "
+       INDEX       { ifIndex, pmVc4NECDIndex, pmVc4NEHDPeriodEndTime }
+::= { opticsIMVc4NEHistoryDataTable 1 }
+
+OpticsIMVc4NEHistoryDataEntry ::= SEQUENCE {
+   pmVc4NEHDElapsedTime                    OpticsIMPmElapsedTime,
+   pmVc4NEHDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmVc4NEHDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals, 
+   pmVc4NEHDPeriodEndTime                OpticsIMPmPeriodTime,
+   pmVc4NEHDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmVc4NEHDStartByOS                        TsdimManagerType,
+   pmVc4NEHDSes                                   Gauge32,
+   pmVc4NEHDUas                                   Gauge32,
+   pmVc4NEHDBbe                                   Gauge32,
+   pmVc4NEHDEs                                     Gauge32
+}
+
+pmVc4NEHDElapsedTime OBJECT-TYPE
+     SYNTAX OpticsIMPmElapsedTime
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+          "See Textual Conventions."
+::= { opticsIMVc4NEHistoryDataEntry 1 }
+
+pmVc4NEHDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NEHistoryDataEntry 2 }
+
+pmVc4NEHDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NEHistoryDataEntry 3 }
+
+pmVc4NEHDPeriodEndTime OBJECT-TYPE
+       SYNTAX OpticsIMPmPeriodTime
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NEHistoryDataEntry 4 }
+
+pmVc4NEHDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NEHistoryDataEntry 5 }
+
+pmVc4NEHDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMVc4NEHistoryDataEntry 6 }
+
+pmVc4NEHDSes     OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+::= { opticsIMVc4NEHistoryDataEntry 7 }
+
+pmVc4NEHDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+::= { opticsIMVc4NEHistoryDataEntry 8 }
+
+pmVc4NEHDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+::= { opticsIMVc4NEHistoryDataEntry 9 }
+
+pmVc4NEHDEs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+::= { opticsIMVc4NEHistoryDataEntry 10 }
+
+opticsIMVc4NEThresholdDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc4NEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the Threshold Data used for the SDH Vc4 Near End PM. "
+::= { opticsIMSdhPmMibObject 17 }
+
+opticsIMVc4NEThresholdDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc4NEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry in the RS Threshold Data table. "
+       INDEX          {  pmVc4NEThrIndex }
+::= { opticsIMVc4NEThresholdDataTable 1 }
+
+OpticsIMVc4NEThresholdDataEntry ::= SEQUENCE {
+   pmVc4NEThrIndex             Integer32,
+   pmVc4NESesHighThr        Unsigned32,
+   pmVc4NESesLowThr         Unsigned32,
+   pmVc4NEBbeHighThr        Unsigned32,
+   pmVc4NEBbeLowThr         Unsigned32,
+   pmVc4NEEsHighThr          Unsigned32,
+   pmVc4NEEsLowThr           Unsigned32,
+   pmVc4NEUserLabel           OpticsIMUserLabel,
+   pmVc4NERowStatus          RowStatus
+   }
+
+pmVc4NEThrIndex OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "The index of this table."
+::= { opticsIMVc4NEThresholdDataEntry 1 }
+
+pmVc4NESesHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc4NEThresholdDataEntry 2 }
+
+pmVc4NESesLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc4NEThresholdDataEntry 3 }
+
+pmVc4NEBbeHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc4NEThresholdDataEntry 6 }
+
+pmVc4NEBbeLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc4NEThresholdDataEntry 7 }
+
+pmVc4NEEsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc4NEThresholdDataEntry 8 }
+
+pmVc4NEEsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc4NEThresholdDataEntry 9 }
+
+pmVc4NEUserLabel OBJECT-TYPE
+       SYNTAX OpticsIMUserLabel
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4NEThresholdDataEntry 12 }
+
+pmVc4NERowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The deletion of this entry is refused in case one or more CD
+          entries point to this object (by means of   pmVc4NECDThresholdDataInstance)."
+::= { opticsIMVc4NEThresholdDataEntry 13 }
+
+
+opticsIMVc4NEThrIndexNext OBJECT-TYPE
+       SYNTAX OpticsIMThrIndexNext2
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions (in this case it is applied to SDH Vc4 Near End)."
+::= { opticsIMSdhPmMibObject 18 }
+
+opticsIMVc4FECurrentDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc4FECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+             "This table contains the current data for the SDH Vc4 Far End."
+::= { opticsIMSdhPmMibObject 19 }
+
+opticsIMVc4FECurrentDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc4FECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry of the SDH Vc4 Far End current data table. 
+            An unavailable condition starts when 10 consecutive severely errored seconds have been 
+            detected; these 10 seconds belong to the unavailable time. An unavailable condition 
+            ends when 10 consecutive seconds with no severely errored second are detected. 
+            These 10 seconds belong to  the available time.   
+            If an unavailable period is ending then the UAT Clear shall be sent.
+            These performance event counts are inhibited during unavailable time.
+            In the objects where a Default Value is specified, the write operation is allowed only to the 
+            indicated default value.
+            The write operation to one counter is applied to all the counters of all the the associated objects, 
+            which have a defined default."
+       INDEX          {  ifIndex, pmVc4FECDIndex}
+       ::= { opticsIMVc4FECurrentDataTable 1 }   
+
+OpticsIMVc4FECurrentDataEntry ::= SEQUENCE {
+   pmVc4FECDIndex                                OpticsIMPmIndex,
+   pmVc4FECDElapsedTime                    OpticsIMPmElapsedTime,
+   pmVc4FECDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmVc4FECDMaxSuppressedIntervals OpticsIMPmMaxSuppressedIntervals, 
+   pmVc4FECDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals,
+   pmVc4FECDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmVc4FECDThresholdDataInstance   OpticsIMPmThresholdDataInstance,
+   pmVc4FECDStartByOS                       TsdimManagerType,
+   pmVc4FECDSes                                  Gauge32,
+   pmVc4FECDUas                                  Gauge32,
+   pmVc4FECDBbe                                  Gauge32,
+   pmVc4FECDEs                                    Gauge32,
+   pmVc4FECDRowStatus                       RowStatus,
+   pmVc4FECDAsapIndex                       Integer32
+   }
+
+pmVc4FECDIndex OBJECT-TYPE
+       SYNTAX OpticsIMPmIndex
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "See Textual Conventions."
+::= { opticsIMVc4FECurrentDataEntry 1 }
+
+pmVc4FECDElapsedTime OBJECT-TYPE
+       SYNTAX OpticsIMPmElapsedTime
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FECurrentDataEntry 2 }
+
+pmVc4FECDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FECurrentDataEntry 3 }
+
+pmVc4FECDMaxSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmMaxSuppressedIntervals
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FECurrentDataEntry 4}
+
+pmVc4FECDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FECurrentDataEntry 5 }
+
+pmVc4FECDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+       DEFVAL {1} -- True
+::= { opticsIMVc4FECurrentDataEntry 6 }
+
+pmVc4FECDThresholdDataInstance OBJECT-TYPE
+       SYNTAX  OpticsIMPmThresholdDataInstance
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FECurrentDataEntry 7 }
+
+pmVc4FECDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMVc4FECurrentDataEntry 8 }
+
+pmVc4FECDSes OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+       DEFVAL {0} 
+::= { opticsIMVc4FECurrentDataEntry 9 }
+
+pmVc4FECDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+       DEFVAL {0} 
+::= { opticsIMVc4FECurrentDataEntry 10 }
+
+pmVc4FECDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+       DEFVAL {0} 
+::= { opticsIMVc4FECurrentDataEntry 11 }
+
+pmVc4FECDEs  OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+       DEFVAL {0} 
+::= { opticsIMVc4FECurrentDataEntry 12 }
+
+pmVc4FECDRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+         "When an entry of this table is deleted the corresponding entries of HD table are deleted.
+          When an entry of this table is put to not in service, the measures of this CD are frozen, that is all
+          the counters are stopped."
+::= { opticsIMVc4FECurrentDataEntry 13 }
+
+pmVc4FECDAsapIndex OBJECT-TYPE
+       SYNTAX Integer32 
+       MAX-ACCESS read-create 
+       STATUS current
+       DESCRIPTION
+         "It indicates the ASAP object associated to this CD."
+::= { opticsIMVc4FECurrentDataEntry 14 }
+
+ 
+
+opticsIMVc4FEHistoryDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc4FEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the History data for the SDH Vc4 Far End."
+::= { opticsIMSdhPmMibObject 20 }
+
+opticsIMVc4FEHistoryDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc4FEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "One entry of this table is created at the end of the time interval of the related CD (defined by 
+            granularity Period).
+            At most n entries of opticsIMVc4FEHistoryDataTable can be created indexed by the indexes of the 
+            corresponding CD entry and by the time of the measure (pmVc4FEHDPeriodEndTime). 
+            This set of n entries is wrapped, when the n+1 measure is provided. 
+            The n+1 measure is written in the row of the table indexed by the smallest value of 
+             PeriodEndTime. "
+       INDEX       { ifIndex, pmVc4FECDIndex, pmVc4FEHDPeriodEndTime }
+::= { opticsIMVc4FEHistoryDataTable 1 }
+
+OpticsIMVc4FEHistoryDataEntry ::= SEQUENCE {
+   pmVc4FEHDElapsedTime                    OpticsIMPmElapsedTime,
+   pmVc4FEHDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmVc4FEHDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals, 
+   pmVc4FEHDPeriodEndTime                OpticsIMPmPeriodTime,
+   pmVc4FEHDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmVc4FEHDStartByOS                        TsdimManagerType,
+   pmVc4FEHDSes                                   Gauge32,
+   pmVc4FEHDUas                                   Gauge32,
+   pmVc4FEHDBbe                                   Gauge32,
+   pmVc4FEHDEs                                     Gauge32
+}
+
+pmVc4FEHDElapsedTime OBJECT-TYPE
+     SYNTAX OpticsIMPmElapsedTime
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+          "See Textual Conventions."
+::= { opticsIMVc4FEHistoryDataEntry 1 }
+
+pmVc4FEHDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FEHistoryDataEntry 2 }
+
+pmVc4FEHDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FEHistoryDataEntry 3 }
+
+pmVc4FEHDPeriodEndTime OBJECT-TYPE
+       SYNTAX OpticsIMPmPeriodTime
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FEHistoryDataEntry 4 }
+
+pmVc4FEHDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FEHistoryDataEntry 5 }
+
+pmVc4FEHDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMVc4FEHistoryDataEntry 6 }
+
+pmVc4FEHDSes     OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+::= { opticsIMVc4FEHistoryDataEntry 7 }
+
+pmVc4FEHDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+::= { opticsIMVc4FEHistoryDataEntry 8 }
+
+pmVc4FEHDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+::= { opticsIMVc4FEHistoryDataEntry 9 }
+
+pmVc4FEHDEs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+::= { opticsIMVc4FEHistoryDataEntry 10 }
+
+opticsIMVc4FEThresholdDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc4FEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the Threshold Data used for the SDH Vc4 Far End PM. "
+::= { opticsIMSdhPmMibObject 21 }
+
+opticsIMVc4FEThresholdDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc4FEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry in the Vc4 Far End Threshold Data table. "
+       INDEX          {  pmVc4FEThrIndex }
+::= { opticsIMVc4FEThresholdDataTable 1 }
+
+OpticsIMVc4FEThresholdDataEntry ::= SEQUENCE {
+   pmVc4FEThrIndex             Integer32,
+   pmVc4FESesHighThr        Unsigned32,
+   pmVc4FESesLowThr         Unsigned32,
+   pmVc4FEBbeHighThr        Unsigned32,
+   pmVc4FEBbeLowThr         Unsigned32,
+   pmVc4FEEsHighThr          Unsigned32,
+   pmVc4FEEsLowThr           Unsigned32,
+   pmVc4FEUserLabel           OpticsIMUserLabel,
+   pmVc4FERowStatus          RowStatus
+   }
+
+pmVc4FEThrIndex OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "The index of this table."
+::= { opticsIMVc4FEThresholdDataEntry 1 }
+
+pmVc4FESesHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc4FEThresholdDataEntry 2 }
+
+pmVc4FESesLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc4FEThresholdDataEntry 3 }
+
+pmVc4FEBbeHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc4FEThresholdDataEntry 6 }
+
+pmVc4FEBbeLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc4FEThresholdDataEntry 7 }
+
+pmVc4FEEsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc4FEThresholdDataEntry 8 }
+
+pmVc4FEEsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc4FEThresholdDataEntry 9 }
+
+pmVc4FEUserLabel OBJECT-TYPE
+       SYNTAX OpticsIMUserLabel
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc4FEThresholdDataEntry 12 }
+
+pmVc4FERowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The deletion of this entry is refused in case one or more CD
+          entries point to this object (by means of   pmVc4FECDThresholdDataInstance)."
+::= { opticsIMVc4FEThresholdDataEntry 13 }
+
+
+opticsIMVc4FEThrIndexNext OBJECT-TYPE
+       SYNTAX OpticsIMThrIndexNext2
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions (in this case it is applied to SDH Vc4 Far End)."
+::= { opticsIMSdhPmMibObject 22 }
+
+opticsIMVc3NECurrentDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc3NECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+             "This table contains the current data for the SDH Vc3 Near End."
+::= { opticsIMSdhPmMibObject 23 }
+
+opticsIMVc3NECurrentDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc3NECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry of the SDH Vc3 Far End current data table. 
+            An unavailable condition starts when 10 consecutive severely errored seconds have been 
+            detected; these 10 seconds belong to the unavailable time. An unavailable condition 
+            ends when 10 consecutive seconds with no severely errored second are detected. 
+            These 10 seconds belong to  the available time.   
+            If an unavailable period is ending then the UAT Clear shall be sent.
+            These performance event counts are inhibited during unavailable time.
+In the objects where a Default Value is specified, the write operation is allowed only to the 
+            indicated default value.
+            The write operation to one counter is applied to all the counters of all the the associated objects, 
+            which have a defined default."
+       INDEX          {  ifIndex, pmVc3NECDIndex}
+       ::= { opticsIMVc3NECurrentDataTable 1 }   
+
+OpticsIMVc3NECurrentDataEntry ::= SEQUENCE {
+   pmVc3NECDIndex                                OpticsIMPmIndex,
+   pmVc3NECDElapsedTime                    OpticsIMPmElapsedTime,
+   pmVc3NECDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmVc3NECDMaxSuppressedIntervals OpticsIMPmMaxSuppressedIntervals, 
+   pmVc3NECDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals,
+   pmVc3NECDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmVc3NECDThresholdDataInstance   OpticsIMPmThresholdDataInstance,
+   pmVc3NECDStartByOS                       TsdimManagerType,
+   pmVc3NECDSes                                  Gauge32,
+   pmVc3NECDUas                                  Gauge32,
+   pmVc3NECDBbe                                  Gauge32,
+   pmVc3NECDEs                                    Gauge32,
+   pmVc3NECDRowStatus                       RowStatus,
+   pmVc3NECDAsapIndex                       Integer32
+   }
+
+pmVc3NECDIndex OBJECT-TYPE
+       SYNTAX OpticsIMPmIndex
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "See Textual Conventions."
+::= { opticsIMVc3NECurrentDataEntry 1 }
+
+pmVc3NECDElapsedTime OBJECT-TYPE
+       SYNTAX OpticsIMPmElapsedTime
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NECurrentDataEntry 2 }
+
+pmVc3NECDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NECurrentDataEntry 3 }
+
+pmVc3NECDMaxSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmMaxSuppressedIntervals
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NECurrentDataEntry 4}
+
+pmVc3NECDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NECurrentDataEntry 5 }
+
+pmVc3NECDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+       DEFVAL {1} -- True
+::= { opticsIMVc3NECurrentDataEntry 6 }
+
+pmVc3NECDThresholdDataInstance OBJECT-TYPE
+       SYNTAX  OpticsIMPmThresholdDataInstance
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NECurrentDataEntry 7 }
+
+pmVc3NECDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMVc3NECurrentDataEntry 8 }
+
+pmVc3NECDSes OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+       DEFVAL {0} 
+::= { opticsIMVc3NECurrentDataEntry 9 }
+
+pmVc3NECDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+       DEFVAL {0} 
+::= { opticsIMVc3NECurrentDataEntry 10 }
+
+pmVc3NECDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+       DEFVAL {0} 
+::= { opticsIMVc3NECurrentDataEntry 11 }
+
+pmVc3NECDEs  OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+       DEFVAL {0} 
+::= { opticsIMVc3NECurrentDataEntry 12 }
+
+pmVc3NECDRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+         "When an entry of this table is deleted the corresponding entries of HD table are deleted.
+
+          When an entry of this table is put to not in service, the measures of this CD are frozen, that is all
+          the counters are stopped."
+::= { opticsIMVc3NECurrentDataEntry 13 }
+
+pmVc3NECDAsapIndex OBJECT-TYPE
+       SYNTAX Integer32 
+       MAX-ACCESS read-create 
+       STATUS current
+       DESCRIPTION
+         "It indicates the ASAP object associated to this CD."
+::= { opticsIMVc3NECurrentDataEntry 14 }
+
+
+opticsIMVc3NEHistoryDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc3NEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the History data for the SDH Vc3 Far End."
+::= { opticsIMSdhPmMibObject 24 }
+
+opticsIMVc3NEHistoryDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc3NEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "One entry of this table is created at the end of the time interval of the related CD (defined by 
+            granularity Period).
+            At most n entries of opticsIMVc3NEHistoryDataTable can be created indexed by the indexes of the 
+            corresponding CD entry and by the time of the measure (pmVc3NEHDPeriodEndTime). 
+            This set of n entries is wrapped, when the n+1 measure is provided. 
+            The n+1 measure is written in the row of the table indexed by the smallest value of 
+             PeriodEndTime. "
+       INDEX       { ifIndex, pmVc3NECDIndex, pmVc3NEHDPeriodEndTime }
+::= { opticsIMVc3NEHistoryDataTable 1 }
+
+OpticsIMVc3NEHistoryDataEntry ::= SEQUENCE {
+   pmVc3NEHDElapsedTime                    OpticsIMPmElapsedTime,
+   pmVc3NEHDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmVc3NEHDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals, 
+   pmVc3NEHDPeriodEndTime                OpticsIMPmPeriodTime,
+   pmVc3NEHDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmVc3NEHDStartByOS                        TsdimManagerType,
+   pmVc3NEHDSes                                   Gauge32,
+   pmVc3NEHDUas                                   Gauge32,
+   pmVc3NEHDBbe                                   Gauge32,
+   pmVc3NEHDEs                                     Gauge32
+}
+
+pmVc3NEHDElapsedTime OBJECT-TYPE
+     SYNTAX OpticsIMPmElapsedTime
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+          "See Textual Conventions."
+::= { opticsIMVc3NEHistoryDataEntry 1 }
+
+pmVc3NEHDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NEHistoryDataEntry 2 }
+
+pmVc3NEHDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NEHistoryDataEntry 3 }
+
+pmVc3NEHDPeriodEndTime OBJECT-TYPE
+       SYNTAX OpticsIMPmPeriodTime
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NEHistoryDataEntry 4 }
+
+pmVc3NEHDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NEHistoryDataEntry 5 }
+
+pmVc3NEHDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMVc3NEHistoryDataEntry 6 }
+
+pmVc3NEHDSes     OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+::= { opticsIMVc3NEHistoryDataEntry 7 }
+
+pmVc3NEHDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+::= { opticsIMVc3NEHistoryDataEntry 8 }
+
+pmVc3NEHDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+::= { opticsIMVc3NEHistoryDataEntry 9 }
+
+pmVc3NEHDEs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+::= { opticsIMVc3NEHistoryDataEntry 10 }
+
+opticsIMVc3NEThresholdDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc3NEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the Threshold Data used for the SDH Multiplex Section Near End PM. "
+::= { opticsIMSdhPmMibObject 25 }
+
+opticsIMVc3NEThresholdDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc3NEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry in the Vc3 Near End Threshold Data table. "
+       INDEX          {  pmVc3NEThrIndex }
+::= { opticsIMVc3NEThresholdDataTable 1 }
+
+OpticsIMVc3NEThresholdDataEntry ::= SEQUENCE {
+   pmVc3NEThrIndex             Integer32,
+   pmVc3NESesHighThr        Unsigned32,
+   pmVc3NESesLowThr         Unsigned32,
+   pmVc3NEBbeHighThr        Unsigned32,
+   pmVc3NEBbeLowThr         Unsigned32,
+   pmVc3NEEsHighThr          Unsigned32,
+   pmVc3NEEsLowThr           Unsigned32,
+   pmVc3NEUserLabel           OpticsIMUserLabel,
+   pmVc3NERowStatus          RowStatus
+   }
+
+pmVc3NEThrIndex OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "The index of this table."
+::= { opticsIMVc3NEThresholdDataEntry 1 }
+
+pmVc3NESesHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc3NEThresholdDataEntry 2 }
+
+pmVc3NESesLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc3NEThresholdDataEntry 3 }
+
+pmVc3NEBbeHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc3NEThresholdDataEntry 6 }
+
+pmVc3NEBbeLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc3NEThresholdDataEntry 7 }
+
+pmVc3NEEsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc3NEThresholdDataEntry 8 }
+
+pmVc3NEEsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc3NEThresholdDataEntry 9 }
+
+pmVc3NEUserLabel OBJECT-TYPE
+       SYNTAX OpticsIMUserLabel
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3NEThresholdDataEntry 12 }
+
+pmVc3NERowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The deletion of this entry is refused in case one or more CD
+          entries point to this object (by means of   pmVc3NECDThresholdDataInstance)."
+::= { opticsIMVc3NEThresholdDataEntry 13 }
+
+
+opticsIMVc3NEThrIndexNext OBJECT-TYPE
+       SYNTAX OpticsIMThrIndexNext2
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions (in this case it is applied to SDH Vc3 Near End)."
+::= { opticsIMSdhPmMibObject 26 }
+
+opticsIMVc3FECurrentDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc3FECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+             "This table contains the current data for the SDH Vc3 Far End."
+::= { opticsIMSdhPmMibObject 27 }
+
+opticsIMVc3FECurrentDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc3FECurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry of the SDH Vc3 Far End current data table. 
+            An unavailable condition starts when 10 consecutive severely errored seconds have been 
+            detected; these 10 seconds belong to the unavailable time. An unavailable condition 
+            ends when 10 consecutive seconds with no severely errored second are detected. 
+            These 10 seconds belong to  the available time.   
+            If an unavailable period is ending then the UAT Clear shall be sent.
+            These performance event counts are inhibited during unavailable time.
+            In the objects where a Default Value is specified, the write operation is allowed only to the 
+            indicated default value.
+            The write operation to one counter is applied to all the counters of all the the associated objects, 
+            which have a defined default."
+       INDEX          {  ifIndex, pmVc3FECDIndex}
+       ::= { opticsIMVc3FECurrentDataTable 1 }   
+
+OpticsIMVc3FECurrentDataEntry ::= SEQUENCE {
+   pmVc3FECDIndex                                OpticsIMPmIndex,
+   pmVc3FECDElapsedTime                    OpticsIMPmElapsedTime,
+   pmVc3FECDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmVc3FECDMaxSuppressedIntervals OpticsIMPmMaxSuppressedIntervals, 
+   pmVc3FECDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals,
+   pmVc3FECDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmVc3FECDThresholdDataInstance   OpticsIMPmThresholdDataInstance,
+   pmVc3FECDStartByOS                       TsdimManagerType,
+   pmVc3FECDSes                                  Gauge32,
+   pmVc3FECDUas                                  Gauge32,
+   pmVc3FECDBbe                                  Gauge32,
+   pmVc3FECDEs                                    Gauge32,
+   pmVc3FECDRowStatus                       RowStatus,
+   pmVc3FECDAsapIndex                       Integer32
+   }
+
+pmVc3FECDIndex OBJECT-TYPE
+       SYNTAX OpticsIMPmIndex
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "See Textual Conventions."
+::= { opticsIMVc3FECurrentDataEntry 1 }
+
+pmVc3FECDElapsedTime OBJECT-TYPE
+       SYNTAX OpticsIMPmElapsedTime
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FECurrentDataEntry 2 }
+
+pmVc3FECDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FECurrentDataEntry 3 }
+
+pmVc3FECDMaxSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmMaxSuppressedIntervals
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FECurrentDataEntry 4}
+
+pmVc3FECDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FECurrentDataEntry 5 }
+
+pmVc3FECDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+       DEFVAL {1} -- True
+::= { opticsIMVc3FECurrentDataEntry 6 }
+
+pmVc3FECDThresholdDataInstance OBJECT-TYPE
+       SYNTAX  OpticsIMPmThresholdDataInstance
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FECurrentDataEntry 7 }
+
+pmVc3FECDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMVc3FECurrentDataEntry 8 }
+
+pmVc3FECDSes OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+       DEFVAL {0} 
+::= { opticsIMVc3FECurrentDataEntry 9 }
+
+pmVc3FECDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+       DEFVAL {0} 
+::= { opticsIMVc3FECurrentDataEntry 10 }
+
+pmVc3FECDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+       DEFVAL {0} 
+::= { opticsIMVc3FECurrentDataEntry 11 }
+
+pmVc3FECDEs  OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+       DEFVAL {0} 
+::= { opticsIMVc3FECurrentDataEntry 12 }
+
+pmVc3FECDRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+         "When an entry of this table is deleted the corresponding entries of HD table are deleted.
+          When an entry of this table is put to not in service, the measures of this CD are frozen, that is all
+          the counters are stopped."
+::= { opticsIMVc3FECurrentDataEntry 13 }
+
+pmVc3FECDAsapIndex OBJECT-TYPE
+       SYNTAX Integer32 
+       MAX-ACCESS read-create 
+       STATUS current
+       DESCRIPTION
+         "It indicates the ASAP object associated to this CD."
+::= { opticsIMVc3FECurrentDataEntry 14 }
+
+
+opticsIMVc3FEHistoryDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc3FEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the History data for the SDH Vc3 Far End."
+::= { opticsIMSdhPmMibObject 28 }
+
+opticsIMVc3FEHistoryDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc3FEHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "One entry of this table is created at the end of the time interval of the related CD (defined by 
+            granularity Period).
+            At most n entries of opticsIMVc3FEHistoryDataTable can be created indexed by the indexes of the 
+            corresponding CD entry and by the time of the measure (pmVc3FEHDPeriodEndTime). 
+            This set of n entries is wrapped, when the n+1 measure is provided. 
+            The n+1 measure is written in the row of the table indexed by the smallest value of 
+             PeriodEndTime. "
+       INDEX       { ifIndex, pmVc3FECDIndex, pmVc3FEHDPeriodEndTime }
+::= { opticsIMVc3FEHistoryDataTable 1 }
+
+OpticsIMVc3FEHistoryDataEntry ::= SEQUENCE {
+   pmVc3FEHDElapsedTime                    OpticsIMPmElapsedTime,
+   pmVc3FEHDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmVc3FEHDNumSuppressedIntervals OpticsIMPmNumSuppressedIntervals, 
+   pmVc3FEHDPeriodEndTime                OpticsIMPmPeriodTime,
+   pmVc3FEHDSuspectIntervalFlag         OpticsIMPmSuspectIntervalFlag,
+   pmVc3FEHDStartByOS                        TsdimManagerType,
+   pmVc3FEHDSes                                   Gauge32,
+   pmVc3FEHDUas                                   Gauge32,
+   pmVc3FEHDBbe                                   Gauge32,
+   pmVc3FEHDEs                                     Gauge32
+}
+
+pmVc3FEHDElapsedTime OBJECT-TYPE
+     SYNTAX OpticsIMPmElapsedTime
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+          "See Textual Conventions."
+::= { opticsIMVc3FEHistoryDataEntry 1 }
+
+pmVc3FEHDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FEHistoryDataEntry 2 }
+
+pmVc3FEHDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FEHistoryDataEntry 3 }
+
+pmVc3FEHDPeriodEndTime OBJECT-TYPE
+       SYNTAX OpticsIMPmPeriodTime
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FEHistoryDataEntry 4 }
+
+pmVc3FEHDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FEHistoryDataEntry 5 }
+
+pmVc3FEHDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMVc3FEHistoryDataEntry 6 }
+
+pmVc3FEHDSes     OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+::= { opticsIMVc3FEHistoryDataEntry 7 }
+
+pmVc3FEHDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+::= { opticsIMVc3FEHistoryDataEntry 8 }
+
+pmVc3FEHDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+::= { opticsIMVc3FEHistoryDataEntry 9 }
+
+pmVc3FEHDEs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+::= { opticsIMVc3FEHistoryDataEntry 10 }
+
+opticsIMVc3FEThresholdDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMVc3FEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the Threshold Data used for the SDH Vc3 Far End PM. "
+::= { opticsIMSdhPmMibObject 29 }
+
+opticsIMVc3FEThresholdDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMVc3FEThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry in the RS Threshold Data table. "
+       INDEX          {  pmVc3FEThrIndex }
+::= { opticsIMVc3FEThresholdDataTable 1 }
+
+OpticsIMVc3FEThresholdDataEntry ::= SEQUENCE {
+   pmVc3FEThrIndex             Integer32,
+   pmVc3FESesHighThr        Unsigned32,
+   pmVc3FESesLowThr         Unsigned32,
+   pmVc3FEBbeHighThr        Unsigned32,
+   pmVc3FEBbeLowThr         Unsigned32,
+   pmVc3FEEsHighThr          Unsigned32,
+   pmVc3FEEsLowThr           Unsigned32,
+   pmVc3FEUserLabel           OpticsIMUserLabel,
+   pmVc3FERowStatus          RowStatus
+   }
+
+pmVc3FEThrIndex OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "The index of this table."
+::= { opticsIMVc3FEThresholdDataEntry 1 }
+
+pmVc3FESesHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc3FEThresholdDataEntry 2 }
+
+pmVc3FESesLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc3FEThresholdDataEntry 3 }
+
+pmVc3FEBbeHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc3FEThresholdDataEntry 6 }
+
+pmVc3FEBbeLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc3FEThresholdDataEntry 7 }
+
+pmVc3FEEsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMVc3FEThresholdDataEntry 8 }
+
+pmVc3FEEsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMVc3FEThresholdDataEntry 9 }
+
+pmVc3FEUserLabel OBJECT-TYPE
+       SYNTAX OpticsIMUserLabel
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMVc3FEThresholdDataEntry 12 }
+
+pmVc3FERowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The deletion of this entry is refused in case one or more CD
+          entries point to this object (by means of   pmVc3FECDThresholdDataInstance)."
+::= { opticsIMVc3FEThresholdDataEntry 13 }
+
+
+opticsIMVc3FEThrIndexNext OBJECT-TYPE
+       SYNTAX OpticsIMThrIndexNext2
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions (in this case it is applied to SDH Vc3 Far End)."
+::= { opticsIMSdhPmMibObject 30 }
+
+--
+
+opticsIMRsMonitoringCurrentDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMRsMonitoringCurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+             "This table contains the current data for the not-intrusive SDH Regenerator  Section. "
+::= { opticsIMSdhPmMibObject 31 }
+
+opticsIMRsMonitoringCurrentDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMRsMonitoringCurrentDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry of the SDH regenerator section current data table. 
+
+            An unavailable condition starts when 10 consecutive severely errored seconds have been 
+            detected; these 10 seconds belong to the unavailable time. An unavailable condition 
+            ends when 10 consecutive seconds with no severely errored second are detected. 
+            These 10 seconds belong to  the available time.   
+            If an unavailable period is ending then the UAT Clear shall be sent.
+
+            These performance event counts are inhibited during unavailable time.
+
+            In the objects where a Default Value is specified, the write operation is allowed only to the 
+            indicated default value.
+            The write operation to one counter is applied to all the counters of all the the associated objects, 
+            which have a defined default."
+       INDEX          {  ifIndex, pmRsMonitoringCDIndex}
+       ::= { opticsIMRsMonitoringCurrentDataTable 1 }   
+
+OpticsIMRsMonitoringCurrentDataEntry ::= SEQUENCE {
+   pmRsMonitoringCDIndex                         OpticsIMPmIndex,
+   pmRsMonitoringCDElapsedTime                   OpticsIMPmElapsedTime,
+   pmRsMonitoringCDGranularityPeriod             OpticsIMPmGranularityPeriod, 
+   pmRsMonitoringCDMaxSuppressedIntervals 	 OpticsIMPmMaxSuppressedIntervals, 
+   pmRsMonitoringCDNumSuppressedIntervals 	 OpticsIMPmNumSuppressedIntervals,
+   pmRsMonitoringCDSuspectIntervalFlag         	 OpticsIMPmSuspectIntervalFlag,
+   pmRsMonitoringCDThresholdDataInstance   	 OpticsIMPmThresholdDataInstance,
+   pmRsMonitoringCDStartByOS                     TsdimManagerType,
+   pmRsMonitoringCDSes                           Gauge32,
+   pmRsMonitoringCDUas                           Gauge32,
+   pmRsMonitoringCDBbe                           Gauge32,
+   pmRsMonitoringCDEs                            Gauge32,
+   pmRsMonitoringCDOfs                           Gauge32,
+   pmRsMonitoringCDRowStatus                     RowStatus,
+   pmRsMonitoringCDAsapIndex                     Integer32,
+   pmRsMonitoringCDLps                           Gauge32
+   }
+
+pmRsMonitoringCDIndex OBJECT-TYPE
+       SYNTAX OpticsIMPmIndex
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "See Textual Conventions."
+::= { opticsIMRsMonitoringCurrentDataEntry 1 }
+
+pmRsMonitoringCDElapsedTime OBJECT-TYPE
+       SYNTAX OpticsIMPmElapsedTime
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringCurrentDataEntry 2 }
+
+pmRsMonitoringCDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringCurrentDataEntry 3 }
+
+pmRsMonitoringCDMaxSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmMaxSuppressedIntervals
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringCurrentDataEntry 4 }
+
+pmRsMonitoringCDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringCurrentDataEntry 5 }
+
+pmRsMonitoringCDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+       DEFVAL {1} -- True
+::= { opticsIMRsMonitoringCurrentDataEntry 6 }
+
+pmRsMonitoringCDThresholdDataInstance OBJECT-TYPE
+       SYNTAX  OpticsIMPmThresholdDataInstance
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringCurrentDataEntry 7 }
+
+pmRsMonitoringCDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMRsMonitoringCurrentDataEntry 8 }
+
+pmRsMonitoringCDSes OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+       DEFVAL {0} 
+::= { opticsIMRsMonitoringCurrentDataEntry 9 }
+
+pmRsMonitoringCDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+       DEFVAL {0} 
+::= { opticsIMRsMonitoringCurrentDataEntry 10 }
+
+pmRsMonitoringCDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+       DEFVAL {0} 
+::= { opticsIMRsMonitoringCurrentDataEntry 11 }
+
+pmRsMonitoringCDEs  OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+       DEFVAL {0} 
+::= { opticsIMRsMonitoringCurrentDataEntry 12 }
+
+pmRsMonitoringCDOfs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of OFS."
+       DEFVAL {0} 
+::= { opticsIMRsMonitoringCurrentDataEntry 13 }
+
+pmRsMonitoringCDRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+         "When an entry of this table is deleted the corresponding entries of HD table are deleted.
+
+          When an entry of this table is put to not in service, the measures of this CD are frozen, that is all
+          the counters are stopped."
+::= { opticsIMRsMonitoringCurrentDataEntry 14 }
+
+pmRsMonitoringCDAsapIndex OBJECT-TYPE
+       SYNTAX Integer32 
+       MAX-ACCESS read-create 
+       STATUS current
+       DESCRIPTION
+         "It indicates the ASAP object associated to this CD."
+::= { opticsIMRsMonitoringCurrentDataEntry 15 }
+
+pmRsMonitoringCDLps  OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The number of LPS."
+       DEFVAL {0} 
+::= { opticsIMRsMonitoringCurrentDataEntry 16 }
+
+
+
+opticsIMRsMonitoringHistoryDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMRsMonitoringHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the History data for the not-intrusive SDH Regenerator Section. "
+::= { opticsIMSdhPmMibObject 32 }
+
+opticsIMRsMonitoringHistoryDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMRsMonitoringHistoryDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "One entry of this table is created at the end of the time interval of the related CD (defined by 
+            granularity Period).
+
+            At most n entries of opticsIMRsHistoryDataTable can be created indexed by the indexes of the 
+            corresponding CD entry and by the time of the measure (pmRsHDPeriodEndTime). 
+
+            This set of n entries is wrapped, when the n+1 measure is provided. 
+            The n+1 measure is written in the row of the table indexed by the smallest value of 
+             PeriodEndTime. "
+       INDEX       { ifIndex, pmRsMonitoringCDIndex, pmRsMonitoringHDPeriodEndTime }
+::= { opticsIMRsMonitoringHistoryDataTable 1 }
+
+OpticsIMRsMonitoringHistoryDataEntry ::= SEQUENCE {
+   pmRsMonitoringHDElapsedTime                  OpticsIMPmElapsedTime,
+   pmRsMonitoringHDGranularityPeriod            OpticsIMPmGranularityPeriod, 
+   pmRsMonitoringHDNumSuppressedIntervals 	OpticsIMPmNumSuppressedIntervals, 
+   pmRsMonitoringHDPeriodEndTime                OpticsIMPmPeriodTime,
+   pmRsMonitoringHDSuspectIntervalFlag         	OpticsIMPmSuspectIntervalFlag,
+   pmRsMonitoringHDStartByOS                    TsdimManagerType,
+   pmRsMonitoringHDSes                          Gauge32,
+   pmRsMonitoringHDUas                          Gauge32,
+   pmRsMonitoringHDBbe                          Gauge32,
+   pmRsMonitoringHDEs                           Gauge32,
+   pmRsMonitoringHDOfs                          Gauge32,
+   pmRsMonitoringHDLps                          Gauge32
+   }
+
+pmRsMonitoringHDElapsedTime OBJECT-TYPE
+     SYNTAX OpticsIMPmElapsedTime
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+          "See Textual Conventions."
+::= { opticsIMRsMonitoringHistoryDataEntry 1 }
+
+pmRsMonitoringHDGranularityPeriod OBJECT-TYPE
+       SYNTAX OpticsIMPmGranularityPeriod
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringHistoryDataEntry 2 }
+
+pmRsMonitoringHDNumSuppressedIntervals OBJECT-TYPE
+       SYNTAX OpticsIMPmNumSuppressedIntervals
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringHistoryDataEntry 3 }
+
+pmRsMonitoringHDPeriodEndTime OBJECT-TYPE
+       SYNTAX OpticsIMPmPeriodTime
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringHistoryDataEntry 4 }
+
+pmRsMonitoringHDSuspectIntervalFlag OBJECT-TYPE
+       SYNTAX OpticsIMPmSuspectIntervalFlag
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringHistoryDataEntry 5 }
+
+pmRsMonitoringHDStartByOS OBJECT-TYPE
+       SYNTAX TsdimManagerType
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            " See Textual Conventions."
+::= { opticsIMRsMonitoringHistoryDataEntry 6 }
+
+pmRsMonitoringHDSes     OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of SES. "
+::= { opticsIMRsMonitoringHistoryDataEntry 7 }
+
+pmRsMonitoringHDUas OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of UAS. "
+::= { opticsIMRsMonitoringHistoryDataEntry 8 }
+
+pmRsMonitoringHDBbe OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of BBE."
+::= { opticsIMRsMonitoringHistoryDataEntry 9 }
+
+pmRsMonitoringHDEs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of ES."
+::= { opticsIMRsMonitoringHistoryDataEntry 10 }
+
+pmRsMonitoringHDOfs OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of OFS."
+::= { opticsIMRsMonitoringHistoryDataEntry 11 }
+
+pmRsMonitoringHDLps OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "The number of LPS."
+::= { opticsIMRsMonitoringHistoryDataEntry 12 }
+
+
+opticsIMRsMonitoringThresholdDataTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMRsMonitoringThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "This table contains the Threshold Data used for the SDH Regenerator Section PM not-intrusive. "
+::= { opticsIMSdhPmMibObject 33 }
+
+opticsIMRsMonitoringThresholdDataEntry OBJECT-TYPE
+       SYNTAX OpticsIMRsMonitoringThresholdDataEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "An entry in the RS Threshold Data table. "
+       INDEX          {  pmRsMonitoringThrIndex }
+::= { opticsIMRsMonitoringThresholdDataTable 1 }
+
+OpticsIMRsMonitoringThresholdDataEntry ::= SEQUENCE {
+   pmRsMonitoringThrIndex           	Integer32,
+   pmRsMonitoringSesHighThr        	Unsigned32,
+   pmRsMonitoringSesLowThr         	Unsigned32,
+   pmRsMonitoringBbeHighThr        	Unsigned32,
+   pmRsMonitoringBbeLowThr         	Unsigned32,
+   pmRsMonitoringEsHighThr         	Unsigned32,
+   pmRsMonitoringEsLowThr          	Unsigned32,
+   pmRsMonitoringOfsHighThr         	Unsigned32,
+   pmRsMonitoringOfsLowThr          	Unsigned32,
+   pmRsMonitoringLpsHighThr         	Unsigned32,
+   pmRsMonitoringLpsLowThr          	Unsigned32,
+   pmRsMonitoringUserLabel         	OpticsIMUserLabel,
+   pmRsMonitoringRowStatus         	RowStatus
+   }
+
+pmRsMonitoringThrIndex OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+            "The index of this table."
+::= { opticsIMRsMonitoringThresholdDataEntry 1 }
+
+pmRsMonitoringSesHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 2 }
+
+pmRsMonitoringSesLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 3 }
+
+pmRsMonitoringBbeHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 4 }
+
+pmRsMonitoringBbeLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 5 }
+
+pmRsMonitoringEsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 6 }
+
+pmRsMonitoringEsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 7 }
+
+pmRsMonitoringUserLabel OBJECT-TYPE
+       SYNTAX OpticsIMUserLabel
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions."
+::= { opticsIMRsMonitoringThresholdDataEntry 8 }
+
+pmRsMonitoringRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The deletion of this entry is refused in case one or more CD
+          entries point to this object (by means of   pmRsCDThresholdDataInstance)."
+::= { opticsIMRsMonitoringThresholdDataEntry 9 }
+
+pmRsMonitoringOfsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 10 }
+
+pmRsMonitoringOfsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 11 }
+
+pmRsMonitoringLpsHighThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The High threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 12 }
+
+pmRsMonitoringLpsLowThr OBJECT-TYPE
+       SYNTAX Unsigned32
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+            "The Low threshold for this counter."
+::= { opticsIMRsMonitoringThresholdDataEntry 13 }
+
+
+
+opticsIMRsMonitoringThrIndexNext OBJECT-TYPE
+       SYNTAX OpticsIMThrIndexNext2
+       MAX-ACCESS read-only
+       STATUS current
+       DESCRIPTION
+            "See Textual Conventions (in this case it is applied to SDH  Regenerator Section)."
+::= { opticsIMSdhPmMibObject 34 }
+
+--
+
+-- OPTICSIM-SDH-PM-MC DEFINITIONS ::= BEGIN
+--       IMPORTS            
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB;
+
+
+-- opticsIMSdhPmMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0201250000Z"
+--       ORGANIZATION "Alcatel TND"
+--       CONTACT-INFO "Alcatel TND"
+--       DESCRIPTION 
+--            "Deletion of pmRsUasHighThr and  pmRsUasLowThr objects from 
+--             opticsIMRsThresholdDataGroup"
+--       REVISION "0110190000Z"
+--           "Initial Release of SDH PM Module Compliance."
+    
+-- ::= { opticsIMSdhPmMCConf 1 }
+
+opticsIMSdhPmMCConf         OBJECT IDENTIFIER ::= { opticsimSdhPdhMC  5  }
+opticsIMSdhPmMCCompl      OBJECT IDENTIFIER ::= { opticsIMSdhPmMCConf 1 }
+opticsIMSdhPmMCGroup      OBJECT IDENTIFIER ::= { opticsIMSdhPmMCConf 2 }
+
+opticsIMSdhPmMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMSdhPmMib. "
+
+       MODULE -- opticsIMSdhPmMib  
+
+
+MANDATORY-GROUPS { opticsIMRsCurrentDataGroup,
+                                            opticsIMRsHistoryDataGroup,
+                                            opticsIMRsThresholdDataGroup,
+                                            opticsIMRsCurrentDataGroup}
+
+
+GROUP opticsIMOptRsCurrentDataGroup
+      DESCRIPTION
+          " This group contains the optional CD objects used for SDH RS Performance Monitoring. "
+
+GROUP opticsIMOptRsHistoryDataGroup
+      DESCRIPTION
+          " This group contains the optional HD objects used for SDH RS Performance Monitoring."
+
+GROUP opticsIMOptMsNECurrentDataGroup
+      DESCRIPTION
+          " This group contains the optional CD objects used for SDH MS Near End Performance 
+             Monitoring."
+
+GROUP opticsIMOptMsNEHistoryDataGroup
+      DESCRIPTION
+          " This group contains the optional HD objects used for SDH MS Near End Performance 
+             Monitoring."
+
+GROUP opticsIMOptMsNEThresholdDataGroup
+      DESCRIPTION
+          " This group contains the optional TD objects used for SDH MS Near End Performance 
+             Monitoring."
+
+GROUP opticsIMOptMsFECurrentDataGroup
+      DESCRIPTION
+           " This group contains the optional CD objects used for SDH MS Far End Performance 
+             Monitoring."
+
+GROUP opticsIMOptMsFEHistoryDataGroup
+      DESCRIPTION
+          " This group contains the optional HD objects used for SDH MS Far End Performance 
+             Monitoring."
+
+GROUP opticsIMOptMsFEThresholdDataGroup
+      DESCRIPTION
+          " This group contains the optional TD objects used for SDH MS Far End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc4NECurrentDataGroup
+      DESCRIPTION
+          " This group contains the optional CD objects used for SDH Vc4 Near End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc4NEHistoryDataGroup
+      DESCRIPTION
+          " This group contains the optional HD objects used for SDH Vc4 Near End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc4NEThresholdDataGroup
+      DESCRIPTION
+" This group contains the optional TD objects used for SDH Vc4 Near End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc4FECurrentDataGroup
+      DESCRIPTION
+          " This group contains the optional CD objects used for SDH Vc4 Far End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc4FEHistoryDataGroup
+      DESCRIPTION
+          " This group contains the optional HD objects used for SDH Vc4 Far End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc4FEThresholdDataGroup
+      DESCRIPTION
+          " This group contains the optional TD objects used for SDH Vc4 Far End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc3NECurrentDataGroup
+      DESCRIPTION
+          " This group contains the optional CD objects used for SDH Vc3 Near End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc3NEHistoryDataGroup
+      DESCRIPTION
+          " This group contains the optional HD objects used for SDH Vc3 Near End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc3NEThresholdDataGroup
+      DESCRIPTION
+          " This group contains the optional TD objects used for SDH Vc3 Near End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc3FECurrentDataGroup
+      DESCRIPTION
+         " This group contains the optional CD objects used for SDH Vc3 Far End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc3FEHistoryDataGroup
+      DESCRIPTION
+          " This group contains the optional HD objects used for SDH Vc3 Far End Performance 
+             Monitoring."
+
+GROUP opticsIMOptVc3FEThresholdDataGroup
+      DESCRIPTION
+          " This group contains the optional TD objects used for SDH Vc3 Far End Performance 
+             Monitoring."
+
+::= { opticsIMSdhPmMCCompl 1 }
+
+
+opticsIMRsCurrentDataGroup OBJECT-GROUP
+      OBJECTS {  pmRsCDElapsedTime,
+                           pmRsCDGranularityPeriod, 
+                           pmRsCDMaxSuppressedIntervals, 
+                           pmRsCDNumSuppressedIntervals, 
+                           pmRsCDSuspectIntervalFlag,
+                           pmRsCDThresholdDataInstance,
+                           pmRsCDStartByOS,
+                           pmRsCDSes,
+                           pmRsCDUas,
+                           pmRsCDBbe,
+                           pmRsCDEs,
+                           pmRsCDRowStatus,
+                           pmRsCDAsapIndex }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing CD for SDH RS."
+::= { opticsIMSdhPmMCGroup 1 }  
+
+opticsIMRsHistoryDataGroup OBJECT-GROUP
+      OBJECTS {  pmRsHDElapsedTime,
+                           pmRsHDGranularityPeriod, 
+                           pmRsHDNumSuppressedIntervals, 
+                           pmRsHDSuspectIntervalFlag,
+                           pmRsHDStartByOS,
+                           pmRsHDSes,
+                           pmRsHDUas,
+                           pmRsHDBbe,
+                           pmRsHDEs }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing HD for SDH RS."
+::= { opticsIMSdhPmMCGroup 2 }  
+
+opticsIMRsThresholdDataGroup OBJECT-GROUP
+      OBJECTS { pmRsSesHighThr,
+                          pmRsSesLowThr,
+                          pmRsBbeHighThr,
+                          pmRsBbeLowThr,
+                          pmRsEsHighThr,
+                          pmRsEsLowThr,
+                          pmRsUserLabel,
+                          pmRsRowStatus,
+                          opticsIMRsThrIndexNext  }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing TD for SDH RS."
+::= { opticsIMSdhPmMCGroup 3 }  
+
+
+opticsIMOptRsCurrentDataGroup OBJECT-GROUP
+      OBJECTS { pmRsCDOfs}
+      STATUS current         
+      DESCRIPTION 
+          "A collection of optional objects providing CD for SDH Rs"
+::= { opticsIMSdhPmMCGroup 4 }  
+
+opticsIMOptRsHistoryDataGroup OBJECT-GROUP
+      OBJECTS {  pmRsHDOfs }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of optional objects providing HD for SDH RS."
+::= { opticsIMSdhPmMCGroup 5 }  
+
+
+opticsIMOptMsNECurrentDataGroup OBJECT-GROUP
+      OBJECTS {  pmMsNECDElapsedTime,
+                           pmMsNECDGranularityPeriod, 
+                           pmMsNECDMaxSuppressedIntervals, 
+                           pmMsNECDNumSuppressedIntervals, 
+                           pmMsNECDSuspectIntervalFlag,
+                           pmMsNECDThresholdDataInstance,
+                           pmMsNECDStartByOS,
+                           pmMsNECDSes,
+                           pmMsNECDUas,
+                           pmMsNECDBbe,
+                           pmMsNECDEs,
+                           pmMsNECDRowStatus,
+                           pmMsNECDAsapIndex }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing CD for SDH MS Near End."
+::= { opticsIMSdhPmMCGroup 6 }  
+
+opticsIMOptMsNEHistoryDataGroup OBJECT-GROUP
+      OBJECTS {  pmMsNEHDElapsedTime,
+                           pmMsNEHDGranularityPeriod, 
+                           pmMsNEHDNumSuppressedIntervals, 
+                           pmMsNEHDSuspectIntervalFlag,
+                           pmMsNEHDStartByOS,
+                           pmMsNEHDSes,
+                           pmMsNEHDUas,
+                           pmMsNEHDBbe,
+                           pmMsNEHDEs }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing HD for SDH MS Near End."
+::= { opticsIMSdhPmMCGroup 7 }  
+
+opticsIMOptMsNEThresholdDataGroup OBJECT-GROUP
+      OBJECTS { pmMsNESesHighThr,
+                          pmMsNESesLowThr,
+                          pmMsNEBbeHighThr,
+                          pmMsNEBbeLowThr,
+                          pmMsNEEsHighThr,
+                          pmMsNEEsLowThr,
+                          pmMsNEUserLabel,
+                          pmMsNERowStatus,
+                          opticsIMMsNEThrIndexNext  }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing TD for SDH MS Near End."
+::= { opticsIMSdhPmMCGroup 8 }  
+
+
+opticsIMOptMsFECurrentDataGroup OBJECT-GROUP
+      OBJECTS {  pmMsFECDElapsedTime,
+                           pmMsFECDGranularityPeriod, 
+                           pmMsFECDMaxSuppressedIntervals, 
+                           pmMsFECDNumSuppressedIntervals, 
+                           pmMsFECDSuspectIntervalFlag,
+                           pmMsFECDThresholdDataInstance,
+                           pmMsFECDStartByOS,
+                           pmMsFECDSes,
+                           pmMsFECDUas,
+                           pmMsFECDBbe,
+                           pmMsFECDEs,
+                           pmMsFECDRowStatus,
+                           pmMsFECDAsapIndex }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing CD for SDH MS Far End."
+::= { opticsIMSdhPmMCGroup 9 }  
+
+opticsIMOptMsFEHistoryDataGroup OBJECT-GROUP
+      OBJECTS {  pmMsFEHDElapsedTime,
+                           pmMsFEHDGranularityPeriod, 
+                           pmMsFEHDNumSuppressedIntervals, 
+                           pmMsFEHDSuspectIntervalFlag,
+                           pmMsFEHDStartByOS,
+                           pmMsFEHDSes,
+                           pmMsFEHDUas,
+                           pmMsFEHDBbe,
+                           pmMsFEHDEs }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing HD for SDH MS Far End."
+::= { opticsIMSdhPmMCGroup 10 }  
+
+opticsIMOptMsFEThresholdDataGroup OBJECT-GROUP
+      OBJECTS { pmMsFESesHighThr,
+                          pmMsFESesLowThr,
+                          pmMsFEBbeHighThr,
+                          pmMsFEBbeLowThr,
+                          pmMsFEEsHighThr,
+                          pmMsFEEsLowThr,
+                          pmMsFEUserLabel,
+                          pmMsFERowStatus,
+                          opticsIMMsFEThrIndexNext  }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing TD for SDH MS Far End."
+::= { opticsIMSdhPmMCGroup 11 }  
+
+
+opticsIMOptVc4NECurrentDataGroup OBJECT-GROUP
+      OBJECTS {  pmVc4NECDElapsedTime,
+                           pmVc4NECDGranularityPeriod, 
+                           pmVc4NECDMaxSuppressedIntervals, 
+                           pmVc4NECDNumSuppressedIntervals, 
+                           pmVc4NECDSuspectIntervalFlag,
+                           pmVc4NECDThresholdDataInstance,
+                           pmVc4NECDStartByOS,
+                           pmVc4NECDSes,
+                           pmVc4NECDUas,
+                           pmVc4NECDBbe,
+                           pmVc4NECDEs,
+                           pmVc4NECDRowStatus,
+                           pmVc4NECDAsapIndex }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing CD for SDH VC4 Near End."
+::= { opticsIMSdhPmMCGroup 12 }  
+
+opticsIMOptVc4NEHistoryDataGroup OBJECT-GROUP
+      OBJECTS {  pmVc4NEHDElapsedTime,
+                           pmVc4NEHDGranularityPeriod, 
+                           pmVc4NEHDNumSuppressedIntervals, 
+                           pmVc4NEHDSuspectIntervalFlag,
+                           pmVc4NEHDStartByOS,
+                           pmVc4NEHDSes,
+                           pmVc4NEHDUas,
+                           pmVc4NEHDBbe,
+                           pmVc4NEHDEs }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing HD for SDH VC4 Near End."
+::= { opticsIMSdhPmMCGroup 13 }  
+
+opticsIMOptVc4NEThresholdDataGroup OBJECT-GROUP
+      OBJECTS { pmVc4NESesHighThr,
+                          pmVc4NESesLowThr,
+                          pmVc4NEBbeHighThr,
+                          pmVc4NEBbeLowThr,
+                          pmVc4NEEsHighThr,
+                          pmVc4NEEsLowThr,
+                          pmVc4NEUserLabel,
+                          pmVc4NERowStatus,
+                          opticsIMVc4NEThrIndexNext  }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing TD for SDH VC4NE."
+::= { opticsIMSdhPmMCGroup 14 }  
+
+
+opticsIMOptVc4FECurrentDataGroup OBJECT-GROUP
+      OBJECTS {  pmVc4FECDElapsedTime,
+                           pmVc4FECDGranularityPeriod, 
+                           pmVc4FECDMaxSuppressedIntervals, 
+                           pmVc4FECDNumSuppressedIntervals, 
+                           pmVc4FECDSuspectIntervalFlag,
+                           pmVc4FECDThresholdDataInstance,
+                           pmVc4FECDStartByOS,
+                           pmVc4FECDSes,
+                           pmVc4FECDUas,
+                           pmVc4FECDBbe,
+                           pmVc4FECDEs,
+                           pmVc4FECDRowStatus,
+                           pmVc4FECDAsapIndex }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing CD for SDH VC4 Near End."
+::= { opticsIMSdhPmMCGroup 15 }  
+
+opticsIMOptVc4FEHistoryDataGroup OBJECT-GROUP
+      OBJECTS {  pmVc4FEHDElapsedTime,
+                           pmVc4FEHDGranularityPeriod, 
+                           pmVc4FEHDNumSuppressedIntervals, 
+                           pmVc4FEHDSuspectIntervalFlag,
+                           pmVc4FEHDStartByOS,
+                           pmVc4FEHDSes,
+                           pmVc4FEHDUas,
+                           pmVc4FEHDBbe,
+                           pmVc4FEHDEs }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing HD for SDH VC4 Far End."
+::= { opticsIMSdhPmMCGroup 16 }  
+
+opticsIMOptVc4FEThresholdDataGroup OBJECT-GROUP
+      OBJECTS { pmVc4FESesHighThr,
+                          pmVc4FESesLowThr,
+                          pmVc4FEBbeHighThr,
+                          pmVc4FEBbeLowThr,
+                          pmVc4FEEsHighThr,
+                          pmVc4FEEsLowThr,
+                          pmVc4FEUserLabel,
+                          pmVc4FERowStatus,
+                          opticsIMVc4FEThrIndexNext  }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing TD for SDH VC4 Far End."
+::= { opticsIMSdhPmMCGroup 17 }  
+
+
+opticsIMOptVc3NECurrentDataGroup OBJECT-GROUP
+      OBJECTS {  pmVc3NECDElapsedTime,
+                           pmVc3NECDGranularityPeriod, 
+                           pmVc3NECDMaxSuppressedIntervals, 
+                           pmVc3NECDNumSuppressedIntervals, 
+                           pmVc3NECDSuspectIntervalFlag,
+                           pmVc3NECDThresholdDataInstance,
+                           pmVc3NECDStartByOS,
+                           pmVc3NECDSes,
+                           pmVc3NECDUas,
+                           pmVc3NECDBbe,
+                           pmVc3NECDEs,
+                           pmVc3NECDRowStatus,
+                           pmVc3NECDAsapIndex }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing CD for SDH VC3 Near End."
+::= { opticsIMSdhPmMCGroup 18 }  
+
+opticsIMOptVc3NEHistoryDataGroup OBJECT-GROUP
+      OBJECTS {  pmVc3NEHDElapsedTime,
+                           pmVc3NEHDGranularityPeriod, 
+                           pmVc3NEHDNumSuppressedIntervals, 
+                           pmVc3NEHDSuspectIntervalFlag,
+                           pmVc3NEHDStartByOS,
+                           pmVc3NEHDSes,
+                           pmVc3NEHDUas,
+                           pmVc3NEHDBbe,
+                           pmVc3NEHDEs }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing HD for SDH VC3 Near End."
+::= { opticsIMSdhPmMCGroup 19 }  
+
+opticsIMOptVc3NEThresholdDataGroup OBJECT-GROUP
+      OBJECTS { pmVc3NESesHighThr,
+                          pmVc3NESesLowThr,
+                          pmVc3NEBbeHighThr,
+                          pmVc3NEBbeLowThr,
+                          pmVc3NEEsHighThr,
+                          pmVc3NEEsLowThr,
+                          pmVc3NEUserLabel,
+                          pmVc3NERowStatus,
+                          opticsIMVc3NEThrIndexNext  }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing TD for SDH VC3 Near End."
+::= { opticsIMSdhPmMCGroup 20 }  
+
+
+opticsIMOptVc3FECurrentDataGroup OBJECT-GROUP
+      OBJECTS {  pmVc3FECDElapsedTime,
+                           pmVc3FECDGranularityPeriod, 
+                           pmVc3FECDMaxSuppressedIntervals, 
+                           pmVc3FECDNumSuppressedIntervals, 
+                           pmVc3FECDSuspectIntervalFlag,
+                           pmVc3FECDThresholdDataInstance,
+                           pmVc3FECDStartByOS,
+                           pmVc3FECDSes,
+                           pmVc3FECDUas,
+                           pmVc3FECDBbe,
+                           pmVc3FECDEs,
+                           pmVc3FECDRowStatus,
+                           pmVc3FECDAsapIndex }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing CD for SDH VC3 Far End."
+::= { opticsIMSdhPmMCGroup 21 }  
+
+opticsIMOptVc3FEHistoryDataGroup OBJECT-GROUP
+      OBJECTS {  pmVc3FEHDElapsedTime,
+                           pmVc3FEHDGranularityPeriod, 
+                           pmVc3FEHDNumSuppressedIntervals, 
+                           pmVc3FEHDSuspectIntervalFlag,
+                           pmVc3FEHDStartByOS,
+                           pmVc3FEHDSes,
+                           pmVc3FEHDUas,
+                           pmVc3FEHDBbe,
+                           pmVc3FEHDEs }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing HD for SDH VC3 Far End."
+::= { opticsIMSdhPmMCGroup 22}  
+
+opticsIMOptVc3FEThresholdDataGroup OBJECT-GROUP
+      OBJECTS { pmVc3FESesHighThr,
+                          pmVc3FESesLowThr,
+                          pmVc3FEBbeHighThr,
+                          pmVc3FEBbeLowThr,
+                          pmVc3FEEsHighThr,
+                          pmVc3FEEsLowThr,
+                          pmVc3FEUserLabel,
+                          pmVc3FERowStatus,
+                          opticsIMVc3FEThrIndexNext  }
+      STATUS current         
+      DESCRIPTION 
+          "A collection of objects providing TD for SDH VC3 Far End."
+::= { opticsIMSdhPmMCGroup 23 }  
+
+
+
+END
+

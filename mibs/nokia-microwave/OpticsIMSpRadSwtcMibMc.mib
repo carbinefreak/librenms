@@ -1,0 +1,947 @@
+OPTICSIM-RADIO-SWTC-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+       Integer32, Unsigned32 FROM SNMPv2-SMI
+       TruthValue FROM SNMPv2-TC
+       MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP FROM SNMPv2-CONF
+       tsdimEventObjectClassIdentifier, tsdimEventObjectInstanceIdentifier,
+       tsdimEventNotificationId, tsdimEventTime, tsdimAlarmSeverity,
+       tsdimAlarmSpecProblem, opticsIMAdditionalText, opticsIMAlarmType FROM TSDIM-SUPPORT-MIB
+       OpticsIMProtectionGroupType, OpticsIMProtectionSwitchStatus,    
+       OpticsIMProtectionSwitchCommand,
+       OpticsIMProtectionPriority, OpticsIMEquipmentProtectionSwitchCriteria,
+       OpticsIMRevertive, OpticsIMProtectionUnitType, 
+       OpticsIMRadioChannelNumber FROM OPTICSIM-COMMON-TC
+       opticsimRadioMib, opticsimRadioMC FROM OPTICSIM-RADIOREG-MIB
+       TsdimOperationalState  FROM TSDIM-SNMP-TC;
+
+ opticsIMRadioSwtcMib MODULE-IDENTITY
+       LAST-UPDATED "0711290000Z" 
+       ORGANIZATION "Alcatel TND"
+       CONTACT-INFO "Alcatel TND"
+       DESCRIPTION 
+                 "SwitchCriteria for servChProtectionUnit is changed from OpticsIMEquipmentProtectionSwitchCriteria
+                  type to INTEGER type."
+       REVISION "0602160000Z" 
+       DESCRIPTION 
+                 "Added on OpticsIMRadioRxStaticDelay the new columnar object xxxASAPIndex."
+       REVISION "0504070000Z" 
+       DESCRIPTION 
+                 "For each alarm notification (raise and clear) the following objects have been added:
+                - opticsIMAdditionalText
+                - opticsIMAlarmType"
+       REVISION "0409300000Z" 
+       DESCRIPTION 
+                 "Added the objects ReceivedPowerLevelThr for EW alarm.
+                  Added the enable for EW and LowBER alarm for RPS switch."
+       REVISION "0406150000Z" 
+
+       DESCRIPTION 
+                 "Added the WST protection definition. "
+       REVISION "0310100000Z" 
+       DESCRIPTION 
+                 "Added the WST and Radio Service Channels protection objects. "
+       REVISION "0303140000Z" 
+       DESCRIPTION 
+                " Renaming of CLA definitions. "
+       REVISION "0211050000Z" 
+       DESCRIPTION 
+                " Added the scalar object opticsIMRadioClaStatus. "
+       REVISION "0207240000Z" 
+       DESCRIPTION 
+                " Objects related to rx static delay have been moved from opticsIMRadioProtectionUnit table to 
+                  a new table OpticsIMRadioRxStaticDelay. "
+       REVISION "0205100000Z" 
+       DESCRIPTION
+                " Added hitless object in the RadioProtectionGroup entry. Radio CLA objects have been moved 
+                  from RADIO-NE-MIB.
+                  Other minor editorial changes have been done."
+       REVISION "0201250000Z" 
+       DESCRIPTION
+                "Initial Release of Radio Protections MIB."
+ ::= {  opticsimRadioMib 4}
+
+
+opticsIMRadioSwtcMibObject      OBJECT IDENTIFIER ::= { opticsIMRadioSwtcMib 1 }
+
+OpticsIMPowerLevel ::= TEXTUAL-CONVENTION
+     STATUS current
+     DESCRIPTION
+        " This object specifies the absolute Power Level.
+           It is an integer with associated measure unit expressed in decade of dBm (e.g. 255 means 
+            25.5 dBm)."
+     SYNTAX Integer32
+
+opticsIMRadioProtectionGroupTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF   OpticsIMRadioProtectionGroupEntry
+	MAX-ACCESS                     not-accessible
+	STATUS                               current
+	DESCRIPTION
+" This table is used to manage all the protection schemes related to the Radio Protection Switch  
+  (RPS) function."
+::= { opticsIMRadioSwtcMibObject 1 } 
+
+opticsIMRadioProtectionGroupEntry OBJECT-TYPE
+	SYNTAX                     OpticsIMRadioProtectionGroupEntry
+	MAX-ACCESS            not-accessible
+	STATUS                      current
+	DESCRIPTION
+"An entry of the opticsIMRadioProtectionGroup table. Each entry corresponds to a Radio Protection 
+ Switch  protection scheme and allows to define all the related common management functions."
+	INDEX    { opticsIMRadioProtectionGroupIndex }
+::= { opticsIMRadioProtectionGroupTable 1 }
+
+OpticsIMRadioProtectionGroupEntry ::= SEQUENCE {
+   opticsIMRadioProtectionGroupIndex                          Unsigned32,
+   opticsIMRadioProtectionGroupType                           OpticsIMProtectionGroupType,
+   opticsIMRadioProtectionGroupHitless                        TruthValue,
+   opticsIMRadioProtectionGroupMismatchStatus         TruthValue,
+   opticsIMRadioProtectionGroupRevertive                   OpticsIMRevertive,
+   opticsIMRadioProtectionGroupExtraTraffic                INTEGER,
+   opticsIMRadioProtectionGroupPrivilegedChannel     OpticsIMRadioChannelNumber,
+   opticsIMRadioProtectionGroupOperationalState       TsdimOperationalState
+   }
+
+opticsIMRadioProtectionGroupIndex OBJECT-TYPE
+	SYNTAX					Unsigned32
+	MAX-ACCESS			not-accessible
+	STATUS					current
+	DESCRIPTION
+" This object is the identifier of the opticsIMRadioProtectionGroupTable. "
+::= { opticsIMRadioProtectionGroupEntry 1 }
+
+opticsIMRadioProtectionGroupType OBJECT-TYPE
+	SYNTAX					OpticsIMProtectionGroupType 
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMRadioProtectionGroupEntry 2 }
+
+opticsIMRadioProtectionGroupHitless OBJECT-TYPE
+	SYNTAX					TruthValue
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" This object specifies whether the hitless capability is present. A value of TRUE indicates that the 
+  hitless capability is present in the protection system. "
+::= { opticsIMRadioProtectionGroupEntry 3 }
+
+opticsIMRadioProtectionGroupMismatchStatus OBJECT-TYPE
+	SYNTAX					TruthValue
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" This object indicates a mismatch between the local and far-end values for the protection group type. 
+   The TRUE value indicates  that a mismatch has occurred."
+::= { opticsIMRadioProtectionGroupEntry 4 }
+
+opticsIMRadioProtectionGroupRevertive  OBJECT-TYPE
+	SYNTAX					OpticsIMRevertive
+	MAX-ACCESS			read-write
+	STATUS					current
+	DESCRIPTION
+" See Textual conventions."
+::= { opticsIMRadioProtectionGroupEntry 5 }
+
+opticsIMRadioProtectionGroupExtraTraffic OBJECT-TYPE
+	SYNTAX  INTEGER {
+         enabled   (0),
+         disabled   (1) 
+         }
+	MAX-ACCESS			read-write
+	STATUS					current
+	DESCRIPTION
+" This object specifies if the extra traffic is enabled or disabled on the protecting channel. It can be 
+   used only whether the protection scheme is 1:N. "
+::= { opticsIMRadioProtectionGroupEntry 6 }
+
+opticsIMRadioProtectionGroupPrivilegedChannel OBJECT-TYPE
+	SYNTAX					OpticsIMRadioChannelNumber
+	MAX-ACCESS			read-write
+	STATUS					current
+	DESCRIPTION
+" This object specifies the protected channel permanently bridged in Tx side (in absence of any
+  switching requests) to the protecting channel.  
+  It can be used only whether the protection scheme is 1:N. "
+::= { opticsIMRadioProtectionGroupEntry 7 }
+
+opticsIMRadioProtectionGroupOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMRadioProtectionGroupEntry 8 }
+
+
+opticsIMRadioProtectionUnitTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF   OpticsIMRadioProtectionUnitEntry
+	MAX-ACCESS                     not-accessible
+	STATUS                               current
+	DESCRIPTION
+" This table contains the Radio Protection Unit associated to each Radio Protection Group."
+::= { opticsIMRadioSwtcMibObject 2 } 
+
+opticsIMRadioProtectionUnitEntry OBJECT-TYPE
+	SYNTAX                          OpticsIMRadioProtectionUnitEntry
+	MAX-ACCESS                 not-accessible
+	STATUS                           current
+	DESCRIPTION
+  "An entry in the opticsIMRadioProtectionUnit table. Entries of this table are created when the 
+   associated Radio Protection Group is created and, when the related group is already created, as 
+   consequence of the Radio provisioning. "
+	INDEX  { opticsIMRadioProtectionGroupIndex, opticsIMRadioProtectionUnitChannelNumber }
+::= { opticsIMRadioProtectionUnitTable 1 }
+
+OpticsIMRadioProtectionUnitEntry ::= SEQUENCE {
+   opticsIMRadioProtectionUnitChannelNumber       OpticsIMRadioChannelNumber,
+   opticsIMRadioProtectionUnitType                         OpticsIMProtectionUnitType,
+   opticsIMRadioProtectionUnitSwitchCommand      OpticsIMProtectionSwitchCommand,
+   opticsIMRadioProtectionUnitSwitchCriteria           INTEGER,
+   opticsIMRadioProtectionUnitSwitchStatus            OpticsIMProtectionSwitchStatus,
+   opticsIMRadioProtectionUnitPriority                      OpticsIMProtectionPriority
+   }
+
+opticsIMRadioProtectionUnitChannelNumber OBJECT-TYPE
+	SYNTAX					OpticsIMRadioChannelNumber
+	MAX-ACCESS			not-accessible
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMRadioProtectionUnitEntry 1 }
+
+opticsIMRadioProtectionUnitType OBJECT-TYPE
+	SYNTAX					OpticsIMProtectionUnitType
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMRadioProtectionUnitEntry 2 }
+
+opticsIMRadioProtectionUnitSwitchCommand OBJECT-TYPE
+	SYNTAX					OpticsIMProtectionSwitchCommand
+	MAX-ACCESS			read-write
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMRadioProtectionUnitEntry 3 }
+
+opticsIMRadioProtectionUnitSwitchCriteria OBJECT-TYPE
+	SYNTAX INTEGER {
+         noOne   (0),
+         earlyWarning   (1),
+         lowBer   (2),
+         highBer   (3),
+         signalFail   (4)
+         }
+	MAX-ACCESS				read-only
+	STATUS						current
+	DESCRIPTION
+" This object contains the highest priority automatic switch request currently active on the channel. "
+::= { opticsIMRadioProtectionUnitEntry 4 }
+
+opticsIMRadioProtectionUnitSwitchStatus OBJECT-TYPE
+	SYNTAX					OpticsIMProtectionSwitchStatus
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMRadioProtectionUnitEntry 5 }
+
+opticsIMRadioProtectionUnitPriority OBJECT-TYPE
+	SYNTAX					OpticsIMProtectionPriority
+	MAX-ACCESS			read-write
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMRadioProtectionUnitEntry 6 }
+
+
+opticsIMRadioRxStaticDelayTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF    OpticsIMRadioRxStaticDelayEntry
+     MAX-ACCESS                      not-accessible
+     STATUS                                current
+     DESCRIPTION
+" This table is used to manage the Rx Static Delay radio functionality. "
+::= { opticsIMRadioSwtcMibObject 6 } 
+
+opticsIMRadioRxStaticDelayEntry OBJECT-TYPE
+     SYNTAX                          OpticsIMRadioRxStaticDelayEntry
+     MAX-ACCESS                 not-accessible
+     STATUS                           current
+     DESCRIPTION
+  "An entry in the opticsIMRadioRxStaticDelay table. Each entry of this table is associated to an entry 
+   of the opticsIMRadioProtectionUnit table. These entries are created, only whether the hitless 
+   capability is supported, when the associated Radio Protection Unit are created. "
+     INDEX  { opticsIMRadioProtectionGroupIndex, opticsIMRadioProtectionUnitChannelNumber }
+::= { opticsIMRadioRxStaticDelayTable 1 }
+
+OpticsIMRadioRxStaticDelayEntry ::= SEQUENCE {
+   opticsIMRadioAutoRxStaticDelayAlignment          INTEGER,
+   opticsIMRadioAutoRxStaticDelayDirectAway        Integer32,
+   opticsIMRadioAutoRxStaticDelayIndirectAway	     Integer32,
+   opticsIMRadioManRxStaticDelay                          INTEGER,
+   opticsIMRadioManRxStaticDelayDirectAway        Integer32,
+   opticsIMRadioManRxStaticDelayIndirectAway      Integer32,
+   opticsIMRadioManRxStaticDelayAsapIndex		      Integer32
+   }
+
+opticsIMRadioAutoRxStaticDelayAlignment OBJECT-TYPE
+     SYNTAX INTEGER {
+         aligning  (1),
+         notAligning  (2) 
+         }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       "This object is used to trigger the start of an automatic static delay alignment procedure.
+        In case of success of the procedure the number of delays inserted on each away are indicated in 
+        the objects RadioAutoRxStaticDelaysDirectAway and RadioAutoRxStaticDelaysIndirectAway.
+        When the procedure has been completed, the agent has to change the value back to notAligning. "
+::= { opticsIMRadioRxStaticDelayEntry 1 }
+
+opticsIMRadioAutoRxStaticDelayDirectAway OBJECT-TYPE
+	SYNTAX					Integer32
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" This object specifies the number of delays inserted on the direct away by the automatic static delay 
+  alignment procedure. The value -1 indicates that the procedure has not yet activated. "
+::= { opticsIMRadioRxStaticDelayEntry 2 }
+
+opticsIMRadioAutoRxStaticDelayIndirectAway OBJECT-TYPE
+	SYNTAX					Integer32
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" This object specifies the number of delays inserted on the indirect away by the automatic static 
+  delay alignment procedure. The value -1 indicates that the procedure has not yet activated. "
+::= { opticsIMRadioRxStaticDelayEntry 3 }
+
+opticsIMRadioManRxStaticDelay OBJECT-TYPE
+     SYNTAX INTEGER {
+        manOpActive  (1),
+        manOpNotActive  (2) 
+        }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       "This object is used to initiate (manOpActive) or terminate (manOpNotActive) a manual handling 
+        of the rx static delay. 
+        When a manual handling of the rx static delay is initiated an Abnormal Condition indication is 
+        generated. When it is terminated the Abnormal Condition indication is removed. "
+::= { opticsIMRadioRxStaticDelayEntry 4 }
+
+opticsIMRadioManRxStaticDelayDirectAway OBJECT-TYPE
+	SYNTAX					Integer32
+	MAX-ACCESS			read-write
+	STATUS					current
+	DESCRIPTION
+" This object specifies the number of delays inserted on the direct away by a manual handling of the 
+   rx static delay. "
+::= { opticsIMRadioRxStaticDelayEntry 5 }
+
+opticsIMRadioManRxStaticDelayIndirectAway OBJECT-TYPE
+	SYNTAX					Integer32
+	MAX-ACCESS			read-write
+	STATUS					current
+	DESCRIPTION
+" This object specifies the number of delays inserted on the indirect away by a manual handling of the 
+   rx static delay. "
+::= { opticsIMRadioRxStaticDelayEntry 6 }
+
+opticsIMRadioManRxStaticDelayAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMRadioRxStaticDelayEntry 7 }
+
+opticsIMRxPowerLevelThresholdMngt OBJECT IDENTIFIER ::= { opticsIMRadioSwtcMibObject 10 }
+
+opticsIMEWRxPowerLevelThr OBJECT-TYPE
+     SYNTAX					OpticsIMPowerLevel
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the absolute Received Power Level used to raise an EW alarm. 
+         See textual convention."
+::= { opticsIMRxPowerLevelThresholdMngt 1 }
+
+opticsIMEWRxPowerLevelMinThr OBJECT-TYPE
+     SYNTAX					OpticsIMPowerLevel
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the minimum value allowed for Received Power Level threshold used to 
+          raise an EW alarm.
+          See textual convention."
+::= { opticsIMRxPowerLevelThresholdMngt 2 }
+
+opticsIMEWRxPowerLevelMaxThr OBJECT-TYPE
+     SYNTAX					OpticsIMPowerLevel
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+     " This object specifies the maximum value allowed for Received Power Level threshold used to 
+        raise an EW alarm.
+        See textual convention."
+::= { opticsIMRxPowerLevelThresholdMngt 3 }
+
+
+opticsIMRadioSwitchEWEnabled OBJECT-TYPE
+     SYNTAX					INTEGER {
+         enabledBoth                  (1),
+         enabledBEROnly           (2),
+         enabledRxPowerOnly    (3),
+         disabled                         (4)
+      }
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " This object specifies whether the RPS Switch occur when an EW alarm is raised.
+       The 'enabledBoth' value indicates that an RPS switch occurs when an EW alarm 
+       is triggered both for BER threshold and Received Power Level threshold raised.
+       The 'enabledBEROnly' value indicates that an RPS switch occurs when an EW alarm 
+       is triggered only for BER threshold raised.
+       The 'enabledRxPowerOnly' value indicates that an RPS switch occurs when an EW alarm 
+       is triggered only for Received Power Level threshold raised.
+       The 'disabled' value disable RPS switch when the EW alarm is raised. However if the 
+        conditions that contribute to trigger the EW alarm occur, the EW alarm is raised 
+        (without switching)."
+::= { opticsIMRadioSwtcMibObject 11 }
+
+opticsIMRadioSwitchLowBEREnabled OBJECT-TYPE
+SYNTAX						INTEGER {
+         enabled   (0),
+         disabled   (1)
+      }
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " This object specifies whether the RPS Switch occurs when an lowBER alarm is raised.
+       The 'enabled' value indicates that an RPS switch occurs when an lowBER alarm is raised
+       The 'disabled' value disable RPS switch when the lowBER alarm is raised. However the lowBER 
+       alarm is raised (without switching)."
+::= { opticsIMRadioSwtcMibObject 12 }
+
+
+opticsIMTxProtectionGroupTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF    OpticsIMTxProtectionGroupEntry
+	MAX-ACCESS                      not-accessible
+	STATUS                                current
+	DESCRIPTION
+" This table is used to manage all the protection schemes related to the Tx Protection Switch  
+  (TPS) function in Hot Stand-by configuration (protection group type 1+1)."
+::= { opticsIMRadioSwtcMibObject 3 } 
+
+opticsIMTxProtectionGroupEntry OBJECT-TYPE
+	SYNTAX                          OpticsIMTxProtectionGroupEntry
+	MAX-ACCESS                 not-accessible
+	STATUS                           current
+	DESCRIPTION
+"An entry of the opticsIMTxProtectionGroup table. Each entry corresponds to a Tx Protection 
+ Switch  protection scheme and allows to define all the related common management functions."
+	INDEX  { opticsIMTxProtectionGroupIndex }
+::= { opticsIMTxProtectionGroupTable 1 }
+
+OpticsIMTxProtectionGroupEntry ::= SEQUENCE {
+   opticsIMTxProtectionGroupIndex                          Unsigned32,
+   opticsIMTxProtectionGroupRevertive                    OpticsIMRevertive,
+   opticsIMTxProtectionGroupOperationalState        TsdimOperationalState
+   }
+
+opticsIMTxProtectionGroupIndex OBJECT-TYPE
+	SYNTAX					Unsigned32
+	MAX-ACCESS			not-accessible
+	STATUS					current
+	DESCRIPTION
+" This object is the identifier of the opticsIMTxProtectionGroupTable. "
+::= { opticsIMTxProtectionGroupEntry 1 }
+
+opticsIMTxProtectionGroupRevertive OBJECT-TYPE
+	SYNTAX					OpticsIMRevertive
+	MAX-ACCESS			read-write
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions."
+::= { opticsIMTxProtectionGroupEntry 2 }
+
+opticsIMTxProtectionGroupOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMTxProtectionGroupEntry 3 }
+
+
+opticsIMTxProtectionUnitTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF    OpticsIMTxProtectionUnitEntry
+	MAX-ACCESS                      not-accessible
+	STATUS                                current
+	DESCRIPTION
+  " This table contains the Tx Protection Unit associated to each Tx Protection Group."
+::= { opticsIMRadioSwtcMibObject 4 } 
+
+opticsIMTxProtectionUnitEntry OBJECT-TYPE
+	SYNTAX                          OpticsIMTxProtectionUnitEntry
+	MAX-ACCESS                 not-accessible
+	STATUS                           current
+	DESCRIPTION
+  "An entry in the opticsIMTxProtectionUnit table. Entries of this table are created when the 
+   associated Tx Protection Group is created and, when the related group is already created, as 
+   consequence of the Radio provisioning. "
+	INDEX  { opticsIMTxProtectionGroupIndex, opticsIMTxProtectionUnitChannelNumber }
+::= { opticsIMTxProtectionUnitTable 1 }
+
+OpticsIMTxProtectionUnitEntry ::= SEQUENCE {
+   opticsIMTxProtectionUnitChannelNumber       OpticsIMRadioChannelNumber,
+   opticsIMTxProtectionUnitType	                         OpticsIMProtectionUnitType,
+   opticsIMTxProtectionUnitSwitchCommand      OpticsIMProtectionSwitchCommand,
+   opticsIMTxProtectionUnitSwitchCriteria           OpticsIMEquipmentProtectionSwitchCriteria,
+   opticsIMTxProtectionUnitSwitchStatus            OpticsIMProtectionSwitchStatus
+   }
+
+opticsIMTxProtectionUnitChannelNumber OBJECT-TYPE
+	SYNTAX					OpticsIMRadioChannelNumber
+	MAX-ACCESS			not-accessible
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMTxProtectionUnitEntry 1 }
+
+opticsIMTxProtectionUnitType OBJECT-TYPE
+	SYNTAX					OpticsIMProtectionUnitType
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMTxProtectionUnitEntry 2 }
+
+opticsIMTxProtectionUnitSwitchCommand OBJECT-TYPE
+	SYNTAX					OpticsIMProtectionSwitchCommand
+	MAX-ACCESS			read-write
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMTxProtectionUnitEntry 3 }
+
+opticsIMTxProtectionUnitSwitchCriteria OBJECT-TYPE
+	SYNTAX					OpticsIMEquipmentProtectionSwitchCriteria
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMTxProtectionUnitEntry 4 }
+
+opticsIMTxProtectionUnitSwitchStatus OBJECT-TYPE
+	SYNTAX					OpticsIMProtectionSwitchStatus
+	MAX-ACCESS			read-only
+	STATUS					current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMTxProtectionUnitEntry 5 }
+
+
+opticsIMRadioCLAMngt OBJECT IDENTIFIER ::= { opticsIMRadioSwtcMibObject 5 }
+
+opticsIMRadioCLAEnabled OBJECT-TYPE
+     SYNTAX					TruthValue
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          "This object specifies if the CLA procedure is currently allowed to work or not. The true value 
+            indicates that the CLA procedure is allowed to work and the false value that the procedure is not 
+            allowed to work. "
+::= { opticsIMRadioCLAMngt 1 }
+
+
+opticsIMRadioCLAReset OBJECT-TYPE
+     SYNTAX  INTEGER {
+         resetting (1),
+         notResetting (2) 
+         }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          "This object is used to trigger a reset of a ComonLossAlarm defect. 
+           As consequence, a notification of the clearing of the alarm is emitted and the defect is removed 
+           from the activeProblemTable. 
+           When the reset has been completed, the agent has to change the value back to notResetting."
+::= { opticsIMRadioCLAMngt 2 }
+
+opticsIMRadioCLAAlarms OBJECT IDENTIFIER ::= { opticsIMRadioCLAMngt 3 }
+
+-- common loss alarm
+
+opticsIMAlarmCLARaise NOTIFICATION-TYPE
+OBJECTS { tsdimEventObjectClassIdentifier,
+                          tsdimEventObjectInstanceIdentifier, 
+                          tsdimEventNotificationId,
+                          tsdimEventTime,
+                          tsdimAlarmSeverity,
+                          tsdimAlarmSpecProblem,
+                          opticsIMAdditionalText,
+                          opticsIMAlarmType}
+      STATUS current
+      DESCRIPTION 
+          "This notification reports the CLA defect raise."
+::= { opticsIMRadioCLAAlarms 1 }
+
+opticsIMAlarmCLAClear NOTIFICATION-TYPE
+OBJECTS { tsdimEventObjectClassIdentifier,
+                          tsdimEventObjectInstanceIdentifier, 
+                          tsdimEventNotificationId,
+                          tsdimEventTime,
+                          tsdimAlarmSeverity,
+                          tsdimAlarmSpecProblem,
+                          opticsIMAdditionalText,
+                          opticsIMAlarmType}
+      STATUS current
+      DESCRIPTION 
+          "This notification reports the CLA defect clear."
+::= { opticsIMRadioCLAAlarms 2 }
+
+opticsIMRadioCLAStatus OBJECT-TYPE
+SYNTAX  INTEGER {
+         active (1),
+         notActive (2) 
+         }
+     MAX-ACCESS			read-only
+     STATUS				current
+     DESCRIPTION
+          "This object specifies the status of the CLA procedure (active or notActive). When the CLA 
+           procedure is active an abnormal condition indication is generated."
+::= { opticsIMRadioCLAMngt 4 }
+
+
+opticsIMWSTServChProtectionGroupTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF          OpticsIMWSTServChProtectionGroupEntry
+	MAX-ACCESS	                          not-accessible
+	STATUS                                      current
+	DESCRIPTION
+ " This table is used to manage all the protection schemes related to the Way Side Traffic and Radio  
+   Service Channels Protection Switches functions."
+::= { opticsIMRadioSwtcMibObject 7 } 
+
+opticsIMWSTServChProtectionGroupEntry OBJECT-TYPE
+	SYNTAX                          OpticsIMWSTServChProtectionGroupEntry
+	MAX-ACCESS	               not-accessible
+	STATUS                           current
+	DESCRIPTION
+ "An entry of the opticsIMWSTServChProtectionGroup table. Each entry corresponds to a WST or 
+  Radio Service Channels Protection  Switch  protection scheme and allows to define all the related 
+  common management functions."
+	INDEX  { opticsIMWSTServChProtectionGroupIndex }
+::= { opticsIMWSTServChProtectionGroupTable 1 }
+
+OpticsIMWSTServChProtectionGroupEntry ::= SEQUENCE {
+   opticsIMWSTServChProtectionGroupIndex                             Unsigned32,
+   opticsIMWSTServChProtectionGroupRevertive                       OpticsIMRevertive,
+   opticsIMWSTServChProtectionGroupOperationalState           TsdimOperationalState
+   }
+
+opticsIMWSTServChProtectionGroupIndex OBJECT-TYPE
+	SYNTAX                Unsigned32
+	MAX-ACCESS	     not-accessible
+	STATUS                current
+	DESCRIPTION
+" This object is the identifier of the opticsIMWSTServChProtectionGroupTable. "
+::= { opticsIMWSTServChProtectionGroupEntry 1 }
+
+opticsIMWSTServChProtectionGroupRevertive OBJECT-TYPE
+	SYNTAX                OpticsIMRevertive
+	MAX-ACCESS	     read-write
+	STATUS                current
+	DESCRIPTION
+" See Textual Conventions."
+::= { opticsIMWSTServChProtectionGroupEntry 2 }
+
+opticsIMWSTServChProtectionGroupOperationalState OBJECT-TYPE
+     SYNTAX                        TsdimOperationalState 
+     MAX-ACCESS               read-only
+     STATUS                         current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMWSTServChProtectionGroupEntry 3 }
+
+
+
+
+opticsIMWSTServChProtectionUnitTable OBJECT-TYPE
+	SYNTAX SEQUENCE OF             OpticsIMWSTServChProtectionUnitEntry
+	MAX-ACCESS	                             not-accessible
+	STATUS                                         current
+	DESCRIPTION
+  " This table contains the Way Side Traffic and Radio Service Channels Protection Unit associated to 
+    each  Way Side Traffic or Radio Service Channels Protection Group."
+::= { opticsIMRadioSwtcMibObject 8 } 
+
+opticsIMWSTServChProtectionUnitEntry OBJECT-TYPE
+	SYNTAX                      OpticsIMWSTServChProtectionUnitEntry
+	MAX-ACCESS	           not-accessible
+	STATUS                       current
+	DESCRIPTION
+  "An entry in the opticsIMWSTServChProtectionUnit table. Entries of this table are created when the 
+   associated Way Side Traffic or Radio Service Channels Protection Group is created and, when the 
+   related group is already created, as   consequence of the equipment provisioning. "
+	INDEX  { opticsIMWSTServChProtectionGroupIndex,         
+                    opticsIMWSTServChProtectionUnitChannelNumber }
+::= { opticsIMWSTServChProtectionUnitTable 1 }
+
+OpticsIMWSTServChProtectionUnitEntry ::= SEQUENCE {
+   opticsIMWSTServChProtectionUnitChannelNumber       OpticsIMRadioChannelNumber,
+   opticsIMWSTServChProtectionUnitType                         OpticsIMProtectionUnitType,
+   opticsIMWSTServChProtectionUnitSwitchCommand      OpticsIMProtectionSwitchCommand,
+   opticsIMWSTServChProtectionUnitSwitchCriteria           INTEGER,
+   opticsIMWSTServChProtectionUnitSwitchStatus            OpticsIMProtectionSwitchStatus
+   }
+
+opticsIMWSTServChProtectionUnitChannelNumber OBJECT-TYPE
+	SYNTAX                        OpticsIMRadioChannelNumber
+	MAX-ACCESS               not-accessible
+	STATUS                         current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMWSTServChProtectionUnitEntry 1 }
+
+opticsIMWSTServChProtectionUnitType OBJECT-TYPE
+	SYNTAX                        OpticsIMProtectionUnitType
+	MAX-ACCESS               read-only
+	STATUS                         current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMWSTServChProtectionUnitEntry 2 }
+
+opticsIMWSTServChProtectionUnitSwitchCommand OBJECT-TYPE
+	SYNTAX                        OpticsIMProtectionSwitchCommand
+	MAX-ACCESS               read-write
+	STATUS                         current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMWSTServChProtectionUnitEntry 3 }
+
+opticsIMWSTServChProtectionUnitSwitchCriteria OBJECT-TYPE
+	SYNTAX 	INTEGER {
+         	noOne   (0),
+         	earlyWarning   (1),
+         	lowBer   (2),
+         	highBer   (3),
+         	signalFail   (4)
+         }
+	MAX-ACCESS               read-only
+	STATUS                         current
+	DESCRIPTION
+" This object contains the highest priority automatic switch request currently active on the channel. "
+::= { opticsIMWSTServChProtectionUnitEntry 4 }
+
+opticsIMWSTServChProtectionUnitSwitchStatus OBJECT-TYPE
+	SYNTAX                       OpticsIMProtectionSwitchStatus
+	MAX-ACCESS              read-only
+	STATUS                        current
+	DESCRIPTION
+" See Textual Conventions. "
+::= { opticsIMWSTServChProtectionUnitEntry 5 }
+
+opticsIMWSTProtection OBJECT-TYPE
+     SYNTAX  INTEGER {
+         unprotected (1),
+         protected (2) 
+         }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+          "This object specifies if the Way Side Traffic signal is protected or unprotected.
+            As a side effect to set 'protected' value for this object, the agent must create an istance of
+            opticsIMWSTServChProtectionGroupEntry and related instances of
+            opticsIMWSTServChProtectionUnitEntry. 
+            When the WST signals are unprotected, two radio channels carry two WST signals (e1 or ds1
+            unprotected); instead, when WST signals are protected, two radio channels carry only one WST
+            signal (e1 or ds1 protected): in this case the signalMode of e1 or ds1 signal associated to spare 
+            radio channel become disabled. For this reason as a side effect to set 'protected' value for this
+            object (opticsIMWSTProtection), the agent must set the columnar object 
+            e1pPITTPSignalMode of opticalIME1pPITTPTable or columnar object
+            ds1pPITTPSignalMode of opticalIMDs1pPITTPTable of e1 or ds1 signal associated to spare 
+            radio channel to 'disabled' value."
+      DEFVAL { unprotected }
+::= { opticsIMRadioSwtcMibObject 9 }
+
+
+
+-- OPTICSIM-RADIO-SWTC-MC DEFINITIONS ::= BEGIN
+--       IMPORTS
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimRadioMC FROM OPTICSIM-RADIOREG-MIB;
+
+-- opticsIMRadioSwMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0207240000Z" 
+--       ORGANIZATION "Alcatel TND"
+--       CONTACT-INFO "Alcatel TND"
+--       DESCRIPTION 
+--           " Objects related to rx static delay have been moved from opticsIMRadioProtectionGroup to 
+--             a new group OpticsIMRadioRxStaticDelayGroup. "
+--       REVISION "0205100000Z" 
+--       DESCRIPTION
+--           " Added hitless object in the RadioProtectionGroup entry. Radio CLA objects have been moved 
+--             from RADIO-NE-MIB.
+--             Other minor editorial changes have been done."
+--       REVISION "0201250000Z"
+--       DESCRIPTION 
+--           "Initial Release of Radio Protections Module Compliance."
+    
+-- ::= { opticsIMRadioSwtcMCConf 1 }
+
+opticsIMRadioSwtcMCConf         OBJECT IDENTIFIER ::= { opticsimRadioMC 4 }
+opticsIMRadioSwtcMCCompl      OBJECT IDENTIFIER ::= { opticsIMRadioSwtcMCConf 1 }
+opticsIMRadioSwtcMCGroup      OBJECT IDENTIFIER ::= { opticsIMRadioSwtcMCConf 2 }
+
+opticsIMRadioSwtcMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMRadioSwtcMib. "
+
+       MODULE -- opticsIMRadioSwtcMib  
+
+MANDATORY-GROUPS { opticsIMRadioProtectionGroup,
+                                           opticsIMTxProtectionGroup,
+                                           opticsIMRadioRxStaticDelayGroup}
+
+GROUP opticsIMOptRadioProtectionGroup
+      DESCRIPTION 
+          " This group describes the Radio Protection optional objects. "
+
+GROUP opticsIMOptRadioCLAGroup
+      DESCRIPTION 
+          " This group describes the Radio optional objects related to the CLA procedure. "
+
+GROUP opticsIMOptRadioCLAAlarmsGroup
+      DESCRIPTION
+          " This group describes the CLA alarms notifications."
+
+GROUP opticsIMWSTServChProtectionGroup
+      DESCRIPTION 
+          " This group describes the WST and Radio Service Channels Protection objects. "
+
+GROUP opticsIMOptRxPowerLevelThresholdGroup
+      DESCRIPTION 
+         " This group describes the objects related to the management of Received Power Level
+            thresholds." 
+
+GROUP opticsIMOptRadioSwitchEnableGroup
+      DESCRIPTION 
+         " This group describes the objects related to the management of RPS switch enable." 
+::= { opticsIMRadioSwtcMCCompl 1 }
+
+opticsIMRadioProtectionGroup OBJECT-GROUP
+      OBJECTS { opticsIMRadioProtectionGroupType,
+                          opticsIMRadioProtectionGroupRevertive,
+                          opticsIMRadioProtectionGroupHitless,
+                          opticsIMRadioProtectionGroupOperationalState,
+                          opticsIMRadioProtectionUnitType,
+                          opticsIMRadioProtectionUnitSwitchCommand,
+                          opticsIMRadioProtectionUnitSwitchCriteria,
+                          opticsIMRadioProtectionUnitSwitchStatus }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Radio Protection mandatory objects." 
+::= { opticsIMRadioSwtcMCGroup 1 }
+
+
+opticsIMOptRadioProtectionGroup OBJECT-GROUP
+      OBJECTS { opticsIMRadioProtectionGroupMismatchStatus,
+                          opticsIMRadioProtectionGroupExtraTraffic,
+                          opticsIMRadioProtectionGroupPrivilegedChannel,
+                          opticsIMRadioProtectionUnitPriority }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Radio Protection optional objects." 
+::= { opticsIMRadioSwtcMCGroup 2 }
+
+
+opticsIMRadioRxStaticDelayGroup OBJECT-GROUP
+      OBJECTS { opticsIMRadioAutoRxStaticDelayAlignment,
+                          opticsIMRadioAutoRxStaticDelayDirectAway,
+                          opticsIMRadioAutoRxStaticDelayIndirectAway,
+                          opticsIMRadioManRxStaticDelay,
+                          opticsIMRadioManRxStaticDelayDirectAway,
+                          opticsIMRadioManRxStaticDelayIndirectAway,
+                          opticsIMRadioManRxStaticDelayAsapIndex  }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Radio Rx Static Delay mandatory objects." 
+::= { opticsIMRadioSwtcMCGroup 6 }
+
+
+opticsIMTxProtectionGroup OBJECT-GROUP
+      OBJECTS { opticsIMTxProtectionGroupRevertive,
+                          opticsIMTxProtectionGroupOperationalState,
+                          opticsIMTxProtectionUnitType,
+                          opticsIMTxProtectionUnitSwitchCommand,
+                          opticsIMTxProtectionUnitSwitchCriteria,
+                          opticsIMTxProtectionUnitSwitchStatus }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Tx HST Protection mandatory objects." 
+::= { opticsIMRadioSwtcMCGroup 3 }
+
+
+opticsIMOptRadioCLAGroup OBJECT-GROUP
+      OBJECTS { opticsIMRadioCLAEnabled,
+                          opticsIMRadioCLAReset,
+                          opticsIMRadioCLAStatus }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Radio optional objects related to the CLA procedure." 
+::= { opticsIMRadioSwtcMCGroup 4 }
+
+
+opticsIMOptRadioCLAAlarmsGroup NOTIFICATION-GROUP
+      NOTIFICATIONS { opticsIMAlarmCLARaise,
+		                           opticsIMAlarmCLAClear }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the CLA alarms notifications." 
+::= { opticsIMRadioSwtcMCGroup 5 }
+
+
+opticsIMWSTServChProtectionGroup OBJECT-GROUP
+      OBJECTS { opticsIMWSTServChProtectionGroupRevertive,
+                          opticsIMWSTServChProtectionGroupOperationalState,
+                          opticsIMWSTServChProtectionUnitType,
+                          opticsIMWSTServChProtectionUnitSwitchCommand,
+                          opticsIMWSTServChProtectionUnitSwitchCriteria,
+                          opticsIMWSTServChProtectionUnitSwitchStatus,
+                          opticsIMWSTProtection }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the WST and Radio Service Channels Protection objects." 
+::= { opticsIMRadioSwtcMCGroup 7 }
+
+opticsIMOptRxPowerLevelThresholdGroup OBJECT-GROUP
+      OBJECTS { opticsIMEWRxPowerLevelThr,
+                          opticsIMEWRxPowerLevelMinThr,
+                          opticsIMEWRxPowerLevelMaxThr
+                        }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of Received Power Level
+            thresholds." 
+::= { opticsIMRadioSwtcMCGroup 8 }
+
+
+opticsIMOptRadioSwitchEnableGroup OBJECT-GROUP
+      OBJECTS { opticsIMRadioSwitchEWEnabled,
+                          opticsIMRadioSwitchLowBEREnabled
+                        }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of RPS switch enable." 
+::= { opticsIMRadioSwtcMCGroup 9 }
+
+   
+END

@@ -1,0 +1,502 @@
+OPTICSIM-OH-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, 
+       Integer32                                                                          FROM SNMPv2-SMI
+       RowStatus                                                                       FROM SNMPv2-TC
+
+       MODULE-COMPLIANCE, OBJECT-GROUP                  FROM SNMPv2-CONF
+       opticsimSdhPdhMib, opticsimSdhPdhMC                        FROM OPTICSIM-RADIOREG-MIB
+       TsdimOperationalState                                                    FROM TSDIM-SNMP-TC;
+
+opticsIMOverheadMib MODULE-IDENTITY
+       LAST-UPDATED "0207240000Z"
+       ORGANIZATION "Alcatel TND"
+       CONTACT-INFO "Alcatel TND"
+       DESCRIPTION
+                " Added the opticsIMAuxiliaryPITTPBidPRBS to opticsIMAuxiliaryPITTPBidEntry."
+
+       REVISION "0412140000Z"
+       DESCRIPTION
+                " Added the v11-128Kb and the eowDTMF enum to opticsIMAuxiliaryPITTPBidType object."
+
+      REVISION "0406150000Z"
+      DESCRIPTION
+                " Added the v24RS232 enum to opticsIMAuxiliaryPITTPBidType object.
+                  Added opticsIMAuxiliaryPITTPBidCrossConnectIdentifier columnar object to
+                  OpticsIMAuxiliaryPITTPBidTable.
+                  Added OpticsIMRSOHBytesTable, OpticsIMRFCOHBytesTable and 
+                  opticsIMEOWPartyLineTable new tables."
+      REVISION "0303140000Z"
+      DESCRIPTION
+                " Added the disabled enum to opticsIMAuxiliaryPITTPBidType object. "
+       REVISION "0211050000Z"
+       DESCRIPTION
+                " Added the OperationalState and ASAPIndex objects to the AuxiliaryPITTPBidEntry. "
+       REVISION "0207240000Z"
+       DESCRIPTION
+                " Added two new enum to opticsIMAuxiliaryPITTPBidType object. "
+       REVISION "0205100000Z"
+       DESCRIPTION
+                "Initial Release of SDH/PDH Overhead MIB."
+ ::= {  opticsimSdhPdhMib 6}
+
+
+opticsIMOverheadMibObject      OBJECT IDENTIFIER ::= { opticsIMOverheadMib 1 }
+
+
+opticsIMEowDTMFTTPBidTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMEowDTMFTTPBidEntry
+       MAX-ACCESS			not-accessible
+       STATUS					current
+       DESCRIPTION
+             "This table contains the information related to the termination and to the origination of the DTMF 
+              signaling channel (Rec. ITU-T EOW trail) on Engineering Order Wire. "
+::= { opticsIMOverheadMibObject 1 }
+
+opticsIMEowDTMFTTPBidEntry OBJECT-TYPE
+       SYNTAX					OpticsIMEowDTMFTTPBidEntry
+       MAX-ACCESS			not-accessible
+       STATUS					current
+       DESCRIPTION
+            "An entry of the on Engineering Order Wire table. "
+       INDEX   { opticsIMEowDTMFTTPBidIndex }
+::= { opticsIMEowDTMFTTPBidTable 1 } 
+
+OpticsIMEowDTMFTTPBidEntry ::= SEQUENCE {
+   opticsIMEowDTMFTTPBidIndex					Integer32,
+   opticsIMEowDTMFTTPBidPhoneNumber		Integer32
+   }
+
+opticsIMEowDTMFTTPBidIndex OBJECT-TYPE
+       SYNTAX				Integer32
+       MAX-ACCESS		not-accessible
+       STATUS				current
+       DESCRIPTION
+           "This object identifies the index of the table. "
+::= { opticsIMEowDTMFTTPBidEntry 1 }
+
+opticsIMEowDTMFTTPBidPhoneNumber OBJECT-TYPE
+       SYNTAX				Integer32
+       MAX-ACCESS		read-write
+       STATUS				current
+       DESCRIPTION
+           "This object identifies the phone number associated to the Engineering Order Wire . "
+::= { opticsIMEowDTMFTTPBidEntry 2 }
+
+
+
+opticsIMAuxiliaryPITTPBidTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMAuxiliaryPITTPBidEntry
+       MAX-ACCESS			not-accessible
+       STATUS					current
+       DESCRIPTION
+             "This table contains the the information related to the termination and to the origination of the 
+              auxiliary physical interfaces (i.e. v11). "
+::= { opticsIMOverheadMibObject 2 }
+
+opticsIMAuxiliaryPITTPBidEntry OBJECT-TYPE
+       SYNTAX					OpticsIMAuxiliaryPITTPBidEntry
+       MAX-ACCESS			not-accessible
+       STATUS					current
+       DESCRIPTION
+            "An entry of the auxiliary physical interfaces table. "
+       INDEX   { opticsIMAuxiliaryPITTPBidIndex }
+::= { opticsIMAuxiliaryPITTPBidTable 1 } 
+
+OpticsIMAuxiliaryPITTPBidEntry ::= SEQUENCE {
+   opticsIMAuxiliaryPITTPBidIndex		Integer32,
+   opticsIMAuxiliaryPITTPBidType		INTEGER,
+   opticsIMAuxiliaryPITTPBidOperationalState	TsdimOperationalState,
+   opticsIMAuxiliaryPITTPBidAsapIndex			Integer32,
+   opticsIMAuxiliaryPITTPBidCrossConnectIdentifier	Integer32,
+   opticsIMAuxiliaryPITTPBidPRBS          INTEGER
+   }
+
+opticsIMAuxiliaryPITTPBidIndex OBJECT-TYPE
+       SYNTAX				Integer32
+       MAX-ACCESS		not-accessible
+       STATUS				current
+       DESCRIPTION
+           "This object identifies the index of the table. "
+::= { opticsIMAuxiliaryPITTPBidEntry 1 }
+
+opticsIMAuxiliaryPITTPBidType OBJECT-TYPE
+       SYNTAX INTEGER {
+           disabled (1),
+           v11Codir64Kb (2),
+           v11Contradir64Kb (3),
+           g703-64Kb (4),
+           v11Asynch9600b (5),
+           v28Asynch9600b (6),
+           v11Asynch4800b (7),
+           v28Asynch4800b (8),
+           v24RS232 (9),
+           v11-128Kb (10),
+           eowDTMF (11)
+          }
+       MAX-ACCESS		read-write
+       STATUS				current
+       DESCRIPTION
+           "This object specifies the type of auxiliary interface. "
+::= { opticsIMAuxiliaryPITTPBidEntry 2 }
+
+opticsIMAuxiliaryPITTPBidOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMAuxiliaryPITTPBidEntry 3 }
+
+opticsIMAuxiliaryPITTPBidAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this physical port."
+::= { opticsIMAuxiliaryPITTPBidEntry 4 }
+
+opticsIMAuxiliaryPITTPBidCrossConnectIdentifier OBJECT-TYPE
+     SYNTAX Integer32 (0..2147483647)
+     MAX-ACCESS read-only
+     STATUS current
+     DESCRIPTION
+        "This object allows to identify the cross-connection in which the auxiliary port is involved.
+         It is automatically set by the agent when the auxiliary port is cross-connected. Its value is the one 
+         that identify the cross-connection index (opticsIMCrossConnectIndex object of the 
+         opticsIMCrossConnectTable).
+         The value of the connection identifier is the same for all the objects making part of the same cross-
+         connection.
+         The value '0' indicates that the auxiliary port is not involved in any cross-connection."
+::= { opticsIMAuxiliaryPITTPBidEntry 5 }
+
+opticsIMAuxiliaryPITTPBidPRBS OBJECT-TYPE
+     SYNTAX INTEGER {
+          on  (1),
+          off  (2)
+          }
+     MAX-ACCESS read-write
+     STATUS current
+     DESCRIPTION
+        "This object allows to enable (‘on?value) or disable(‘off?value) the insertion of the PRBS. The insertion has 
+         to be allowed only if the operational state is enabled. "
+::= { opticsIMAuxiliaryPITTPBidEntry 6 }
+
+
+
+opticsIMRSOHBytesTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMRSOHBytesEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       DESCRIPTION
+           "This table contains the overhead bytes belonging to the SDH Regenerator Section."
+::= { opticsIMOverheadMibObject 3 }
+
+opticsIMRSOHBytesEntry OBJECT-TYPE
+       SYNTAX  OpticsIMRSOHBytesEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       DESCRIPTION
+           "An entry of the RSOH bytes table.
+            This entry can be created by manager or by agent: the behaviour is product dependent."
+       INDEX   { opticsIMRSOHBytesIndex }
+::= { opticsIMRSOHBytesTable 1 } 
+
+OpticsIMRSOHBytesEntry::= SEQUENCE {
+   opticsIMRSOHBytesIndex              Integer32,
+   opticsIMRSOHBytesType               INTEGER,
+   opticsIMRSOHBytesOperationalState  TsdimOperationalState,
+   opticsIMRSOHBytesCrossConnectIdentifier  Integer32,
+   opticsIMRSOHBytesRowStatus    RowStatus
+}
+
+opticsIMRSOHBytesIndex OBJECT-TYPE
+       SYNTAX  Integer32
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       DESCRIPTION
+           "This object identifies the index of the table. "
+::= { opticsIMRSOHBytesEntry 1 }
+
+opticsIMRSOHBytesType OBJECT-TYPE
+       SYNTAX INTEGER {
+           e1 (1),
+           f1 (2),
+           futureUse (3),
+           nationalUse (4)
+          }
+       MAX-ACCESS  read-create
+       STATUS  current
+       DESCRIPTION
+           "This object specifies the type of RSOH byte. "
+::= { opticsIMRSOHBytesEntry 2 }
+
+opticsIMRSOHBytesOperationalState OBJECT-TYPE
+     SYNTAX  TsdimOperationalState 
+     MAX-ACCESS  read-only
+     STATUS  current
+     DESCRIPTION
+         " See Textual Conventions."
+::= { opticsIMRSOHBytesEntry 3 }
+
+opticsIMRSOHBytesCrossConnectIdentifier OBJECT-TYPE
+     SYNTAX  Integer32 (0..2147483647)
+     MAX-ACCESS  read-only
+     STATUS  current
+     DESCRIPTION
+        "This object allows to identify the cross-connection in which the RSOH byte is involved.
+         It is automatically set by the agent when the RSOH byte is cross-connected. Its value is the one 
+         that identify the cross-connection index (opticsIMCrossConnectIndex object of the 
+         opticsIMCrossConnectTable).
+         The value of the connection identifier is the same for all the objects making part of the same cross-
+         connection.
+         The value '0' indicates that the RSOH byte is not involved in any cross-connection."
+::= { opticsIMRSOHBytesEntry 4 }
+
+opticsIMRSOHBytesRowStatus OBJECT-TYPE
+     SYNTAX  RowStatus
+     MAX-ACCESS  read-create
+     STATUS  current
+     DESCRIPTION
+        "For creating, modifying, and deleting this row."
+::= { opticsIMRSOHBytesEntry 5 }
+
+
+
+
+opticsIMRFCOHBytesTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMRFCOHBytesEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       DESCRIPTION
+           "This table contains the overhead bytes belonging to the RFCOH section. "
+::= { opticsIMOverheadMibObject 4 }
+
+opticsIMRFCOHBytesEntry OBJECT-TYPE
+       SYNTAX  OpticsIMRFCOHBytesEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       DESCRIPTION
+           "An entry of the RFCOH bytes table. "
+       INDEX   { opticsIMRFCOHBytesIndex }
+::= { opticsIMRFCOHBytesTable 1 } 
+
+OpticsIMRFCOHBytesEntry::= SEQUENCE {
+   opticsIMRFCOHBytesIndex                Integer32,
+   opticsIMRFCOHBytesType                INTEGER,
+   opticsIMRFCOHBytesOperationalState  TsdimOperationalState,
+   opticsIMRFCOHBytesCrossConnectIdentifier  Integer32
+}
+
+opticsIMRFCOHBytesIndex OBJECT-TYPE
+       SYNTAX  Integer32
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       DESCRIPTION
+           "This object identifies the index of the table. "
+::= { opticsIMRFCOHBytesEntry 1 }
+
+opticsIMRFCOHBytesType OBJECT-TYPE
+       SYNTAX INTEGER {
+           e1 (1),
+           userChannel (2)
+          }
+       MAX-ACCESS  read-create
+       STATUS  current
+       DESCRIPTION
+           "This object specifies the type of RFCOH byte. "
+::= { opticsIMRFCOHBytesEntry 2 }
+
+opticsIMRFCOHBytesOperationalState OBJECT-TYPE
+     SYNTAX  TsdimOperationalState 
+     MAX-ACCESS  read-only
+     STATUS  current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMRFCOHBytesEntry 3 }
+
+opticsIMRFCOHBytesCrossConnectIdentifier OBJECT-TYPE
+     SYNTAX  Integer32 (0..2147483647)
+     MAX-ACCESS read-only
+     STATUS  current
+     DESCRIPTION
+        "This object allows to identify the cross-connection in which the RFCOH byte is involved.
+         It is automatically set by the agent when the RFCOH byte is cross-connected. Its value is the one 
+         that identify the cross-connection index (opticsIMCrossConnectIndex object of the 
+         opticsIMCrossConnectTable).
+         The value of the connection identifier is the same for all the objects making part of the same cross-
+         connection.
+         The value '0' indicates that the RFCOH byte is not involved in any cross-connection."
+::= { opticsIMRFCOHBytesEntry 4 }
+
+
+opticsIMEowPartyLineTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF OpticsIMEowPartyLineEntry
+       MAX-ACCESS			not-accessible
+       STATUS					current
+       DESCRIPTION
+             "This table allows to enable or disable the Engineering Order Wire party line on each NMS port 
+              on which the party line is available. "
+::= { opticsIMOverheadMibObject 5 }
+
+opticsIMEowPartyLineEntry OBJECT-TYPE
+       SYNTAX					OpticsIMEowPartyLineEntry
+       MAX-ACCESS			not-accessible
+       STATUS					current
+       DESCRIPTION
+            "An entry of the on Engineering Order Wire Party Line table. "
+       INDEX   { opticsIMEowDTMFTTPBidIndex, 
+                 opticsIMEowPartyLinePortType,
+                 opticsIMEowPartyLinePortId }
+::= { opticsIMEowPartyLineTable 1 } 
+
+OpticsIMEowPartyLineEntry::= SEQUENCE {
+   opticsIMEowPartyLinePortType   INTEGER,
+   opticsIMEowPartyLinePortId     Integer32,
+   opticsIMEowPartyLineEnabled    INTEGER
+   }
+
+opticsIMEowPartyLinePortType OBJECT-TYPE
+       SYNTAX INTEGER {
+          nms-v11  (1),
+          nms-g703  (2)
+          }
+       MAX-ACCESS            not-accessible
+       STATUS                     current
+       DESCRIPTION
+           "This object identifies the NMS port type (v11 or g703). "
+::= { opticsIMEowPartyLineEntry 1 }
+
+opticsIMEowPartyLinePortId OBJECT-TYPE
+       SYNTAX				Integer32
+       MAX-ACCESS		not-accessible
+       STATUS				current
+       DESCRIPTION
+           "This object identifies the NMS port number. "
+::= { opticsIMEowPartyLineEntry 2 }
+
+opticsIMEowPartyLineEnabled OBJECT-TYPE
+       SYNTAX INTEGER {
+          enabled  (1),
+          disabled  (2)
+          }
+       MAX-ACCESS            read-write
+       STATUS                     current
+       DESCRIPTION
+           "This object specifies whether the party line is enabled or disabled. "
+::= { opticsIMEowPartyLineEntry 3 }
+
+
+
+-- OPTICSIM-OH-MC DEFINITIONS ::= BEGIN
+--       IMPORTS
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB;
+
+
+
+-- opticsIMOverheadMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0201250000Z"
+--       ORGANIZATION "Alcatel TND"
+--       CONTACT-INFO "Alcatel TND"
+--       DESCRIPTION 
+--           "Initial Release of Overhead Module Compliance."
+    
+-- ::= { opticsIMOverheadMCConf 1 }
+
+opticsIMOverheadMCConf         OBJECT IDENTIFIER ::= { opticsimSdhPdhMC 6 }
+opticsIMOverheadMCCompl      OBJECT IDENTIFIER ::= { opticsIMOverheadMCConf 1 }
+opticsIMOverheadMCGroup      OBJECT IDENTIFIER ::= { opticsIMOverheadMCConf 2 }
+
+opticsIMOverheadMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMOverheadMib. "
+
+       MODULE -- opticsIMOverheadMib  
+
+
+MANDATORY-GROUPS { opticsIMEowDTMFGroup }
+
+
+
+
+GROUP opticsIMAuxiliaryPITTPBidGroup
+      DESCRIPTION
+       " This group describes the objects related to the auxiliary physical interfaces." 
+
+GROUP opticsIMRSOHBytesGroup
+      DESCRIPTION
+       " This group describes the objects related to the RSOH bytes." 
+
+GROUP opticsIMRFCOHBytesGroup
+      DESCRIPTION
+      " This group describes the objects related to the RFCOH bytes." 
+
+GROUP opticsIMEOWPartyLineGroup
+      DESCRIPTION
+      " This group describes the objects related to the EOW party line." 
+::= { opticsIMOverheadMCCompl 1 }
+
+
+
+
+opticsIMEowDTMFGroup OBJECT-GROUP
+      OBJECTS { opticsIMEowDTMFTTPBidPhoneNumber
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the Engineering Order Wire objects." 
+::= { opticsIMOverheadMCGroup 1 }
+
+
+
+opticsIMAuxiliaryPITTPBidGroup OBJECT-GROUP
+      OBJECTS { opticsIMAuxiliaryPITTPBidType,
+                          opticsIMAuxiliaryPITTPBidOperationalState,
+                          opticsIMAuxiliaryPITTPBidAsapIndex,
+                          opticsIMAuxiliaryPITTPBidCrossConnectIdentifier,
+                          opticsIMAuxiliaryPITTPBidPRBS
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the auxiliary physical interfaces." 
+::= { opticsIMOverheadMCGroup 2 }
+
+
+
+opticsIMRSOHBytesGroup OBJECT-GROUP
+      OBJECTS { opticsIMRSOHBytesType,
+                         opticsIMRSOHBytesOperationalState,
+                          opticsIMRSOHBytesCrossConnectIdentifier,
+                          opticsIMRSOHBytesRowStatus
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the RSOH bytes." 
+::= { opticsIMOverheadMCGroup 3 }
+
+
+opticsIMRFCOHBytesGroup OBJECT-GROUP
+      OBJECTS { opticsIMRFCOHBytesType,
+                          opticsIMRFCOHBytesOperationalState,
+                          opticsIMRFCOHBytesCrossConnectIdentifier
+                        }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the RFCOH bytes." 
+::= { opticsIMOverheadMCGroup 4 }
+
+
+
+opticsIMEOWPartyLineGroup OBJECT-GROUP
+      OBJECTS { opticsIMEowPartyLineEnabled
+                        }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the EOW party line." 
+::= { opticsIMOverheadMCGroup 5 }
+
+END

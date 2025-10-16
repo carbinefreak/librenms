@@ -1,0 +1,2381 @@
+
+OPTICSIM-IEEE1588-MIB DEFINITIONS ::= BEGIN
+
+-- ******************************************************************
+-- ALU properitary MIB for IEEE1588
+-- ******************************************************************
+IMPORTS
+				MODULE-IDENTITY,
+
+				OBJECT-TYPE,
+				NOTIFICATION-TYPE,
+				Integer32, Counter32, Counter64,
+				Unsigned32 FROM SNMPv2-SMI -- [RFC2578]
+				TEXTUAL-CONVENTION,
+				TimeInterval,TimeStamp, RowStatus,
+				TruthValue, MacAddress	FROM SNMPv2-TC -- [RFC2579]
+				
+				InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB              -- [RFC4001]
+			
+				InterfaceIndex 			FROM IF-MIB
+				
+				TsdimEventTimeInt FROM TSDIM-SNMP-TC
+				opticsimEthMib		FROM OPTICSIM-ETHREG-MIB;
+
+opticsIMIEEE1588Mib MODULE-IDENTITY
+            		LAST-UPDATED "201511130000Z"
+			ORGANIZATION "Alcatel-Lucent OND"
+			CONTACT-INFO
+					"Alcatel-Lucent OND"
+			DESCRIPTION
+				"ALU OND MIB for 1588V2 module"
+
+                REVISION "201511130000Z"
+  	           DESCRIPTION
+    	               "- SNMPIDL-507, update LAST-UPDATED and
+                     REVISION date format adding the 2 digits
+                     missing (20) for yers after 1999 as for 
+                     RFC 2578."
+
+			REVISION "201407310000Z"
+			DESCRIPTION
+				"SNMPIDL-480: Feng Wei
+				Change ieee1588PtpClockDefaultDSClass from read-only to read-write"
+
+			REVISION "201405090000Z"
+			DESCRIPTION
+				"OPTnm26383: Linhai Qiu
+				Add ieee1588GMClockStatusChange notification"
+
+			REVISION "201309030000Z"
+			DESCRIPTION
+				"OPTnm25149: Luigi Ronchetti
+				Change ieee1588PtpClockDefaultDSOffsetScaledLogVariance from read-only to read-write
+				In Ieee1588PtpClockParentDSEntry:
+				   add ieee1588PtpClockParentDSClockPhaseChangeRate"
+			
+			REVISION "201309030000Z"
+			DESCRIPTION
+				"OPTnm23768: Feng Wei
+				In ieee1588PtpClockDefaultDSEntry:
+				   add ieee1588PtpClockDefaultDSSubnetMask
+				   add ieee1588PtpClockDefaultDSGateway
+				In ieee1588PtpPortDSEntry:
+				   add ieee1588PtpPortDSIpAddress
+				   add ieee1588PtpPortDSSubnetMask
+				   add ieee1588PtpPortDSDefaultGateway
+				Change ieee1588PtpClockDefaultDSClass default value from 255 to 187  
+				Change ieee1588PtpClockDefaultDSAccuracy from read-only to read-write   
+				In ieee1588PtpExtIfEntry, add ieee1588PtpExtIfClockIdentifier
+				In ieee1588PtpExtIfOperStatus, add option 5: Holdover"
+
+			REVISION "201201260000Z"
+                        DESCRIPTION 
+                                "OPTnm14667 (A.Da Broi):
+                                Added opticsTODPortSubnetMask to OpticsTODPortTable
+                                Added opticsTODPortDefaultGateway to OpticsTODPortTable"
+                                 
+                        REVISION "201209240000Z"
+						DESCRIPTION 
+                                "OPTnm04198 (P.Villa):
+				 - Modified description of ieee1588PtpClockMode and ieee1588PtpClockDefaultDSClockType
+				 OPTnm05509 (He Zongying):
+                                 - Add ieee1588PtpPortSessionAnnounceNegotiationStatus
+                                 - Add ieee1588PtpPortSessionSyncNegotiationStatus
+                                 - Add ieee1588PtpPortSessionDelayRspNegotiationStatus
+                                 - Add ieee1588PtpClockActiveSlaveListTable
+                                 - Add new values for ieee1588PtpPortSessionEncapType"
+                                 
+                        REVISION "201111030000Z"
+                        DESCRIPTION 
+                                "OPTnm02749: P.Villa.
+                                 Modified ieee1588PtpClockIndex from INTEGER to Integer32
+                                 Added ieee1588PtpClockDefaultDSIpAddrType"
+
+                        REVISION "201107270000Z"
+                        DESCRIPTION 
+                                "TSDnm96146: P.Villa.
+                                 ieee1588PtpClockDefaultDSIdentifier redefined as read-write.
+                                 Modified ieee1588PtpPortDSPortType
+                                 Added ieee1588PtpClockDefaultDSIpAddr and 
+                                      ieee1588PtpClockCurrentDSClockMode
+                                 Added OpticsTODPortTable"
+
+                        REVISION "201005130000Z"
+			DESCRIPTION
+				" ALU OND MIB for 1588V2 module" 
+			REVISION "201005130000Z"  
+			DESCRIPTION
+				"Initial Proposal(by He Zongying) based on
+				  - IEEE1588-2008
+				  - 1850TSS-5 R6.0 private MIB from Ganesan
+				  - ALU IPD 7705 MIB for IEEE1588 (Last Updates:Jan 16,2009), which supports OC.
+				  - ALU WLPD MIB for IEEE1588 (Last Updates: Feb 18, 2008), which only supports OC
+                 " 			
+	::= { opticsimEthMib 600 }
+
+ieee1588Notifications 	OBJECT IDENTIFIER ::= { opticsIMIEEE1588Mib 0 }
+ieee1588MIBObjects 		OBJECT IDENTIFIER ::= { opticsIMIEEE1588Mib 1 }
+ieee1588CfmConformance OBJECT IDENTIFIER ::= { opticsIMIEEE1588Mib 2 }
+
+
+-- ******************************************************************
+-- Groups in IEEE1588 MIB Module
+-- ******************************************************************
+ieee1588PtpGlobal			  	 OBJECT IDENTIFIER ::= { ieee1588MIBObjects 1 }
+ieee1588PtpClock					 OBJECT IDENTIFIER ::= { ieee1588MIBObjects 2 }
+ieee1588PtpPort		 			 	 OBJECT IDENTIFIER ::= { ieee1588MIBObjects 3 }
+ieee1588PtpExtIf					 OBJECT IDENTIFIER ::= { ieee1588MIBObjects 4 }
+
+-- ******************************************************************
+-- Textual conventions
+-- ******************************************************************			
+IEEE1588PtpClockIdentifier ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "This 64-bit extended unique identifier (EUI-64) is 
+        a concatenation of the 24-bit OUI and the MAC address
+        of the chassis plus the clock index - 1."
+    SYNTAX  OCTET STRING (SIZE(8))
+
+
+IEEE1588PtpClockIndex ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+        "The clock index of the IEEE 1588 PTP clock. 
+        
+        For configurations with ieee1588PtpClockMode set to 'Ordinary Clock - Slave(1)',
+         multiple PTP clocks can be created. 
+        
+        For configurations with ieee1588PtpClockMode set to 'Boundary Clock(4)',
+        a single PTP clocks can be created. "
+-- BEGIN OPTnm02749
+--    SYNTAX  INTEGER
+    SYNTAX  Integer32
+-- END OPTnm02749
+
+IEEE1588PtpRecoveredClockState ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The state of the clock that is recovered from the IEEE 1588
+        PTP port clock recovery instance."
+    SYNTAX      INTEGER {
+                    unknown (0),
+                    freeRun (1),
+                    acquiring (2),
+                    phasetracking (3),
+                    holdover (4),
+                    locked (5)
+                }
+
+IEEE1588PtpPortState ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+        "The state of the the IEEE 1588 PTP port."
+    SYNTAX     INTEGER {
+                    unknown (0),
+                    initializing (1),
+                    faulty (2),
+                    disabled (3),
+                    listening (4),
+                    premaster (5),
+                    master (6),
+                    passive (7),
+                    uncalibrated (8),
+                    slave (9)
+                }
+
+-- -----------------------------------------------------
+-- Global 1588 Configuration for NE
+-- -----------------------------------------------------
+ieee1588PtpClockMode OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+          " This parameter determines the operational clock mode of one PTP node.
+	   			  Refer to Section 7.6.1 of IEEE1588-2008
+	   			  It is intended to be managed by the System Operator
+	   			  0b0000		Disabled
+	   			  0b0001		Ordinary Clock - Slave
+	   			  0b0010		Ordinary Clock - Master
+	   			  0b0011		Boundary Clock
+	   			  0b0100   	    End-to-End Transparent Clock
+	   			  0b1000		Peer-to-Peer Transparent Clock
+	   			  0b0101		End-to-End Transparent Clock And OC-Slave
+	   			  0b0111		End-to-End Transparent Clock And BC
+				  0b1001		Peer-to-Peer Transparent Clock And OC-Slave 
+
+                  0b1111        Boundary Clock in Ring Configuration (OPTnm04198)
+	   			  
+	   			  Default: 0
+	   			"
+    ::= { ieee1588PtpGlobal 1 }
+
+-- -----------------------------------------------------
+-- Default Data Set for the following PTP Clocks:
+--         Ordinary Clock - Slave
+--         Ordinary Clock - Master
+--				 Boundary Clock
+-- -----------------------------------------------------
+ieee1588PtpClockDefaultDSTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF Ieee1588PtpClockDefaultDSEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides IEEE1588 PTP Clock Default Data Set for the following PTP Clocks:
+        --         Ordinary Clock - Slave
+				--         Ordinary Clock - Master
+				--				 Boundary Clock
+        For TC (E2E or P2P), no default DS will be available
+         "
+    ::= { ieee1588PtpClock 1 }
+
+ieee1588PtpClockDefaultDSEntry OBJECT-TYPE
+    SYNTAX       Ieee1588PtpClockDefaultDSEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Configuration information concerning IEEE 1588PTP"
+    INDEX       { ieee1588PtpClockIndex }
+    ::= { ieee1588PtpClockDefaultDSTable 1 }
+
+Ieee1588PtpClockDefaultDSEntry ::= SEQUENCE
+{
+    ieee1588PtpClockIndex                           IEEE1588PtpClockIndex,
+    ieee1588PtpClockDefaultDSClockType              Unsigned32,
+    ieee1588PtpClockDefaultDSIdentifier             IEEE1588PtpClockIdentifier,
+    ieee1588PtpClockDefaultDSDomain                 Unsigned32,
+    ieee1588PtpClockDefaultDSTwoStepFlag            TruthValue,
+    ieee1588PtpClockDefaultDSNumberOfPorts          Unsigned32,
+    ieee1588PtpClockDefaultDSClass                  Unsigned32,
+    ieee1588PtpClockDefaultDSAccuracy               Unsigned32,
+    ieee1588PtpClockDefaultDSOffsetScaledLogVariance Integer32,
+    ieee1588PtpClockDefaultDSPriority1              Unsigned32,
+    ieee1588PtpClockDefaultDSPriority2              Unsigned32,
+    ieee1588PtpClockDefaultDSIpAddr                 InetAddress,
+
+-- BEGIN OPTnm02749
+    ieee1588PtpClockDefaultDSIpAddrType             InetAddressType, 
+-- END OPTnm02749
+
+-- BEGIN OPTnm23768
+   ieee1588PtpClockDefaultDSSubnetMask		    InetAddress,
+   ieee1588PtpClockDefaultDSGateway		    InetAddress
+-- END OPTnm23768
+}
+
+ieee1588PtpClockIndex    OBJECT-TYPE
+    SYNTAX      IEEE1588PtpClockIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The unique value which identifies this IEEE 1588 PTP clock in the chassis. 
+         
+         This attribute will be available for OC-Slave, OC-Master and BC.
+         "
+    ::= { ieee1588PtpClockDefaultDSEntry 1 }
+
+ieee1588PtpClockDefaultDSClockType OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Type of the PTP clock mode
+         0: Phase/ToD clock only via 1588 PTP clock. 
+            Frequency part of clock will be provided via layer 1 SYNC module
+         1: Frequency + Phase/ToD via 1588 PTP clock. Frequency part of the clock is tracing to PRC of layer 1 SYNC
+         2: Frequency + Phase/ToD via 1588 PTP clock. Frequency part of the clock is independent from PRC of layer 1 SYNC
+ 
+         3: Phase/ToD clock  only via 1588 PTP clock  according to ITU-T quality level. (OPTnm04198)
+         4: Frequency + Phase/ToD via 1588 PTP clock  according to ITU-T quality level. (OPTnm04198)
+   
+         Default: 0
+         "
+    ::= { ieee1588PtpClockDefaultDSEntry 2 }           
+
+
+ieee1588PtpClockDefaultDSIdentifier OBJECT-TYPE
+    SYNTAX  IEEE1588PtpClockIdentifier   
+--  MAX-ACCESS  read-only
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This 64-bit extended unique identifier (EUI-64) is 
+        a concatenation of the 24-bit OUI and the MAC address
+        of the chassis.
+        
+        This attribute will be available for OC-Slave, OC-Master and BC.
+        "
+    ::= { ieee1588PtpClockDefaultDSEntry 3 }
+
+ieee1588PtpClockDefaultDSDomain OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The configured domain associated with the 1588 PTP clock.
+        
+        This attribute will be available for OC-Slave, OC-Master and BC.
+        
+        Default Value:0
+        "
+--    DEFVAL { 0 }
+    ::= { ieee1588PtpClockDefaultDSEntry 4 }
+
+ieee1588PtpClockDefaultDSTwoStepFlag OBJECT-TYPE
+    SYNTAX      TruthValue 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This is an indicator of whether master-slave synchronization 
+        utilizes follow-up messaging (IEEE 1588-2008 Section 8.2.1.2.1.).
+        
+        This attribute will be available for OC-Slave, OC-Master and BC.
+        TRUE === ptpTwoStepType
+        FALSE === ptpOneStepType (default Value)
+        "
+    ::= { ieee1588PtpClockDefaultDSEntry 5 }
+
+ieee1588PtpClockDefaultDSNumberOfPorts OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The number of PTP ports that currently participates in 1588 PTP process (OC/BC/TC)
+        
+        This attribute will be available for OC-Slave, OC-Master,BC and TC
+        "
+    ::= { ieee1588PtpClockDefaultDSEntry 6 }
+
+ieee1588PtpClockDefaultDSClass   OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+--  MAX-ACCESS  read-only (SNMPIDL-480)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The clock class on a IEEE 1588 PTP clock (IEEE1588 - 2008 Section 8.2.1.3.1.1).
+        
+        This attribute will be available for OC-Master and BC.
+--      Initializing: 255 (OPTnm23768)
+	Initializing: 187
+        "
+    ::= { ieee1588PtpClockDefaultDSEntry 7 }
+
+ieee1588PtpClockDefaultDSAccuracy   OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+--  MAX-ACCESS  read-only (OPTnm23768)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The accuracy of a IEEE 1588 PTP clock
+        
+        This attribute will be available for OC-Master and BC.
+        Default Value:254
+        "
+--   DEFVAL { 254 }
+    ::= { ieee1588PtpClockDefaultDSEntry 8 }
+
+ieee1588PtpClockDefaultDSOffsetScaledLogVariance   OBJECT-TYPE
+    SYNTAX      Integer32
+--  MAX-ACCESS  read-only (OPTnm25149)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The frequency offset scaled log variance (IEEE P1588-2008 Section 7.6.3).
+        
+        This attribute will be available for OC-Master and BC.
+        
+        Default Value:65535
+        "
+--    DEFVAL { 65535 }
+    ::= { ieee1588PtpClockDefaultDSEntry 9 }
+
+ieee1588PtpClockDefaultDSPriority1 OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The priority1 value of the IEE 1588 PTP clock.
+        
+        This attribute will be available for OC-Master and BC.
+        
+        Default Value:255
+        "
+--   DEFVAL { 255 }
+    ::= { ieee1588PtpClockDefaultDSEntry 10 }
+
+ieee1588PtpClockDefaultDSPriority2 OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The priority2 value of the IEE 1588 PTP clock.
+        
+        This attribute will be available for OC-Master and BC. 
+        
+        Default Value:255
+        "
+--  DEFVAL { 255 }
+    ::= { ieee1588PtpClockDefaultDSEntry 11 }
+
+
+ieee1588PtpClockDefaultDSIpAddr    OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The unicast  IPv4/IPv6 address of IEEE 1588 PTP clock."
+    ::= { ieee1588PtpClockDefaultDSEntry 12 }
+
+-- BEGIN OPTnm02749
+ieee1588PtpClockDefaultDSIpAddrType    OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The type of unicast address of IEEE 1588 PTP clock.
+         This unicast address can be
+          - an IPv4 address in case of type ipv4(1)
+          - an IPv6 address in case of type ipv6(2). 
+         Default value: ipv4(1)"
+    ::= { ieee1588PtpClockDefaultDSEntry 13 }
+-- END OPTnm02749
+
+-- BEGIN OPTnm23768
+ieee1588PtpClockDefaultDSSubnetMask OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The default Subnet mask of IEEE1588 PTP clock."
+    ::= { ieee1588PtpClockDefaultDSEntry 14 }
+
+ieee1588PtpClockDefaultDSGateway OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The default gateway of IEEE1588 PTP clock."
+    ::= { ieee1588PtpClockDefaultDSEntry 15 }
+
+-- END OPTnm23768
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- ALU-IEEE1588-PTP-MIB Clock Current Data Set for the following PTP Clock:
+--			 OC-Slave
+--			 OC-Master
+--			 BC
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ieee1588PtpClockCurrentDSTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF Ieee1588PtpClockCurrentDSEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides IEEE1588 PTP Clock Default Data Set for the following PTP Clock:
+         -- OC-Slave
+         -- OC- Master
+         -- BC
+         "
+    ::= { ieee1588PtpClock 2 }
+
+ieee1588PtpClockCurrentDSEntry OBJECT-TYPE
+    SYNTAX       Ieee1588PtpClockCurrentDSEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Operational information concerning IEEE 1588PTP Clock current
+        values"
+    INDEX       { ieee1588PtpClockIndex }
+    ::= { ieee1588PtpClockCurrentDSTable 1 }
+
+Ieee1588PtpClockCurrentDSEntry ::= SEQUENCE
+{
+    ieee1588PtpClockCurrentDSIdentifier             IEEE1588PtpClockIdentifier,
+    ieee1588PtpClockCurrentDSOffSetFromMaster       Integer32,
+    ieee1588PtpClockCurrentDSMeanPathDelay	        Unsigned32,
+    ieee1588PtpClockCurrentDSCurrentTime		        OCTET STRING,
+    ieee1588PtpClockCurrentDSRecoveredClockState		IEEE1588PtpRecoveredClockState,
+    ieee1588PtpClockCurrentDSLockedIfIndex 					Integer32,
+    ieee1588PtpClockCurrentDSLockedParentDSIdentifier IEEE1588PtpClockIdentifier,
+    ieee1588PtpClockCurrentDSConfiguredParentDSIdentifier IEEE1588PtpClockIdentifier,
+
+    ieee1588PtpClockCurrentDSClockMode              Integer32
+}
+
+ieee1588PtpClockCurrentDSIdentifier OBJECT-TYPE
+    SYNTAX  IEEE1588PtpClockIdentifier   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This 64-bit extended unique identifier (EUI-64) is 
+        a concatenation of the 24-bit OUI and the MAC address
+        of the chassis."
+    ::= { ieee1588PtpClockCurrentDSEntry 1 }
+
+
+ieee1588PtpClockCurrentDSOffSetFromMaster OBJECT-TYPE
+    SYNTAX      Integer32 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current value of the time difference between one master and one slave computed by the slave
+        Refer to Section 8.2.2.4 of IEEE1588-2008
+        
+        Default: 0x7FFF
+        "
+    ::= { ieee1588PtpClockCurrentDSEntry 2 }
+
+ieee1588PtpClockCurrentDSMeanPathDelay OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The mean propagation time between one master and one slave computed by the slave.
+         Refer to Section 8.2.2.4 of IEEE1588-2008 
+        
+        Default: 0xFFFF
+        "
+    ::= { ieee1588PtpClockCurrentDSEntry 3 }
+
+ieee1588PtpClockCurrentDSCurrentTime OBJECT-TYPE
+    SYNTAX      OCTET STRING(SIZE(81)) 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "It specifies the current time of local clock, which might be recovered from 1588 messages
+        in slave clock mode. 
+         
+         The format is as below: 'S.N'
+         S stands for the second part of time (48 octets)
+         N stands for the nano-second part of time (32 octets)        
+        "
+    ::= { ieee1588PtpClockCurrentDSEntry 4 }
+
+ieee1588PtpClockCurrentDSRecoveredClockState    OBJECT-TYPE
+    SYNTAX      IEEE1588PtpRecoveredClockState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "It is used to indicates the
+         current clock synchronization state of the clock derived from
+         the IEEE 1588 PTP synchronization messages.
+         
+         Default Value: freeRun
+         "
+					         
+--  DEFVAL { freeRun }
+    ::= { ieee1588PtpClockCurrentDSEntry 5 }
+    
+ieee1588PtpClockCurrentDSLockedIfIndex  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The interface where the current DS is locked to.
+        
+        It is meaningful only when the PTP node operates as OC/BC and 
+        (ieee1588PtpClockCurrentDSRecoveredClockState == locked)
+        
+        For OC-Slave or BC, this attribute together with ieee1588PtpClockCurrentDSIdentifier
+        references to one entry in ieee1588PtpPortDSTable 
+        
+        For OC-Master, this attribute indicates one entry in ieee1588ExtIfTable (ieee1588ExtIfIndex)
+        
+        -1 for initializing value
+        "
+    ::= { ieee1588PtpClockCurrentDSEntry 6 }
+    
+ieee1588PtpClockCurrentDSLockedParentDSIdentifier OBJECT-TYPE
+    SYNTAX  IEEE1588PtpClockIdentifier   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "It is used to indicate which parent Master that current DS is locked to
+				It should reference to one entry in  ieee1588PtpClockParentDSTable       
+        
+        NULL as Initiliazing value        
+        "
+    ::= { ieee1588PtpClockCurrentDSEntry 7 }
+    
+ieee1588PtpClockCurrentDSConfiguredParentDSIdentifier OBJECT-TYPE
+    SYNTAX  IEEE1588PtpClockIdentifier   
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "It is used for the user to specify which parent Master that current DS is configured to lock
+				It should reference to one entry in  ieee1588PtpClockParentDSTable       
+        
+        NULL as Initiliazing value        
+        "
+    ::= { ieee1588PtpClockCurrentDSEntry 8 }  
+
+ieee1588PtpClockCurrentDSClockMode OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+          " This parameter determines the operational clock mode of IEEE 1588PTP Clock.
+	    Allowed values:			  
+	    - 0b0000		Disabled
+	    - 0b0001		Ordinary Clock - Slave
+	    - 0b0010		Ordinary Clock - Master
+	    - 0b0011		Boundary Clock
+	    - 0b0100   		End-to-End Transparent Clock
+	    - 0b1000		Peer-to-Peer Transparent Clock
+	    - 0b0101		End-to-End Transparent Clock And OC-Slave
+	    - 0b0111		End-to-End Transparent Clock And BC
+	    - 0b1001		Peer-to-Peer Transparent Clock And OC-Slave"
+    ::= { ieee1588PtpClockCurrentDSEntry 9 }
+
+  
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- ALU-IEEE1588-PTP-MIB Clock Parent Data Set for the following PTP Clock:
+--       OC-Master
+--			 OC-Slave
+--			 BC
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ieee1588PtpClockParentDSTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF Ieee1588PtpClockParentDSEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides IEEE1588 PTP Clock Default Data Set for the following PTP Clock:
+					--       OC-Master
+					--			 OC-Slave
+					--			 BC "
+    ::= { ieee1588PtpClock 3 }
+
+ieee1588PtpClockParentDSEntry OBJECT-TYPE
+    SYNTAX       Ieee1588PtpClockParentDSEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Operational information concerning IEEE 1588PTP Clock current values"
+    INDEX       { ieee1588PtpClockParentDSIdentifier }
+    ::= { ieee1588PtpClockParentDSTable 1 }
+
+Ieee1588PtpClockParentDSEntry ::= SEQUENCE
+{
+    ieee1588PtpClockParentDSIdentifier                         IEEE1588PtpClockIdentifier,
+    ieee1588PtpClockParentDSPortNum                            Integer32,
+    ieee1588PtpClockParentDSStats                              TruthValue,
+    ieee1588PtpClockParentDSOffsetScaledLogVariance            Integer32,
+--  (OPTnm25149: Observed Parent Clock Phase Change Rate parameter was missing)
+    ieee1588PtpClockParentDSClockPhaseChangeRate               Integer32,
+    ieee1588PtpClockParentDSGrandmasterClockId                 IEEE1588PtpClockIdentifier,
+    ieee1588PtpClockParentDSGrandmasterClass                   Unsigned32,
+    ieee1588PtpClockParentDSGrandmasterAccuracy                Unsigned32,
+    ieee1588PtpClockParentDSGrandmasterOffsetScaledLogVariance Unsigned32,
+    ieee1588PtpClockParentDSGrandmasterPriority1               Unsigned32,
+    ieee1588PtpClockParentDSGrandmasterPriority2               Unsigned32,
+    ieee1588PtpClockParentDSCurrentUtcOffset		               Integer32,
+    ieee1588PtpClockParentDSCurrentUtcOffsetValid              TruthValue,
+    ieee1588PtpClockParentDSLeap59								             TruthValue,
+    ieee1588PtpClockParentDSLeap61								             TruthValue,
+    ieee1588PtpClockParentDSTimeTraceable					             TruthValue,
+    ieee1588PtpClockParentDSFrequencyTraceable		             TruthValue,
+    ieee1588PtpClockParentDSPtpTimescale					             TruthValue,
+    ieee1588PtpClockParentDSPtpTimeSource					             Unsigned32,
+    ieee1588PtpClockParentDSStepsRemoved           						 Unsigned32
+    
+}
+
+ieee1588PtpClockParentDSIdentifier OBJECT-TYPE
+    SYNTAX  IEEE1588PtpClockIdentifier   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This 64-bit extended unique identifier (EUI-64) is 
+        a concatenation of the 24-bit OUI and the MAC address
+        of the chassis.
+        
+        One entry for each parent PTP OC-master or local 1pps/ToD interface.
+        
+        For local OC-Master, it should be equal to
+         -  1  for 1pps/ToD interface #1
+         -  2  for 1pps/ToD interface #2
+        "
+    ::= { ieee1588PtpClockParentDSEntry 1 }
+
+ieee1588PtpClockParentDSPortNum OBJECT-TYPE
+    SYNTAX 	    Integer32 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The port number that local clock is synchronized to.
+        
+         When the PTP node is configured as
+         - OC-Slave or BC, this attribute indicates the PTP port number of the master 
+         	 that local node is synhchonized to
+         - OC-Master, this attribute indicates the source of local clock, i.e., 
+            a. external 1pps/ToD interface (1 or 2)
+            b. or free-running local XO    (-1)
+            
+        "
+    ::= { ieee1588PtpClockParentDSEntry 2 }
+
+ieee1588PtpClockParentDSStats OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+-- Begin OPTnm25149
+        "This value indicates whether the values of ParentDSOffsetScaledLogVariance
+        and ParentDSClockPhaseChangeRate have been measured and are valid.
+        A TRUE value shall indicate valid data."
+-- End OPTnm25149
+    ::= { ieee1588PtpClockParentDSEntry 3 }
+
+ieee1588PtpClockParentDSOffsetScaledLogVariance   OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The frequency offset scaled log variance of the current master
+        (IEEE P1588-2008 Section 7.6.3).
+        Default Value:65535"
+--  DEFVAL { 65535 }
+    ::= { ieee1588PtpClockParentDSEntry 4 }
+
+-- Begin OPTnm25149
+ieee1588PtpClockParentDSClockPhaseChangeRate OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This value is an estimate of the parent clocks phase change
+        rate as measured by the slave clock.
+        Default Value:0"
+--  DEFVAL { 0 }
+    ::= { ieee1588PtpClockParentDSEntry 5 }
+-- End OPTnm25149
+ieee1588PtpClockParentDSGrandmasterClockId OBJECT-TYPE
+    SYNTAX  IEEE1588PtpClockIdentifier   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current grand master's clock identifier."
+    ::= { ieee1588PtpClockParentDSEntry 6 }
+       
+ieee1588PtpClockParentDSGrandmasterClass   OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The clock class of the grandmaster clock."
+    ::= { ieee1588PtpClockParentDSEntry 7 }
+
+ieee1588PtpClockParentDSGrandmasterAccuracy   OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The accuracy of the grandmaster clock"
+    ::= { ieee1588PtpClockParentDSEntry 8 }
+
+ieee1588PtpClockParentDSGrandmasterOffsetScaledLogVariance OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The priority1 value of the current grandmaster clock."
+    ::= { ieee1588PtpClockParentDSEntry 9 }
+
+ieee1588PtpClockParentDSGrandmasterPriority1 OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The priority1 value of the current grandmaster clock."
+    ::= { ieee1588PtpClockParentDSEntry 10}
+
+ieee1588PtpClockParentDSGrandmasterPriority2 OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The priority2 value of the current grandmaster clock."
+    ::= { ieee1588PtpClockParentDSEntry 11 }
+    
+ieee1588PtpClockParentDSCurrentUtcOffset		 OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current UTC offset value of the current parent clock.
+        Refer to Section 8.2.4.2 of IEEE1588-2008
+        "
+    ::= { ieee1588PtpClockParentDSEntry 12 }             
+    
+ieee1588PtpClockParentDSCurrentUtcOffsetValid OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "To indicate whether current UTC offset is valid or not.
+        Refer to Section 8.2.4.3 of IEEE1588-2008
+        "
+    ::= { ieee1588PtpClockParentDSEntry 13 } 
+             
+ieee1588PtpClockParentDSLeap59						OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "To indicate that the last minute of the current UTC day contains 59 seconds.
+        Refer to Section 8.2.4.4 of IEEE1588-2008
+        "
+    ::= { ieee1588PtpClockParentDSEntry 14 } 
+    
+ieee1588PtpClockParentDSLeap61							OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "To indicate that the last minute of the current UTC day contains 61 seconds.
+        Refer to Section 8.2.4.5 of IEEE1588-2008
+        "
+    ::= { ieee1588PtpClockParentDSEntry 15 } 
+    
+ieee1588PtpClockParentDSTimeTraceable			OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "It should be TRUE if the timescale and value of current UTC offset are traceable to a primary
+        reference
+        
+        Refer to Section 8.2.4.6 of IEEE1588-2008
+        "
+    ::= { ieee1588PtpClockParentDSEntry 16 } 
+    
+ieee1588PtpClockParentDSFrequencyTraceable	 OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "It should be TRUE if the frequency determing the timescale is traceable to a primary
+        reference
+        
+        Refer to Section 8.2.4.7 of IEEE1588-2008
+        "
+    ::= { ieee1588PtpClockParentDSEntry 17 } 
+    
+ieee1588PtpClockParentDSPtpTimescale		 OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicate the type of time scale
+        TRUE = PTP timescale
+        FALSE - ARB timescale
+        
+        Refer to Section 8.2.4.8 of IEEE1588-2008
+        "
+    ::= { ieee1588PtpClockParentDSEntry 18 } 
+    
+ieee1588PtpClockParentDSPtpTimeSource	OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The timesource used by grandmaster clock
+        
+        Refer to Section 8.2.4.9 of IEEE1588-2008
+        "
+    ::= { ieee1588PtpClockParentDSEntry 19 }
+    
+ieee1588PtpClockParentDSStepsRemoved OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The number of IEEE 1588 PTP devices between the IEEE 1588 PTP clock 
+        and the master"
+    ::= { ieee1588PtpClockParentDSEntry 20 }
+ 
+-- Begin OPTnm05509	
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- ALU-IEEE1588-PTP-MIB List of Slave in one master node
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ieee1588PtpClockActiveSlaveListTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF Ieee1588PtpClockActiveSlaveListEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table defines the list of slaves for the following PTP Clock:
+					--   OC-Master
+					--	 BC "
+    ::= { ieee1588PtpClock 4 }
+
+ieee1588PtpClockActiveSlaveListEntry OBJECT-TYPE
+    SYNTAX       Ieee1588PtpClockActiveSlaveListEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "List of slave for one master clock"
+    INDEX       { ieee1588PtpClockIndex,ieee1588PtpPortDSPortType, ieee1588PtpPortDSPortIndex, ieee1588PtpClockActiveSlaveListIdentifier }
+    ::= { ieee1588PtpClockActiveSlaveListTable 1 }
+
+Ieee1588PtpClockActiveSlaveListEntry ::= SEQUENCE
+{
+    ieee1588PtpClockActiveSlaveListIdentifier                           Unsigned32,
+    ieee1588PtpClockActiveSlaveListIPAddress                            InetAddress,
+    ieee1588PtpClockActiveSlaveListMacAddress                           MacAddress,
+    ieee1588PtpClockActiveSlaveListAnnounceGranted                      TruthValue,        
+    ieee1588PtpClockActiveSlaveListAnnounceGrantedTime                  TimeStamp,        
+    ieee1588PtpClockActiveSlaveListAnnounceGrantedDuration              Unsigned32,    
+    ieee1588PtpClockActiveSlaveListSyncGranted		                    TruthValue,        
+    ieee1588PtpClockActiveSlaveListSyncGrantedTime      	            TimeStamp,        
+    ieee1588PtpClockActiveSlaveListSyncGrantedDuration          	    Unsigned32,    
+    ieee1588PtpClockActiveSlaveListDelayRspGranted	                    TruthValue,        
+    ieee1588PtpClockActiveSlaveListDelayRspGrantedTime      	        TimeStamp,        
+    ieee1588PtpClockActiveSlaveListDelayRspGrantedDuration          	Unsigned32
+}
+
+ieee1588PtpClockActiveSlaveListIdentifier OBJECT-TYPE
+    SYNTAX  Unsigned32   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The index of slave      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 1 }
+
+ieee1588PtpClockActiveSlaveListIPAddress OBJECT-TYPE
+    SYNTAX  InetAddress   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        IP Address of slave      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 2 }
+
+ieee1588PtpClockActiveSlaveListMacAddress OBJECT-TYPE
+    SYNTAX  MacAddress   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "
+		MAC Address of slave      
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 3 }
+    
+ieee1588PtpClockActiveSlaveListAnnounceGranted OBJECT-TYPE
+    SYNTAX  TruthValue   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The announce message of this slave is granted or not      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 4 }
+
+ieee1588PtpClockActiveSlaveListAnnounceGrantedTime  OBJECT-TYPE
+    SYNTAX  TimeStamp   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The time that announce message of this slave is granted      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 5 }
+
+ieee1588PtpClockActiveSlaveListAnnounceGrantedDuration    OBJECT-TYPE
+    SYNTAX  Unsigned32   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The duration of the granted announce      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 6 }    
+
+ieee1588PtpClockActiveSlaveListSyncGranted OBJECT-TYPE
+    SYNTAX  TruthValue   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The Sync message of this slave is granted or not      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 7 }
+
+ieee1588PtpClockActiveSlaveListSyncGrantedTime  OBJECT-TYPE
+    SYNTAX  TimeStamp   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The time that sync message of this slave is granted      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 8 }
+
+ieee1588PtpClockActiveSlaveListSyncGrantedDuration    OBJECT-TYPE
+    SYNTAX  Unsigned32   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The duration of the granted Sync      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 9 }
+    
+ieee1588PtpClockActiveSlaveListDelayRspGranted OBJECT-TYPE
+    SYNTAX  TruthValue   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The Delay Response message of this slave is granted or not      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 10 }
+
+ieee1588PtpClockActiveSlaveListDelayRspGrantedTime  OBJECT-TYPE
+    SYNTAX  TimeStamp   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The time that Delay Response message of this slave is granted      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 11 }
+
+ieee1588PtpClockActiveSlaveListDelayRspGrantedDuration    OBJECT-TYPE
+    SYNTAX  Unsigned32   
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "        
+        The duration of the granted Delay Response      
+        
+        "
+    ::= { ieee1588PtpClockActiveSlaveListEntry 12 }        
+
+-- End OPTnm05509	
+	
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- ALU-IEEE1588-PTP-MIB Port Data Set for the following PTP clock modes:
+-- 		OC - Master
+-- 		OC - Slave
+-- 		BC
+-- 		TC
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+ieee1588PtpPortDSTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF Ieee1588PtpPortDSEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table allows configuration to the IEEE 1588 PTP "
+    ::= { ieee1588PtpPort 1 }
+
+ieee1588PtpPortDSEntry OBJECT-TYPE
+    SYNTAX       Ieee1588PtpPortDSEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Configuration information concerning IEEE 1588 PTP port"
+    INDEX       { ieee1588PtpClockIndex, ieee1588PtpPortDSPortType ,ieee1588PtpPortDSPortIndex}
+    ::= { ieee1588PtpPortDSTable 1 }
+
+Ieee1588PtpPortDSEntry ::= SEQUENCE
+{
+    ieee1588PtpPortDSPortType	            	Integer32,
+    ieee1588PtpPortDSPortIndex            	Integer32,
+    ieee1588PtpPortDSPortNum                Unsigned32,
+    ieee1588PtpPortDSDomain                 Unsigned32,
+    ieee1588PtpPortDSAnnoRxTimeout          Integer32,
+    ieee1588PtpPortDSLogAnnoInterval        Integer32,
+    ieee1588PtpPortDSLogSyncInterval        Integer32,
+    ieee1588PtpPortDSLogDelayReqInterval    Integer32,
+    ieee1588PtpPortDSLogMinPDelayReqInterval	Integer32,
+    ieee1588PtpPortDSPeerPathDelay	        Integer32,
+    ieee1588PtpPortDSAdminStatus            Unsigned32,
+    ieee1588PtpPortDSRole					          Unsigned32,
+    ieee1588PtpPortDSPortOperState          IEEE1588PtpPortState,
+    ieee1588PtpPortDSDelayMechanism         INTEGER,
+    ieee1588PtpPortDSVersionNumber          INTEGER,
+    ieee1588PtpPortDSAsymCorrection					Integer32,
+    ieee1588PtpPortDSRowStatus		         	RowStatus,
+-- BEGIN OPTnm23768
+    ieee1588PtpPortDSIpAddress              InetAddress,
+    ieee1588PtpPortDSSubnetMask             InetAddress,
+    ieee1588PtpPortDSDefaultGateway         InetAddress
+-- END OPTnm23768
+}
+
+ieee1588PtpPortDSPortType  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The type of PTP port:
+		 1: physical port
+		 2: Eth LAG group 
+		 3: 1:1 linear Eth protection group
+		 4: 1:1 linear TMPLS protection group
+
+                 5:Logical Master Port
+                 6:Logical Slave  Port
+        "
+    ::= { ieee1588PtpPortDSEntry 1 }
+
+ieee1588PtpPortDSPortIndex  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The value of ieee1588PtpPortDSPortIndex indicates the local 
+        interface on which to transmit or receive IEEE1588 PTP packets.
+         
+	if (ieee1588PtpPortDSPortType == 1 ||2), it references to one entry in ifTable (ieee1588PtpPortDSPortIndex == ifIndex in ifTable)
+	if (ieee1588PtpPortDSPortType == 3), it references to one entry in opticsIMEthLinearPGTable (ieee1588PtpPortDSPortIndex == opticsIMEthLinearPGIndex in opticsIMEthLinearPGTable)        
+	if  (ieee1588PtpPortDSPortType == 4), it references to one entry in linear protection group. ieee1588PtpPortDSPortIndex == TMPLS FFPTUNNEL AID
+	"
+    ::= { ieee1588PtpPortDSEntry 2 }
+
+ieee1588PtpPortDSPortNum OBJECT-TYPE
+    SYNTAX 	    Unsigned32 (1..4096)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The IEEE 1588 PTP port num.
+        "
+    ::= { ieee1588PtpPortDSEntry 3 }
+
+ieee1588PtpPortDSDomain OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The domain associated with the 1588 PTP reference/port.
+        Default Value:0
+        "
+--  DEFVAL { 0 }
+    ::= { ieee1588PtpPortDSEntry 4 }
+
+ieee1588PtpPortDSAnnoRxTimeout OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The administrative value for the number of timeouts for 
+        the announce message associated with the 1588 PTP reference/port.
+        The total time in seconds to timeout is calculated by the
+        ieee1588PtpPortDSAnnoRxTimeout * 2 ^ ieee1588PtpPortDSLogAnnoInterval
+        
+        Default Value: 3
+        "
+--  DEFVAL { 3 }
+    ::= { ieee1588PtpPortDSEntry 5 }
+
+ieee1588PtpPortDSLogAnnoInterval OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The administrative value for the transmission interval for the announce message 
+        associated with the 1588 PTP reference/port. The units of seconds 
+        represented as logarithm to the base 2 of this time interval.
+        
+
+        Default Value :0
+        "
+--  DEFVAL { 0 }
+    ::= { ieee1588PtpPortDSEntry 6 }
+
+ieee1588PtpPortDSLogSyncInterval OBJECT-TYPE
+    SYNTAX      Integer32 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The administrative value for the transmission interval for the sync message 
+        associated with the 1588 PTP reference/port. The units of seconds 
+        represented as logarithm to the base 2 of this time interval.
+        
+        Default Value : -7
+        "
+--   DEFVAL { -7 }
+    ::= { ieee1588PtpPortDSEntry 7 }
+
+ieee1588PtpPortDSLogDelayReqInterval OBJECT-TYPE
+    SYNTAX      Integer32 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The administrative value for the transmission interval for the delay request message 
+        associated with the 1588 PTP reference/port. The units of seconds 
+        represented as logarithm to the base 2 of this time interval.
+        
+        Default Value : -1
+        "
+--  DEFVAL { -1 }
+    ::= { ieee1588PtpPortDSEntry 8 }
+
+ieee1588PtpPortDSLogMinPDelayReqInterval OBJECT-TYPE
+    SYNTAX      Integer32 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The administrative value for the transmission interval for the peer delay request message 
+        associated with the 1588 PTP reference/port. The units of seconds 
+        represented as logarithm to the base 2 of this time interval.
+        
+        This attribute is only applicable to Peer-to-Peer Transparent Clock
+        
+        Default Value : -1
+        "
+--  DEFVAL { -1 }
+    ::= { ieee1588PtpPortDSEntry 9 }
+
+ieee1588PtpPortDSPeerPathDelay OBJECT-TYPE
+    SYNTAX      Integer32 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        " It's an estimate of the current one-way propagation delay on the link.
+        
+        This attribute is only applicable to Peer-to-Peer Transparent Clock
+        "
+    ::= { ieee1588PtpPortDSEntry 10 }
+    
+ieee1588PtpPortDSAdminStatus      OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "It is used for the user to administratively manage the PTP protocols on one port
+         0: Disable
+         1: Enable
+         
+         Default Value : 0
+         "
+    ::= { ieee1588PtpPortDSEntry 11 }      
+
+ieee1588PtpPortDSRole OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "It is used for the user to set the role of one PTP port
+         0: Automatic, depending on BMC algorithm and global clock mode setting,
+            applicable to all clock modes: OC-Slave/OC-Master/BC/TC/TC+OC            
+         1: Slave_only, 
+         		applicable to the clock modes: OC-Slave and BC
+         2: Master_only, 
+         		applicable to the clock modes: OC-Master and BC		
+         3: Transparent_only
+         
+         Default Value : 0
+         				
+         "
+    ::= { ieee1588PtpPortDSEntry 12 }      
+
+ieee1588PtpPortDSPortOperState  OBJECT-TYPE
+    SYNTAX      IEEE1588PtpPortState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The state of the IEEE 1588PTP reference/port.
+        Default Value : initializing
+        "
+--  DEFVAL { initializing }
+    ::= { ieee1588PtpPortDSEntry 13 }
+
+ieee1588PtpPortDSDelayMechanism  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    e2e (1),
+                    p2p (2),
+                    disabled (254)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The delay mechanism for the IEEE 1588PTP reference/port.
+         
+          Default Value: disabled
+        "
+--   DEFVAL { disabled }
+    ::= { ieee1588PtpPortDSEntry 14 }
+
+ieee1588PtpPortDSVersionNumber  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    -- v1 (1),
+                    v2 (2)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The protocol version of the IEEE 1588PTP reference/port."
+    ::= { ieee1588PtpPortDSEntry 15 }
+
+
+ieee1588PtpPortDSAsymCorrection					OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "It allows the user to specify the correction delay for asymmetrical network path
+        
+        Refer to Section 7.4.2 of IEEE1588-2008.
+         
+        The unit of this attribute shall be ns and the steps of this attribute shall be 1ns  
+        "
+    ::= { ieee1588PtpPortDSEntry 16 }
+    
+ieee1588PtpPortDSRowStatus   OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The RowStatus of PTP Port entries
+         
+        "
+    ::= { ieee1588PtpPortDSEntry 17 }  
+    
+-- BEGIN ADD_IP  OPTnm23768
+ieee1588PtpPortDSIpAddress    OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The unicast IPv4/IPv6 address of PTP port. It will only be applicable/meaningful when 
+         (ieee1588PtpPortSessionEncapType == 2 or 3) "
+    ::= { ieee1588PtpPortDSEntry 18 }
+
+ieee1588PtpPortDSSubnetMask OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Subnet mask of PTP port. It will only be applicable/meaningful when 
+         (ieee1588PtpPortSessionEncapType == 2 or 3) "
+    ::= { ieee1588PtpPortDSEntry 19 }
+
+ieee1588PtpPortDSDefaultGateway OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The default gateway ip address.It will only be applicable/meaningful when 
+         (ieee1588PtpPortSessionEncapType == 2 or 3) "
+    ::= { ieee1588PtpPortDSEntry 20 }
+-- END ADD_IP OPTnm23768
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- Session setting for PTP messages to be received/transmitted between  
+-- local PTP port(s) and remote PTP port(s). 
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+ieee1588PtpPortSessionTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF Ieee1588PtpPortSessionEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table allows the configuration for the information required
+        for the PTP sessions between PTP nodes/ports
+        
+        It is applicable to the following PTP Clock modes:
+					OC - Master
+					OC - Slave
+					BC
+					       
+         "
+    ::= { ieee1588PtpPort 2 }
+
+ieee1588PtpPortSessionEntry OBJECT-TYPE
+    SYNTAX       Ieee1588PtpPortSessionEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Configuration information concerning IEEE 1588 PTP
+        
+         For each PTP port operating as Slave, one entry for each acceptable remote master.
+         For each PTP port operating as Master, one entry for each acceptable remote slave.
+        "
+    INDEX       { ieee1588PtpClockIndex, ieee1588PtpPortDSPortType,ieee1588PtpPortDSPortIndex,ieee1588PtpPortSessionIndex}
+    ::= { ieee1588PtpPortSessionTable 1 }
+
+Ieee1588PtpPortSessionEntry ::= SEQUENCE
+{
+    ieee1588PtpPortSessionIndex             	Unsigned32,
+      
+    ieee1588PtpPortSessionEncapType          Unsigned32,
+    
+    ieee1588PtpPortSessionDestMAC		     		 MacAddress,
+    ieee1588PtpPortSessionDestIpAddr		     InetAddress,
+    
+    ieee1588PtpPortSessionVlanTag		     		 Unsigned32,
+    ieee1588PtpPortSessionTuLabel		     		 Unsigned32,
+    ieee1588PtpPortSessionPwLabel		     		 Unsigned32,
+    ieee1588PtpPortSessionCWEnable	     		 Unsigned32,
+    
+    ieee1588PtpPortSessionMulticast          	Unsigned32,
+    ieee1588PtpPortSessionUnicastNegotiate   	TruthValue,      
+    ieee1588PtpPortSessionParentDSIdentifer		IEEE1588PtpClockIdentifier,  
+    ieee1588PtpPortSessionRowStatus         	RowStatus,
+-- Begin OPTnm05509	
+    ieee1588PtpPortSessionAnnounceNegotiationStatus     Unsigned32,
+    ieee1588PtpPortSessionSyncNegotiationStatus     Unsigned32,
+    ieee1588PtpPortSessionDelayRspNegotiationStatus     Unsigned32
+-- End OPTnm05509	
+}
+
+ieee1588PtpPortSessionIndex    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible 
+    STATUS      current
+    DESCRIPTION
+        "The index of the session entry."
+    ::= { ieee1588PtpPortSessionEntry 1 }
+    
+ieee1588PtpPortSessionEncapType    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The encapsulation type of the entry
+         1: UDP/IPv4 per IEEE1588-2008 Annex D
+         2: UDP/IPv6 per IEEE1588-2008 Annex E
+         3: Ethernet per IEEE1588-2008 Annex F
+         4: T-MPLS/MPLS-TP with ETH payload per IEEE1588-2008 Annex F
+         5: T-MPLS/MPLS-TP with UDP/IPv4 payload per IEEE1588-2008 Annex E
+         6: T-MPLS/MPLS-TP with UDP/IPv6 payload per IEEE1588-2008 Annex F
+
+         Default: 3
+        "
+    ::= { ieee1588PtpPortSessionEntry 2 }
+
+ieee1588PtpPortSessionDestMAC    OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The unicast destination MAC address of remote PTP port (slave or master).
+        
+        It will only be applicable when 
+        (ieee1588PtpPortSessionEncapType  == 3 or 4) and (ieee1588PtpPortSessionMulticast != 2)
+        
+        "
+    ::= { ieee1588PtpPortSessionEntry 3 }
+
+ieee1588PtpPortSessionDestIpAddr    OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "
+        The unicast destination IPv4/IPv6 address of remote PTP port (slave or master).
+
+        It will only be applicable when 
+        (ieee1588PtpPortSessionEncapType  == 1 or 2 or 5 or 6) and (ieee1588PtpPortSessionMulticast != 2)
+        "
+    ::= { ieee1588PtpPortSessionEntry 4 }
+
+ieee1588PtpPortSessionVlanTag    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Vlan tag of the tx/rx PTP messages. 
+        It shall be within the range of [0,4094], 0 means untagged
+        
+        It will only be applicable when ieee1588PtpPortEncapType == 3 ||4
+
+				Default: 0         
+        "
+    ::= { ieee1588PtpPortSessionEntry 5 }
+
+ieee1588PtpPortSessionTuLabel    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The T-MPLS/MPLS-TP Tunnel label for the tx/rx PTP messages. 0 means no Tunnel Label
+                
+        It will only be applicable when ieee1588PtpPortEncapType == 4
+         
+        "
+    ::= { ieee1588PtpPortSessionEntry 6 }
+
+ieee1588PtpPortSessionPwLabel    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The T-MPLS/MPLS-TP PW label for the tx/rx PTP messages. 0 means no PW Label
+                
+        It will only be applicable when ieee1588PtpPortEncapType == 4
+         
+        "
+    ::= { ieee1588PtpPortSessionEntry 7 }
+
+ieee1588PtpPortSessionCWEnable    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "To enable/disable CW for PTP message
+                
+        It will only be applicable when ieee1588PtpPortEncapType == 4
+        0: Disable (default)
+        1: enable
+         
+        "
+    ::= { ieee1588PtpPortSessionEntry 8 }
+    
+ieee1588PtpPortSessionMulticast OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Indicates whether the 1588 PTP reference/port comminicates via
+        unicast of multicast messaging.
+          - 0: Multicast for all PTP messages, including Announce, SYNC, Follow-UP, Delay-Request and Delay-Response
+          - 1: Multicast for Announce, SYNC, Follow-UP
+               Unicast for  Delay-Request and Delay-Response
+          - 2: Unicast for all PTP messages, including Announce, SYNC, Follow-UP, Delay-Request and Delay-Response     
+          
+          Default Value: 1
+        "
+--  DEFVAL { 1 }
+    ::= { ieee1588PtpPortSessionEntry 9 }
+
+ieee1588PtpPortSessionUnicastNegotiate OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "An adaministrative value indicating of whether the 1588 PTP reference/port 
+        will communicate to negotiate unicast messaging.
+        Default Value: false
+        "
+--  DEFVAL { false }
+    ::= { ieee1588PtpPortSessionEntry 10 }
+
+ieee1588PtpPortSessionParentDSIdentifer		OBJECT-TYPE
+    SYNTAX      IEEE1588PtpClockIdentifier
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "value indicating of Parent Clock identifier for correctly received Annnounce messages
+        Default Value: NULL
+        "
+    ::= { ieee1588PtpPortSessionEntry 11 }  
+
+ieee1588PtpPortSessionRowStatus   OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The RowStatus of PTP Encap entries
+         
+        "
+    ::= { ieee1588PtpPortSessionEntry 12 }   
+	
+-- Begin OPTnm05509	
+ieee1588PtpPortSessionAnnounceNegotiationStatus   OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The negotiation status of announce message
+         0    completed and suceeded
+         1    failed    
+         2    in progress     
+        "	
+    ::= { ieee1588PtpPortSessionEntry 13 }    
+ieee1588PtpPortSessionSyncNegotiationStatus   OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The negotiation status of sync message
+         0    completed and suceeded
+         1    failed         
+         2    in progress
+         3    not started
+        "	
+    ::= { ieee1588PtpPortSessionEntry 14 }    
+ieee1588PtpPortSessionDelayRspNegotiationStatus   OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The negotiation status of delay_rsp message
+         0    completed and suceeded
+         1    failed         
+         2    in progress
+         3    not started
+        "	
+    ::= { ieee1588PtpPortSessionEntry 15 } 
+    
+-- End OPTnm05509	
+     
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- ALU-IEEE1588-PTP-MIB Port Packet Statistics
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ieee1588PtpPortPacketStatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF Ieee1588PtpPortPacketStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table lists the stats of 1588 PTP messages transmitted/received "
+    ::= { ieee1588PtpPort 3 }
+
+ieee1588PtpPortPacketStatsEntry OBJECT-TYPE
+    SYNTAX       Ieee1588PtpPortPacketStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Configuration information concerning IEEE 1588 PTP"
+    INDEX       { ieee1588PtpClockIndex, ieee1588PtpPortDSPortType,ieee1588PtpPortDSPortIndex,ieee1588PtpPortSessionIndex }
+    ::= { ieee1588PtpPortPacketStatsTable 1 }
+
+Ieee1588PtpPortPacketStatsEntry ::= 
+    SEQUENCE {
+        ieee1588PtpPortBadVersionDisc                 Counter64,
+        ieee1588PtpPortBadDomainDisc                  Counter64,
+        ieee1588PtpPortAlternateMasterDisc            Counter64,
+        ieee1588PtpPortStepRemovedGreaterThan255Disc  Counter64,
+        
+        ieee1588PtpPortAnnounceMsgTx	                Counter64,
+        ieee1588PtpPortAnnounceMsgRx                  Counter64,
+        ieee1588PtpPortSyncMsgTx                      Counter64,
+        ieee1588PtpPortSyncMsgRx 		                  Counter64,
+        
+        ieee1588PtpPortDelayReqMsgTx                  Counter64,
+        ieee1588PtpPortDelayReqMsgRx 		              Counter64,
+        ieee1588PtpPortDelayRspMsgTx                  Counter64,
+        ieee1588PtpPortDelayRspMsgRx                  Counter64,
+        
+                
+        ieee1588PtpPortSignalingMsgTx                 Counter64,
+        ieee1588PtpPortSignalingMsgRx                 Counter64,       
+        ieee1588PtpPortTotalUdpGeneralMsgTx           Counter64,
+        ieee1588PtpPortTotalUdpGeneralMsgRx           Counter64,
+        ieee1588PtpPortTotalUdpEventMsgTx             Counter64,
+        ieee1588PtpPortTotalUdpEventMsgRx             Counter64,
+        ieee1588PtpPortUnicastReqAnnoTx               Counter64,
+        ieee1588PtpPortUnicastReqAnnoRx               Counter64,
+        ieee1588PtpPortUnicastGrantAnnoTx             Counter64,
+        ieee1588PtpPortUnicastGrantAnnoRx             Counter64,
+        ieee1588PtpPortUnicastReqSyncTx               Counter64,
+        ieee1588PtpPortUnicastReqSyncRx               Counter64,
+        ieee1588PtpPortUnicastGrantSyncTx             Counter64,
+        ieee1588PtpPortUnicastGrantSyncRx             Counter64,
+        ieee1588PtpPortUnicastCancelAnnoTx            Counter64,
+        ieee1588PtpPortUnicastCancelAnnoRx            Counter64,
+        ieee1588PtpPortUnicastCancelSyncTx            Counter64,
+        ieee1588PtpPortUnicastCancelSyncRx            Counter64,
+        ieee1588PtpPortUnicastCancelAckAnnoTx         Counter64,
+        ieee1588PtpPortUnicastCancelAckAnnoRx         Counter64,
+        ieee1588PtpPortUnicastCancelAckSyncTx         Counter64,
+        ieee1588PtpPortUnicastCancelAckSyncRx         Counter64,
+        ieee1588PtpPortUnicastNegRejectsAnno          Counter64,
+        ieee1588PtpPortUnicastNegRejectsSync          Counter64,
+        ieee1588PtpPortOutOfOrderSyncPktRx            Counter64,
+        ieee1588PtpPortDuplicateMsgDisc               Counter64,
+        ieee1588PtpPortPacketStatsLastUpdateTime      TimeStamp,
+        ieee1588PtpPortUnicastReqAnnoTxTimeout        Counter64,
+        ieee1588PtpPortUnicastReqSyncTxTimeout        Counter64,
+        ieee1588PtpPortUnicastGrantAnnoRejected       Counter64,
+        ieee1588PtpPortUnicastGrantSyncRejected       Counter64
+}
+
+ieee1588PtpPortBadVersionDisc OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "ieee1588PtpPortBadVersionDisc indicates the number of packets discarded 
+        on ingress as a result of the IEEE P1588 D2.2 section 7.5.5 version number
+        checking."
+    ::= { ieee1588PtpPortPacketStatsEntry 1 }
+
+ieee1588PtpPortBadDomainDisc OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "ieee1588PtpPortBadDomainDisc indicates the number of packets discarded 
+        on ingress as a result of the processing as described in IEEE P1588 D2.2
+        section 9.5.1."
+    ::= { ieee1588PtpPortPacketStatsEntry 2 }
+
+ieee1588PtpPortAlternateMasterDisc OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "ieee1588PtpPortAlternateMasterDisc indicates the number of packets discarded 
+        on ingress as a result of the processing as described in IEEE P1588 D2.2
+
+        section 9.1."
+    ::= { ieee1588PtpPortPacketStatsEntry 3 }
+
+ieee1588PtpPortStepRemovedGreaterThan255Disc OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "ieee1588PtpPortStepRemovedGreaterThan255Disc indicates the number of 
+        packets discarded on ingress as a result of processing as described
+        in IEEE P1588 D2.2 section 9.3.2.5."
+    ::= { ieee1588PtpPortPacketStatsEntry 4 }
+    
+ieee1588PtpPortAnnounceMsgTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "ieee1588PtpPortAnnounceMsgTx indicates the number of Announce packets 
+        transmitted to the master."
+    ::= { ieee1588PtpPortPacketStatsEntry 5 }
+
+ieee1588PtpPortAnnounceMsgRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of Announce packets received from the master."
+    ::= { ieee1588PtpPortPacketStatsEntry 6 }
+
+ieee1588PtpPortSyncMsgTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of Sync packets transmitted to the slave."
+    ::= { ieee1588PtpPortPacketStatsEntry 7 }
+
+ieee1588PtpPortSyncMsgRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of Sync packets received from the master."
+    ::= { ieee1588PtpPortPacketStatsEntry 8 }
+
+ieee1588PtpPortDelayReqMsgTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of Delay Request packets transmitted to the master."
+    ::= { ieee1588PtpPortPacketStatsEntry 9 }
+
+ieee1588PtpPortDelayReqMsgRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of delay request packets received from the slave."
+    ::= { ieee1588PtpPortPacketStatsEntry 10 }
+
+ieee1588PtpPortDelayRspMsgTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of Delay response packets transmitted to the slave."
+    ::= { ieee1588PtpPortPacketStatsEntry 11 }
+
+ieee1588PtpPortDelayRspMsgRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of delay response packets received from the master."
+    ::= { ieee1588PtpPortPacketStatsEntry 12 }
+
+ieee1588PtpPortSignalingMsgTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of Signaling packets transmitted to the master."
+    ::= { ieee1588PtpPortPacketStatsEntry 13 }
+
+ieee1588PtpPortSignalingMsgRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of Signaling packets received from the master."
+    ::= { ieee1588PtpPortPacketStatsEntry 14 }
+
+ieee1588PtpPortTotalUdpGeneralMsgTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of packets transmitted on UDP port 320."
+    ::= { ieee1588PtpPortPacketStatsEntry 15 }
+
+ieee1588PtpPortTotalUdpGeneralMsgRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of packets received on UDP port 320."
+    ::= { ieee1588PtpPortPacketStatsEntry 16 }
+
+ieee1588PtpPortTotalUdpEventMsgTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of packets transmitted on UDP port 319."
+    ::= { ieee1588PtpPortPacketStatsEntry 17 }
+
+ieee1588PtpPortTotalUdpEventMsgRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of packets received on UDP port 319."
+    ::= { ieee1588PtpPortPacketStatsEntry 18 }
+
+ieee1588PtpPortUnicastReqAnnoTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast announce request packets transmitted."
+    ::= { ieee1588PtpPortPacketStatsEntry 19 }
+
+ieee1588PtpPortUnicastReqAnnoRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast announce request packets received."
+    ::= { ieee1588PtpPortPacketStatsEntry 20 }
+
+ieee1588PtpPortUnicastGrantAnnoTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast announce grant packets transmitted."
+    ::= { ieee1588PtpPortPacketStatsEntry 21 }
+
+ieee1588PtpPortUnicastGrantAnnoRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast announce grant packets received."
+    ::= { ieee1588PtpPortPacketStatsEntry 22 }
+
+ieee1588PtpPortUnicastReqSyncTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast sync request packets transmitted."
+    ::= { ieee1588PtpPortPacketStatsEntry 23 }
+
+ieee1588PtpPortUnicastReqSyncRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast sync request packets received."
+    ::= { ieee1588PtpPortPacketStatsEntry 24 }
+
+ieee1588PtpPortUnicastGrantSyncTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast sync grant packets transmitted."
+    ::= { ieee1588PtpPortPacketStatsEntry 25 }
+
+ieee1588PtpPortUnicastGrantSyncRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast sync grant packets received."
+    ::= { ieee1588PtpPortPacketStatsEntry 26 }
+
+ieee1588PtpPortUnicastCancelAnnoTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast announce cancel request packets 
+        transmitted."
+    ::= { ieee1588PtpPortPacketStatsEntry 27 }
+
+ieee1588PtpPortUnicastCancelAnnoRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast announce cancel request packets 
+        received."
+    ::= { ieee1588PtpPortPacketStatsEntry 28 }
+
+ieee1588PtpPortUnicastCancelSyncTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast sync cancel packets transmitted."
+    ::= { ieee1588PtpPortPacketStatsEntry 29 }
+
+ieee1588PtpPortUnicastCancelSyncRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast sync cancel packets received."
+    ::= { ieee1588PtpPortPacketStatsEntry 30 }
+
+ieee1588PtpPortUnicastCancelAckAnnoTx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast announce cancel acknowledgement
+        packets transmitted."
+    ::= { ieee1588PtpPortPacketStatsEntry 31 }
+
+ieee1588PtpPortUnicastCancelAckAnnoRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast announce cancel acknowledgement
+         packets received."
+    ::= { ieee1588PtpPortPacketStatsEntry 32 }
+
+ieee1588PtpPortUnicastCancelAckSyncTx OBJECT-TYPE
+    SYNTAX      Counter64
+
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast sync cancel acknowledgement
+        packets transmitted."
+    ::= { ieee1588PtpPortPacketStatsEntry 33 }
+
+ieee1588PtpPortUnicastCancelAckSyncRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of unicast sync cancel acknowledgement
+         packets received."
+    ::= { ieee1588PtpPortPacketStatsEntry 34 }
+
+ieee1588PtpPortUnicastNegRejectsAnno OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of times the unicast negotiations for
+        the announce message were rejected."
+    ::= { ieee1588PtpPortPacketStatsEntry 35 }
+
+ieee1588PtpPortUnicastNegRejectsSync OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of times the unicast negotiations for
+        the sync message were rejected."
+    ::= { ieee1588PtpPortPacketStatsEntry 36 }
+
+ieee1588PtpPortOutOfOrderSyncPktRx OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "ieee1588PtpPortOutOfOrderSyncPktRx indicates the number of sync 
+        packets discarded on ingress as a sequence number processing"
+    ::= { ieee1588PtpPortPacketStatsEntry 37 }
+
+ieee1588PtpPortDuplicateMsgDisc OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "ieee1588PtpPortDuplicateMsgDisc indicates the number of packets discarded 
+        on ingress as a result of processing described in IEEE P1588 D2.2 
+        section 7.3.7."
+    ::= { ieee1588PtpPortPacketStatsEntry 38}
+
+ieee1588PtpPortPacketStatsLastUpdateTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The last time the PTP port packet statistics were updated"
+    ::= { ieee1588PtpPortPacketStatsEntry 39}
+
+ieee1588PtpPortUnicastReqAnnoTxTimeout OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of times the unicast negotiations for
+        the Announce message failed due to a timeout."
+    ::= { ieee1588PtpPortPacketStatsEntry 40 }
+
+ieee1588PtpPortUnicastReqSyncTxTimeout OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of times the unicast negotiations for
+        the Sync message failed due to a timeout."
+    ::= { ieee1588PtpPortPacketStatsEntry 41 }
+
+ieee1588PtpPortUnicastGrantAnnoRejected OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of times the a Grant indication,
+        for an Announce unicast negotiation, was rejected."
+    ::= { ieee1588PtpPortPacketStatsEntry 42 }
+
+ieee1588PtpPortUnicastGrantSyncRejected OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of times the a Grant indication,
+        for Sync unicast negotiations, was rejected."
+    ::= { ieee1588PtpPortPacketStatsEntry 43 }
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- ALU-IEEE1588-PTP-MIB External Interface (1pps/ToD) configuration
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ieee1588PtpExtIfTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF Ieee1588PtpExtIfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table allows the configurations of external 1pps/ToD interfaces"
+    ::= { ieee1588PtpExtIf 1 }
+
+ieee1588PtpExtIfEntry OBJECT-TYPE
+    SYNTAX       Ieee1588PtpExtIfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Configuration information concerning IEEE 1588 PTP"
+    INDEX       { ieee1588PtpExtIfIndex }
+    ::= { ieee1588PtpExtIfTable 1 }
+
+Ieee1588PtpExtIfEntry ::= 
+    SEQUENCE {
+        ieee1588PtpExtIfIndex									Unsigned32,
+        ieee1588PtpExtIfDirection								Unsigned32,
+		ieee1588PtpExtIfPulseFormat								Unsigned32,
+		ieee1588PtpExtIfToDFormat								Unsigned32,
+		ieee1588PtpExtIfCableCorrection							Integer32,
+        ieee1588PtpExtIfAdminStatus								Unsigned32,
+        ieee1588PtpExtIfOperStatus								Unsigned32,
+        ieee1588PtpExtIfAdditionalInfo	    					OCTET STRING,
+-- BEGIN OPTnm23768
+	ieee1588PtpExtIfClockIdentifier								IEEE1588PtpClockIdentifier
+-- END OPTnm23768
+}
+
+ieee1588PtpExtIfIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The index of external set of external interfaces, 1pps/ToD 
+        "
+    ::= { ieee1588PtpExtIfEntry 1 }
+
+ieee1588PtpExtIfDirection OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The direction of the external interface
+         0: Input (to the node) (Default)
+         1: Output (from the node)                
+        "
+    ::= { ieee1588PtpExtIfEntry 2 }
+
+ieee1588PtpExtIfPulseFormat OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The format of the pulse interface
+         0: 1 pulse per second (Default)
+         1: 1 pulse per minute
+         2: 1 pulse per hour
+        "
+    ::= { ieee1588PtpExtIfEntry 3 }
+
+ieee1588PtpExtIfToDFormat OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The format of the ToD interface
+         0: UBlx (Default)
+         1: IRIG-B
+         2: IRIG-D
+        "
+    ::= { ieee1588PtpExtIfEntry 4 }
+    
+    ieee1588PtpExtIfCableCorrection OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The compensation of  external pulse/ToD interface.
+        The unit of this attribute is ns.         
+        "
+    ::= { ieee1588PtpExtIfEntry 5 }
+    
+    ieee1588PtpExtIfAdminStatus OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Admin status of the  external pulse/ToD interface.
+        	0: Disable (default)
+          1: Enable
+         "
+    ::= { ieee1588PtpExtIfEntry 6 }
+    
+    ieee1588PtpExtIfOperStatus OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The Operational status of the  external pulse/ToD interface.
+        	1: Normal
+        	2: Degraded
+        	3: Do Not used (default)
+        	4: Absent
+-- BEGIN OPTnm23768
+		5: Holdover
+-- END OPTnm23768
+         "
+    ::= { ieee1588PtpExtIfEntry 7 }
+    
+    ieee1588PtpExtIfAdditionalInfo	OBJECT-TYPE
+	SYNTAX OCTET STRING (SIZE(48))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The additional information for the external interface.
+         "
+    ::= { ieee1588PtpExtIfEntry 8 }
+
+-- BEGIN OPTnm23768
+    ieee1588PtpExtIfClockIdentifier OBJECT-TYPE
+    SYNTAX      IEEE1588PtpClockIdentifier
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The clock identifier of the external pulse/ToD interface.
+         This attribute will be available for OC-Slave, OC-Master and BC.
+         Default Value: using 64-bit extended unique identifier (EUI-64),
+	 base on the MAC address of the chassis, add 00:01 in between for clock 1;
+	 add 00:02 in between for clock 2.
+         "
+-- DEFVAL { see above }
+    ::= { ieee1588PtpExtIfEntry 9 }
+-- END OPTnm23768    							
+    
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- ALU-IEEE1588-PTP-MIB Notifications
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ieee1588PtpPortDSStateChange NOTIFICATION-TYPE
+    OBJECTS {
+        ieee1588PtpPortDSPortOperState,
+        ieee1588PtpPortDSPortType,
+		ieee1588PtpPortDSPortIndex
+--		ieee1588PtpClockIndex 
+    }
+    STATUS  current
+    DESCRIPTION
+        "Generated when the ieee1588PtpPortDSPortState changes for a 
+         IEEE 1588 PTP port."
+    ::= { ieee1588Notifications 1 }
+
+ieee1588PtpPortDSRecovClkChange NOTIFICATION-TYPE
+    OBJECTS {
+        ieee1588PtpClockCurrentDSRecoveredClockState,
+        ieee1588PtpClockParentDSPortNum
+--        ieee1588PtpClockIndex        
+    }
+    STATUS  current
+    DESCRIPTION
+        "Generated when the ieee1588PtpPortDSRecoveredClockState changes for a 
+         IEEE 1588 PTP port."
+    ::= { ieee1588Notifications 2 }
+
+ieee1588PtpClockDSChange NOTIFICATION-TYPE
+    OBJECTS {
+        ieee1588PtpClockCurrentDSLockedParentDSIdentifier
+--        ieee1588PtpClockIndex
+    }
+    STATUS  current
+    DESCRIPTION
+        "The ieee1588PtpClockChange notification is generated when 
+         the datasets associated with the PTP clock are changed. Refer
+         to IEEE P1588 D2.2 section 9.3.5 table 13 and table 16 for a
+         description of the PTP clock change."
+    ::= { ieee1588Notifications 3 }
+
+ieee1588ExtIfStatusChange NOTIFICATION-TYPE
+    OBJECTS {
+--        ieee1588PtpExtIfIndex,
+        ieee1588PtpExtIfOperStatus
+    }
+    STATUS  current
+    DESCRIPTION
+        "The ieee1588PtpClockChange notification is generated when 
+         the datasets associated with the PTP clock are changed. Refer
+         to IEEE P1588 D2.2 section 9.3.5 table 13 and table 16 for a
+         description of the PTP clock change."
+    ::= { ieee1588Notifications 4 }
+
+ieee1588GMClockStatusChange NOTIFICATION-TYPE
+    OBJECTS {
+        ieee1588PtpClockParentDSGrandmasterClockId
+    }
+    STATUS  current
+    DESCRIPTION
+        "The ieee1588GMClockStatusChange notification is generated when 
+         The current grand master's clock identifier is changed."
+    ::= { ieee1588Notifications 5 }
+
+----------------------------------------------------------------------------
+
+opticsTODPortTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF OpticsTODPortEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "The table allows operator to enhance configuration of IEEE 1588 PTP"
+    ::= { ieee1588PtpPort 4 }
+
+opticsTODPortEntry OBJECT-TYPE
+    SYNTAX     OpticsTODPortEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "An entry of opticsTODPortTable."
+    AUGMENTS { ieee1588PtpPortDSEntry }
+    ::= { opticsTODPortTable 1 }
+
+OpticsTODPortEntry ::= SEQUENCE {
+    opticsTODPortEncapType 			Unsigned32,
+    opticsTODPortVlanTag 			Unsigned32,
+    opticsTODPortAddressingMode                 Unsigned32,
+    opticsTODPortIpAddress                      InetAddress,
+    opticsTODPortSubnetMask                     InetAddress,
+    opticsTODPortDefaultGateway                 InetAddress  
+   }
+
+opticsTODPortEncapType    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The encapsulation type of the entry
+         1: Ethernet per IEEE1588-2008 Annex F
+         2: UDP/IPv4 per IEEE1588-2008 Annex D
+         3: UDP/IPv6 per IEEE1588-2008 Annex D
+         4: T-MPLS/MPLS-TP with ETH payload per IEEE1588-2008 Annex F
+         Default value: 1
+        "
+    ::= { opticsTODPortEntry 1 }
+
+opticsTODPortVlanTag    OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Vlan tag of the tx/rx PTP messages.  It shall be within the range of [0,4094], 
+         0 means untagged. It will only be applicable when opticsTODPortEncapType == 1
+	 Default value: 0"
+    ::= { opticsTODPortEntry 2  }
+
+opticsTODPortAddressingMode OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Indicates whether the 1588 PTP reference/port communicates via
+        unicast or multicast messaging.
+        - 1 : Multicast per Announce, Sync and Follow_Up;Unicast for Delay_Req and Delay_Resp
+        - 2: (ONLY for Slave): Multicast for Delay_Req.
+        Default Value: 1"
+::= { opticsTODPortEntry 3 }
+
+opticsTODPortIpAddress    OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The unicast  IPv4/IPv6 address of PTP port.It will only be applicable when 
+         (opticsTODPortEncapType == 2 or 3) and (opticsTODPortAddressingMode != 2)"
+    ::= { opticsTODPortEntry 4 }
+
+opticsTODPortSubnetMask OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Subnet mask of PTP port.It will only be applicable when 
+         (opticsTODPortEncapType == 2 or 3) and (opticsTODPortAddressingMode != 2)"
+    ::= { opticsTODPortEntry 5 }
+
+opticsTODPortDefaultGateway OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The default gateway ip address.It will only be applicable when 
+         (opticsTODPortEncapType == 2 or 3) and (opticsTODPortAddressingMode != 2)"
+    ::= { opticsTODPortEntry 6 }
+
+
+
+----------------------------------------------------------------------------
+
+
+END    
+--</PRE></BODY></HTML>

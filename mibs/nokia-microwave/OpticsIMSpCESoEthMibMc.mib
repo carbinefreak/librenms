@@ -1,0 +1,494 @@
+    OPTICSIM-CESoETH-MIB DEFINITIONS ::= BEGIN 
+     
+    IMPORTS  
+       MODULE-IDENTITY, OBJECT-TYPE,  
+       Integer32, Unsigned32  
+          FROM SNMPv2-SMI                    -- [RFC2578] 
+
+        opticsimCESMib FROM OPTICSIM-CESREG-MIB
+
+        MODULE-COMPLIANCE, OBJECT-GROUP  
+          FROM SNMPv2-CONF                   -- [RFC2580] 
+     
+       RowStatus,  
+       DisplayString   
+          FROM SNMPv2-TC                     -- [RFC2579] 
+     
+       InterfaceIndexOrZero  
+          FROM IF-MIB                        -- [RFC2863] 
+          
+       PwIndexType, PwIndexOrZeroType
+          FROM PW-TC-STD-MIB                 -- [RFCxxxx] 
+
+       OpticsIMETSFlowIndex FROM OpticsIMETS-MIB 
+         
+    ;  
+     
+    opticsIMCESoEthMIB MODULE-IDENTITY 
+--       LAST-UPDATED "201702280000Z" 	-- --  January 20, 2016 
+       LAST-UPDATED "1702280000Z"
+       ORGANIZATION "Alcatel Optics"
+       CONTACT-INFO "Alcatel Optics"
+       DESCRIPTION
+            " This MIB module contains managed object definitions for   
+            Ethernet Virtual Connection operation not included in MEF-8 
+            agreement. 
+     
+            This MIB module references the specific MIB modules implementing 
+            the MEF-8 agreement"
+
+       REVISION "1702280000Z"
+       DESCRIPTION
+    	  "- Update DEF value of cesCfgFlowDropPriority object from 0 to 255.
+    	  "
+
+       REVISION "1511130000Z"
+       DESCRIPTION
+    	  "- SNMPIDL-507, update LAST-UPDATED and REVISION date format adding the 2 digits missing (20) for yers after 1999.
+Added a REVISION block corresponding to the LAST-UPDATED timestamp.
+	   Changed SYNTAX of cesCfgPwIndex  from  PwIndexype to PwIndexOrZeroType to include 0 value.         
+    	  "
+
+       REVISION "1405090000Z"
+       DESCRIPTION
+            " OPTnm26385 (change by D.Spreafico)
+			  Added OpticsIMCESFlowIDPortTable."
+
+       REVISION "1401060000Z"
+       DESCRIPTION
+            " OPTnm25178 (change by D.Spreafico)
+			  Added cesCfgFlowDropPriority to opticsIMCESoEthCfgTable."
+
+       REVISION "1105200000Z"
+       DESCRIPTION
+            " TSDnm93171 (change by G. Adinolfi)
+			  Added cesCfgOutFlowIndex, cesCfgFlowCrossConnectIdentifier objects to opticsIMCESoEthCfgTable
+			  and to cesCfgBasicGroup." 
+       REVISION "0908060000Z"
+	   DESCRIPTION
+            " Added cesCfgBandwidth3 object to opticsIMCESoEthCfgTable.
+            " 
+       REVISION "0812180000Z" 
+       DESCRIPTION
+            " Added cesCfgBandwidth2 object to opticsIMCESoEthCfgTable.
+              The integer value 0 is added to the range allowed values of cesCfgBandwidth and cesCfgBandwidth1 objects.
+            " 
+
+       REVISION "0808070000Z" 
+       DESCRIPTION
+            " Added cesCfgBandwidth1 object to opticsIMCESoEthCfgTable.
+            " 
+
+       REVISION "0711290000Z"   
+       DESCRIPTION
+            "Initial version of the MIB"  
+        
+          ::= { opticsimCESMib 5 } 
+     
+    -- Top-level components of this MIB.  
+     
+    opticsIMCESoEthObjects       OBJECT IDENTIFIER  
+                                  ::= { opticsIMCESoEthMIB 1 }  
+    -- Conformance  
+    opticsIMCESoEthConformance   OBJECT IDENTIFIER   
+                                  ::= { opticsIMCESoEthMIB 2 }  
+  
+    -- PW Virtual Connection Table  
+     
+    opticsIMCESoEthIndexNext OBJECT-TYPE  
+       SYNTAX            Unsigned32  
+       MAX-ACCESS        read-only  
+       STATUS            current  
+       DESCRIPTION  
+           "This object contains an appropriate value to be used  
+            for cesCfgIndex when creating entries in the  
+            opticsIMCESoEthCfgTable. The value 0 indicates that no  
+            unassigned entries are available.  To obtain the  
+            value of cesCfgIndex for a new entry in the  
+            opticsIMCESoEthCfgTable, the manager issues a management  
+            protocol retrieval operation. The agent will determine 
+            through its local policy when this index value will be made  
+            available for reuse."  
+       ::= { opticsIMCESoEthObjects 1 }  
+     
+    opticsIMCESoEthCfgTable   OBJECT-TYPE  
+       SYNTAX        SEQUENCE OF OpticsIMCESoEthCfgEntry
+       MAX-ACCESS    not-accessible  
+       STATUS        current  
+       DESCRIPTION  
+           "This table specifies information for configuring of a Circuit Emulation over Ethernet."  
+       ::= { opticsIMCESoEthObjects 2 }  
+     
+    opticsIMCESoEthCfgEntry OBJECT-TYPE  
+       SYNTAX        OpticsIMCESoEthCfgEntry
+       MAX-ACCESS    not-accessible  
+       STATUS        current  
+       DESCRIPTION  
+            "This table contains the configuration parameters of the
+             entity to transport over a packet network in order to 
+             perform an Ethernet Virtual Connection between two end 
+             points.
+             These parameters define the characteristics of a Service transport.
+             It is indexed by  cesCfgIndex, which uniquely identifying 
+             the Service to transport into a singular   
+             connection, and the associated cesCfgIfIndex that represents 
+             the physical interface connected to.
+             The  cesCfgIndex refers to the individual entity 
+             transported by the physical interface.
+             A row is created by the operator if the  Ethernet Virtual 
+             Connection has to be created.
+             The pointers (indexes) to the specific configuration tables 
+             (opticsImPwTable, opticsIMInFlowTable) have to be updated 
+             (if needs) after the creation of the specific entries.
+             
+             None of the read-create objects values can be changed   
+             when cesCfgRowStatus is in the active(1) state. Changes are  
+             allowed when the pwRowStatus is in notInService(2) or  
+             notReady(3) states only.   
+             If the operator need to change one of the values for an  
+             active row (for example in order to fix a mismatch in  
+             configuration between the local node and the peer), the  
+             cesCfgRowStatus should be first changed to notInService(2),  
+             the objects may be changed now, and later to active(1)   
+             in order to re-initiate the signaling process with the  
+             new values in effect.  
+             "  
+       INDEX  { cesCfgIndex, cesCfgIfIndex }  
+          ::= { opticsIMCESoEthCfgTable   1 }  
+     
+    OpticsIMCESoEthCfgEntry ::= SEQUENCE {  
+          cesCfgIndex               PwIndexType,  
+          cesCfgIfIndex             InterfaceIndexOrZero,
+
+          cesCfgPwIndex             PwIndexOrZeroType,
+          cesCfgInFlowIndex         OpticsIMETSFlowIndex, 
+
+          cesCfgServiceProfile       DisplayString,
+          cesCfgVlanId               Unsigned32, 
+          cesCfgBandwidth            Integer32, 
+          cesCfgAsapIndex            Integer32, 
+
+          cesCfgRowStatus            RowStatus,
+	      cesCfgBandwidth1           Integer32,
+	      cesCfgBandwidth2           Integer32,
+    	  cesCfgBandwidth3           Integer32,
+-- Begin TSDnm93171 CRB May, 2011		  
+		  cesCfgOutFlowIndex         Integer32,
+          cesCfgFlowCrossConnectIdentifier Integer32,
+-- End  TSDnm93171 CRB May, 2011
+
+-- Begin OPTnm25178 CRB November, 2013		  
+          cesCfgFlowDropPriority		Integer32
+-- End OPTnm25178 CRB November, 2013		  
+       }  
+     
+    cesCfgIndex  OBJECT-TYPE  
+       SYNTAX        PwIndexType  
+       MAX-ACCESS    not-accessible  
+       STATUS        current  
+       DESCRIPTION  
+         "Index to an entry in this table. The value is a copy of the
+          assigned opticsIMCESoEthIndexNext"
+       ::= { opticsIMCESoEthCfgEntry 1 } 
+ 
+    cesCfgIfIndex  OBJECT-TYPE  
+       SYNTAX        InterfaceIndexOrZero 
+       MAX-ACCESS    not-accessible
+       STATUS        current  
+       DESCRIPTION  
+           "The interface represented in the ifTable as an ifIndex. This  
+            index refers to the ifIndex of the Service Interface to emulate."  
+       ::= { opticsIMCESoEthCfgEntry 2 }  
+     
+     cesCfgPwIndex  OBJECT-TYPE  
+       SYNTAX        PwIndexOrZeroType
+       MAX-ACCESS    read-create  
+       STATUS        current  
+       DESCRIPTION  
+           "Index of the entry on opticsIMPwTable with the configuration parameters 
+            (if needs) for the manual set-up of PW virtual connection.
+            If no manual configuration from managing system are required,
+            it MUST be set to zero."  
+       DEFVAL { 0 }  
+       ::= { opticsIMCESoEthCfgEntry 3 }
+  
+     cesCfgInFlowIndex   OBJECT-TYPE  
+       SYNTAX        OpticsIMETSFlowIndex  
+       MAX-ACCESS    read-create  
+       STATUS        current  
+       DESCRIPTION  
+           "Index of the entry on opticsIMInFlowTable with the characteristics 
+            of the ethernet traffic flow carrying the  Service emulated.
+            If no flow management from managing system is required,
+            it MUST be set to zero."  
+       DEFVAL { 0 }  
+       ::= { opticsIMCESoEthCfgEntry 4 }
+
+    cesCfgServiceProfile OBJECT-TYPE  
+       SYNTAX        DisplayString (SIZE (0..50))
+       MAX-ACCESS    read-create  
+       STATUS        current  
+       DESCRIPTION  
+         "This object defines the profile with the specific characteristics 
+          to use when a Service emulation is required.
+          The allowed values for this object are equipment dependent and 
+          will be provided in each product specification.
+          Also the equipment behaviour related to the allowed profiles will be provided 
+          in each product specification.
+         "  
+       ::= { opticsIMCESoEthCfgEntry 5 }  
+
+    cesCfgVlanId   OBJECT-TYPE  
+       SYNTAX        Unsigned32 (0..4097)
+       MAX-ACCESS    read-only  
+       STATUS        current  
+       DESCRIPTION  
+            "This read-only object reports the opticsIMEth2ETSFlowClassifierVlan 
+             object configured by managing 
+             system on opticsIMEth2ETSFlowClassifierEntry associated to 
+             the Service to transport (emulated Service) on ethernet traffic 
+             flow. 
+             The object value will be updated by the agent as a side effect of 
+             opticsIMEth2ETSFlowClassifierEntry creation by managing system.
+             If no flow classification by VlanId is required by managing system,
+             it MUST be set to zero.  
+             "  
+          DEFVAL { 0 }  
+       ::= { opticsIMCESoEthCfgEntry 6 }  
+
+    cesCfgBandwidth   OBJECT-TYPE  
+     SYNTAX Integer32 (0..2147483647)
+     MAX-ACCESS			read-only
+     STATUS				current
+     DESCRIPTION
+         "This value indicates the total amount of bandwidth necessary to carry the Service required.
+          It's specified in kilobits per second (Kbps).  
+          This value is calculated by agent depending on ServiceProfile and the other parameters
+          provided by managing system (on specific xxCfgTable) ans it 's related only to a specific 
+          physical interface carring the service. 
+          The rules to calculated this value (with all the parameters involved), and for which 
+          physical interface is related to, are equipment dependent and will be defined in each 
+          product external specification."
+       ::= { opticsIMCESoEthCfgEntry 7 }  
+   
+    cesCfgAsapIndex   OBJECT-TYPE
+	SYNTAX			Integer32
+	MAX-ACCESS			read-create
+	STATUS			current
+	DESCRIPTION
+       "This object defines the ASAP object associated to this Circuit Emulation Service."
+       ::= { opticsIMCESoEthCfgEntry 8 }  
+  
+    cesCfgRowStatus  OBJECT-TYPE  
+       SYNTAX        RowStatus  
+       MAX-ACCESS    read-create  
+       STATUS        current  
+       DESCRIPTION  
+           "For creating, modifying, and deleting this row. None of the  
+            read-create objects in the conceptual rows may be changed   
+            when this object is in the active(1) state."  
+        ::= { opticsIMCESoEthCfgEntry 9 }  
+
+ cesCfgBandwidth1   OBJECT-TYPE  
+     SYNTAX Integer32 (0..2147483647)
+     MAX-ACCESS			read-only
+     STATUS				current
+     DESCRIPTION
+         "This value indicates the total amount of bandwidth necessary to carry the Service required.
+          It's specified in kilobits per second (Kbps).  
+          This value is calculated by agent depending on ServiceProfile and the other parameters
+          provided by managing system (on specific xxCfgTable) ans it 's related only to a specific 
+          physical interface carring the service. 
+          The rules to calculated this value (with all the parameters involved), and for which 
+          physical interface is related to, are equipment dependent and will be defined in each 
+          product external specification."
+       ::= { opticsIMCESoEthCfgEntry 10 }  
+   
+ cesCfgBandwidth2   OBJECT-TYPE  
+     SYNTAX Integer32 (0..2147483647)
+     MAX-ACCESS			read-only
+     STATUS				current
+     DESCRIPTION
+         "This value indicates the total amount of bandwidth necessary to carry the Service required.
+          It's specified in kilobits per second (Kbps).  
+          This value is calculated by agent depending on ServiceProfile and the other parameters
+          provided by managing system (on specific xxCfgTable) ans it 's related only to a specific 
+          physical interface carring the service. 
+          The rules to calculated this value (with all the parameters involved), and for which 
+          physical interface is related to, are equipment dependent and will be defined in each 
+          product external specification."
+       ::= { opticsIMCESoEthCfgEntry 11 }  
+   
+cesCfgBandwidth3   OBJECT-TYPE  
+     SYNTAX Integer32 (0..2147483647)
+     MAX-ACCESS			read-only
+     STATUS				current
+     DESCRIPTION
+         "This value indicates the total amount of bandwidth necessary to carry the Service required.
+          It's specified in kilobits per second (Kbps).  
+          This value is calculated by agent depending on ServiceProfile and the other parameters
+          provided by managing system (on specific xxCfgTable) ans it 's related only to a specific 
+          physical interface carring the service. 
+          The rules to calculated this value (with all the parameters involved), and for which 
+          physical interface is related to, are equipment dependent and will be defined in each 
+          product external specification."
+       ::= { opticsIMCESoEthCfgEntry 12 }  
+
+-- Begin TSDnm93171 CRB May, 2011	   
+cesCfgOutFlowIndex   OBJECT-TYPE  
+       SYNTAX        Integer32 (0..2147483647)
+       MAX-ACCESS    read-only 
+       STATUS        current  
+       DESCRIPTION  
+           "Index of the entry on opticsIMETSOutFlowTable with the characteristics 
+            of the ethernet traffic flow carrying the  Service emulated.
+            The default value is equal to zero, meaning that no Outflow leg has been involved in the service.
+			If XConnection for the emulated service has been estabilished successfully, Outflow leg identifier must be filled
+			in by agent, so that the manager knows the Outflow leg associated to Inflow leg, also via cesCfgFlowCrossConnectIdentifier. 
+			In case of XConnection and Outflow deletion, this attribute value shall be initialized to the default value, again."
+       DEFVAL { 0 }  
+       ::= { opticsIMCESoEthCfgEntry 13 }	
+
+cesCfgFlowCrossConnectIdentifier   OBJECT-TYPE  
+       SYNTAX Integer32 (0..2147483647) 
+       MAX-ACCESS    read-only 
+       STATUS        current  
+       DESCRIPTION  
+        "This object indicates that an egress flow (cesCfgOutFlowIndex)
+        is cross-connected to another ingress flow (cesCfgInFlowIndex) that 
+        belongs to the same flow. All such associated ingress and
+        egress flows have the same value of this object, and all
+        their cross-connections are identified by entries in the
+        opticsIMETSCrossConnectTable for which 
+        cesCfgFlowCrossConnectIdentifier has the same value.
+        The  default value of this object is  zero, meaning that no XConnection has been setup between  Inflow and Outflow.
+		When the XConnection has been setup, successfully for the emulated service, the attribute value is filled in by the agent
+        after the associated entries in the opticsIMETSCrossConnectTable have been created.
+		In case of XConnection deletion, involving Flow legs, this attribute value shall be initialized to the default value, again."
+       DEFVAL { 0 }  
+       ::= { opticsIMCESoEthCfgEntry 14 }
+-- End TSDnm93171 CRB May, 2011	   
+
+-- Begin OPTnm25178 CRB November, 2013	   
+cesCfgFlowDropPriority	OBJECT-TYPE  
+       SYNTAX        Integer32 (0..255)
+       MAX-ACCESS    read-write 
+       STATUS        current  
+       DESCRIPTION  
+           "Priority assigned to the service allowing a selective dropping on outgoing interface in case of traffic congestion. 
+            The default value is equal to zero, meaning that no specific priority is provided to this service.
+		 After the entry creation, the managing system is allowed to change the priority value from the default one in all the cases where the traffic congestion is managed on the outgoing interface. "
+       DEFVAL { 255 }  
+       ::= { opticsIMCESoEthCfgEntry 15 }
+-- End OPTnm25178 CRB November, 2013	   
+
+    -- End of PW Virtual Connection Table  
+    
+--
+-- opticsIMCESFlowIDPortTable
+--
+    opticsIMCESFlowIDPortTable   OBJECT-TYPE  
+       SYNTAX        SEQUENCE OF OpticsIMCESFlowIDPortEntry
+       MAX-ACCESS    not-accessible  
+       STATUS        current  
+       DESCRIPTION  
+           "This table associates a flow ID of a Circuit Emulation over Ethernet and a specific port (identified by ifIndex )."  
+       ::= { opticsIMCESoEthObjects 3 }  
+     
+    opticsIMCESFlowIDPortEntry OBJECT-TYPE  
+       SYNTAX        OpticsIMCESFlowIDPortEntry
+       MAX-ACCESS    not-accessible  
+       STATUS        current  
+       DESCRIPTION  
+            "An entry on the table.
+             "  
+       INDEX  { cesFlowIfIndex, cesFlowId }  
+          ::= { opticsIMCESFlowIDPortTable   1 }  
+     
+    OpticsIMCESFlowIDPortEntry ::= SEQUENCE {  
+          cesFlowIfIndex          InterfaceIndexOrZero,
+          cesFlowId               Unsigned32,
+	  cesFlowInfo             Unsigned32
+       }  
+      
+      
+    cesFlowIfIndex  OBJECT-TYPE  
+       SYNTAX        InterfaceIndexOrZero 
+       MAX-ACCESS    not-accessible
+       STATUS        current  
+       DESCRIPTION  
+           "The interface represented in the ifTable as an ifIndex. This index refers to one the two ports used to transport the flowID."  
+       ::= { opticsIMCESFlowIDPortEntry 1 }  
+      
+      
+      
+    cesFlowId   OBJECT-TYPE  
+       SYNTAX        Unsigned32 (0..4097)
+       MAX-ACCESS    not-accessible 
+       STATUS        current  
+       DESCRIPTION  
+            "This index object reports the flow identifier
+             associated to a Service to transport (emulated service) on ethernet traffic flow. 
+             "
+       ::= { opticsIMCESFlowIDPortEntry 2 }  
+
+     
+
+    cesFlowInfo  OBJECT-TYPE  
+       SYNTAX        Unsigned32 
+       MAX-ACCESS    read-only
+       STATUS        current  
+       DESCRIPTION  
+           "Dummy field"  
+       ::= { opticsIMCESFlowIDPortEntry 3 }  
+     
+    -- conformance information  
+     
+    cesCfgGroups      OBJECT IDENTIFIER ::= { opticsIMCESoEthConformance 1 }  
+    cesCfgCompliances OBJECT IDENTIFIER ::= { opticsIMCESoEthConformance 2 }  
+     
+    -- Compliance requirement for fully compliant implementations.   
+     
+    cesModuleFullCompliance MODULE-COMPLIANCE  
+        STATUS  current  
+        DESCRIPTION  
+                "The compliance statement for agents that provide full  
+                 support for CESoEth MIB Module. Such devices can  
+                 then be monitored and also be configured using  
+                 this MIB module."  
+     
+        MODULE  -- this module  
+            MANDATORY-GROUPS { cesCfgBasicGroup
+                             } 
+           
+         ::= { cesCfgCompliances 1 }  
+     
+    
+    cesCfgBasicGroup   OBJECT-GROUP   
+       OBJECTS {  
+--                cesCfgIndex,  
+--                cesCfgIfIndex,
+                cesCfgPwIndex,
+                cesCfgInFlowIndex, 
+                cesCfgServiceProfile,
+                cesCfgVlanId, 
+                cesCfgBandwidth,  
+                cesCfgAsapIndex,          
+                cesCfgRowStatus,
+-- Begin CRB May, 2011	
+				cesCfgBandwidth1,
+	            cesCfgBandwidth2,
+    	        cesCfgBandwidth3,	  
+		        cesCfgOutFlowIndex,
+                cesCfgFlowCrossConnectIdentifier
+-- End CRB May, 2011
+              }  
+     
+       STATUS  current  
+       DESCRIPTION  
+           "Collection of objects that are required in all   
+            implementations that support the CESoEth MIB module."  
+       ::= { cesCfgGroups 1 }  
+                
+    END 
+ 

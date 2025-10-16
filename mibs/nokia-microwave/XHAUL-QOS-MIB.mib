@@ -1,0 +1,1033 @@
+XHAUL-QOS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    Unsigned32, IpAddress, Integer32
+                                                     FROM SNMPv2-SMI
+    MODULE-COMPLIANCE, OBJECT-GROUP
+                                                     FROM SNMPv2-CONF
+    RowStatus, MacAddress, TruthValue, 
+    StorageType, TimeStamp, TEXTUAL-CONVENTION
+                                                     FROM SNMPv2-TC
+    InetAddress, InetAddressType,                                                 
+    InetAddressIPv6, InetAddressPrefixLength
+                                                     FROM INET-ADDRESS-MIB
+           
+    Dot1PPriority, IpAddressPrefixLength,
+    ServiceAccessPoint,TItemDescription,
+    TNamedItem, TNamedItemOrEmpty, TLNamedItemOrEmpty,
+    TDSCPValue,  TDSCPName, TDSCPNameOrEmpty,
+    TIpProtocol, TTcpUdpPort,
+    TTcpUdpPortOperator, TFrameType, TFCName,
+    TLspExpValue, TQueueId, TIngressQueueId,
+    TEgressQueueId, TIngressHsmdaQueueId,
+    TEgressHsmdaQueueId, TPortSchedulerPIR, 
+    TPortSchedulerCIR, THsmdaSchedulerPolicyGroupId,
+    TWeight, TCIRRate, TPIRRate, THsmdaWeight, THsmdaWeightClass,
+    THsmdaWrrWeight,
+    THPolPIRRate, THPolCIRRate, TNonZeroWeight,
+    XhaulEnabledDisabled, TSapIngressPolicyID, 
+    TSapEgressPolicyID, TIngressHsmdaPerPacketOffset,
+    TEgressHsmdaPerPacketOffset,
+    THsmdaPIRKRate, THsmdaCIRKRate,
+    THsmdaPIRMRate, TIngressHsmdaCounterIdOrZero,
+    TEgressHsmdaCounterIdOrZero,
+    TMlpppQoSProfileId, TQosQGrpInstanceIDorZero,
+    TFCNameOrEmpty,
+    TMcFrQoSProfileId,
+    XNetworkPolicyID, TItemScope, TItemMatch,
+    TPriority, TPriorityOrDefault,
+    TProfile, TDEProfile, TProfileOrNone,
+    TAdaptationRule, TRemarkType,
+    TPrecValue, TPrecValueOrNone,
+    TBurstSize, TBurstPercent,
+    TBurstHundredthsOfPercent, TBurstPercentOrDefault,
+    TRatePercent, TPIRRatePercent,
+    TLevel, TLevelOrDefault,
+    TQueueMode, TEntryId, TMatchCriteria,
+    TAtmTdpDescrType, TDEValue, TPolicerWeight,
+    TIngPolicerId, TEgrPolicerId, TEgrPolicerIdOrNone,
+    TIngPolicerIdOrNone, TRateType,
+    TPerPacketOffset, TBurstSizeBytes, TPlcrBurstSizeBytes,
+    XhaulIngPolicerStatMode,
+    TBurstLimit, TClassBurstLimit,
+    XhaulEgrPolicerStatMode, QTagFullRange, QTagFullRangeOrNone,
+    TMacFilterType, TBWRateType,
+    TEgressQPerPacketOffset,TPolicerRateType,
+    THsmdaPolicyIncludeQueues, THsmdaPolicyScheduleClass,
+    THSMDABurstSizeBytes, THSMDAQueueBurstLimit,
+    TProfileUseDEOrNone, XhaulSlopeMap,
+    TAdvCfgRate, TMaxDecRate, TPortSchedulerPIRRate,
+    THPolVirtualSchePIRRate, THPolVirtualScheCIRRate FROM XHAUL-TC-MIB
+
+    xhaulim, xhaulBasicMib		FROM XHAUL-BASICREG-MIB
+    ;
+
+xhaulQosMIBModule   MODULE-IDENTITY
+        LAST-UPDATED "201710230000Z"
+       ORGANIZATION "Nokia"
+        CONTACT-INFO
+            "Nokia Xhaul Support "
+        DESCRIPTION
+            "This document is the SNMP MIB module to manage and provision
+             Quality of Service features on NOKIA X-HAUL system."
+
+
+--
+--  Revision History
+--
+
+        REVISION        "201710230000Z"
+        DESCRIPTION     "Rev 0.3                    23 October 2017 00:00
+                         Changed Description section of tNetworkIngressDot1pProfile and tNetworkIngressLSPEXPProfile objects 
+                         to remove reference of explicit set by manager;
+			 Removed Description section of tSapIngressDot1pPriority and tSapIngressDSCPPriority objects."
+
+        REVISION        "201710060000Z"
+        DESCRIPTION     "Rev 0.2                    6 October 2017 00:00
+                         Changed default value of tNetworkPolicyIngressDefaultActionProfile object from 'out' to 'in'."
+ 
+        REVISION        "201707280000Z"
+        DESCRIPTION     "Rev 0.1                    28 July 2017 00:00
+                         Initial version of the XHAUL-QOS-MIB."
+
+     ::= { xhaulBasicMib 8 }
+
+xhaulQosMib                    OBJECT IDENTIFIER ::= { xhaulim 5 }
+
+xhaulQosObjects                    OBJECT IDENTIFIER ::= { xhaulQosMib 1 }
+--xhaulQosNotifyPrefix              OBJECT IDENTIFIER ::= { xhaulQosMib 2 }
+xhaulQosNotifications           OBJECT IDENTIFIER ::= { xhaulQosMib 2 }
+xhaulQosConformance             OBJECT IDENTIFIER ::= { xhaulQosMib 99 }
+
+tSapIngressObjects             OBJECT IDENTIFIER ::= { xhaulQosObjects 3 }
+tSapEgressObjects              OBJECT IDENTIFIER ::= { xhaulQosObjects 4 }
+tNetworkObjects                OBJECT IDENTIFIER ::= { xhaulQosObjects 5 }
+
+
+--
+--
+-- mib objects
+--
+
+--
+--      XhaulMcFrClassIndex
+--
+XhaulMcFrClassIndex ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulMcFrClassIndex indicates the class
+         of a Multiclass Fr bundle.
+         For example, a 4-class Fr link has 4 classes with 
+         indices 0, 1, 2, and 3."
+    SYNTAX      INTEGER (0..15)
+
+XhaulSchedPlcyParentLocation ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "XhaulSchedPlcyParentLocation is an enumerated integer that indicates
+         the location in which the schedulers in the scheduler-policy
+         will look to find their parent.
+         
+         none (1) - Indicates that the schedulers may not have a parent 
+         configured.
+
+         sub (2) - Indicates that the schedulers should look for their
+         parent in the subscriber-profile's ingress or egress (as appropriate)
+         scheduler policy. 
+
+         vport (3) - Indicates that the schedulers should look for 
+         their parent in the VPort's ingress or egress (as appropriate)
+         scheduler policy."
+    SYNTAX       INTEGER {
+                    none    (1),
+                    sub     (2),
+                    vport   (3)
+                 }
+   
+
+
+
+--
+-- sap-ingress policy table
+--
+
+tSapIngressTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF TSapIngressEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  "  "
+    ::= { tSapIngressObjects 1 }
+
+tSapIngressEntry OBJECT-TYPE
+    SYNTAX       TSapIngressEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about a particular Sap Ingress Policy.
+
+         sap-ingress policy (1) is the default entry.
+
+         Default Entry is created by the agent, other entries are
+         created by user.
+
+         Default Entry cannot be modified/deleted. The other
+         entries are deleted by user.
+
+         There is no StorageType object, entries have a presumed
+         StorageType of nonVolatile.
+        "
+    INDEX { tSapIngressIndex }
+    ::= { tSapIngressTable 1 }
+
+TSapIngressEntry ::= SEQUENCE
+    {
+        tSapIngressIndex                 TSapIngressPolicyID,
+        tSapIngressRowStatus             RowStatus,
+        tSapIngressScope                 TItemScope,
+        tSapIngressDescription           TItemDescription,
+        tSapIngressDefaultFC             TNamedItem,
+        tSapIngressDefaultFCPriority     TPriority,
+        tSapIngressLastChanged           TimeStamp,
+        tSapIngressPolicyName            TLNamedItemOrEmpty
+    }
+
+tSapIngressIndex OBJECT-TYPE
+    SYNTAX       TSapIngressPolicyID (1..65535|65536|65537)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "the policy ID is the index to this table."
+    ::= { tSapIngressEntry 1 }
+
+tSapIngressRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Row Status for the policy. The deletion of this row has
+         an action of removing the dependent rows in the following
+         tables :
+           - tSapIngressQueueTable
+           - tSapIngressDSCPTable
+           - tSapIngressDot1pTable
+        "
+    ::= { tSapIngressEntry 2 }
+
+tSapIngressScope OBJECT-TYPE
+    SYNTAX       TItemScope
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Scope of the policy. If the scope is 'exclusive', it can only be
+         instantiated once whereas it could have multiple instances if defined
+         as 'exclusive'."
+    DEFVAL { template }
+    ::= { tSapIngressEntry 3 }
+
+tSapIngressDescription OBJECT-TYPE
+    SYNTAX       TItemDescription
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "user-provided description of the policy."
+    DEFVAL { ''H }
+    ::= { tSapIngressEntry 4 }
+
+tSapIngressDefaultFC OBJECT-TYPE
+    SYNTAX       TNamedItem
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "tSapIngressDefaultFC specifies the forwarding class or the
+         sub forwarding class which should be used for all traffic that
+         does not match a specific classification specified in this
+         SAP ingress QoS policy.
+
+         Specification of a sub forwarding class is also allowed. The
+         format of a sub forwarding class is the concatenation of the
+         base forwarding class and a sub class identifier in the form
+
+             base-fc-name[.sub-fc-name]
+
+         To reference a sub forwarding class, the mapping of the sub
+         forwarding class should be existing in this QoS policy.
+
+         If not specified explicitly, all traffic will be classified
+         as best-effort 'be'."
+    DEFVAL { 'be'H }
+    ::= { tSapIngressEntry 5 }
+
+tSapIngressDefaultFCPriority OBJECT-TYPE
+    SYNTAX       TPriority
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "the priority to assign to traffic ingressing as the default
+         action queue."
+    DEFVAL { low }
+    ::= { tSapIngressEntry 6 }
+
+
+tSapIngressLastChanged OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "timestamp of last change to this row in tSapIngressTable."
+    ::= { tSapIngressEntry 8 }
+
+
+tSapIngressPolicyName OBJECT-TYPE
+    SYNTAX       TLNamedItemOrEmpty
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "The value of tSapIngressPolicyName specifies the name to associate
+        with this policy."
+    DEFVAL { ''H }
+    ::= { tSapIngressEntry 12 }
+
+
+--
+-- sap-ingress policy dscp table
+--
+
+tSapIngressDSCPTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF TSapIngressDSCPEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "a list of all DSCP entries for all sap-ingress policies."
+    ::= { tSapIngressObjects 3 }
+
+tSapIngressDSCPEntry OBJECT-TYPE
+    SYNTAX       TSapIngressDSCPEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about a particular DSCP entry for a sap-ingress policy.
+
+        Entries are created by user.
+        Entries are deleted by user.
+
+        There is no StorageType object, entries have a presumed
+        StorageType of nonVolatile.
+
+        in the event that one policy has multiple entries, and
+        the tSapIngressDSCP values are the same, only one queue
+        will be created (the queue for the lexicographically
+        first tSapIngressDSCP).
+        "
+    INDEX { tSapIngressIndex, tSapIngressDSCP }
+    ::= { tSapIngressDSCPTable 1 }
+
+TSapIngressDSCPEntry ::= SEQUENCE
+    {
+        tSapIngressDSCP                    TDSCPName,
+        tSapIngressDSCPRowStatus           RowStatus,
+        tSapIngressDSCPFC                  TNamedItemOrEmpty,
+        tSapIngressDSCPPriority            TPriorityOrDefault,
+        tSapIngressDSCPLastChanged         TimeStamp
+  
+    }
+
+tSapIngressDSCP OBJECT-TYPE
+    SYNTAX       TDSCPName
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        ""
+    ::= { tSapIngressDSCPEntry 1 }
+
+tSapIngressDSCPRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "This object allows creation/deletion of rows in this table."
+    ::= { tSapIngressDSCPEntry 2 }
+
+tSapIngressDSCPFC OBJECT-TYPE
+    SYNTAX       TNamedItemOrEmpty
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "tSapIngressDSCPFC specifies the forwarding class or the sub
+         forwarding class to be used to classify all the traffic that
+         matches the specific DSCP i.e. tSapIngressDSCP.
+
+         Specification of a sub forwarding class is also allowed. The
+         format of a sub forwarding class is the concatenation of the
+         base forwarding class and a sub class identifier in the form
+
+             base-fc-name[.sub-fc-name]
+
+         To reference a sub forwarding class, the mapping of the sub
+         forwarding class should be existing in this QoS policy.
+
+         Unless tSapIngressDSCPFC is specified explicitly, this match
+         will be ignored for classification purposes."
+    DEFVAL { ''H }
+    ::= { tSapIngressDSCPEntry 3 }
+
+tSapIngressDSCPPriority OBJECT-TYPE
+    SYNTAX       TPriorityOrDefault
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        ""
+    ::= { tSapIngressDSCPEntry 4 }
+
+tSapIngressDSCPLastChanged OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "timestamp of last change to this row in tSapIngressDSCPTable."
+    ::= { tSapIngressDSCPEntry 5 }
+
+
+--
+-- sap-ingress policy dot1p table
+--
+
+tSapIngressDot1pTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF TSapIngressDot1pEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "a list of all dot1p entries for all sap-ingress policies."
+    ::= { tSapIngressObjects 4 }
+
+tSapIngressDot1pEntry OBJECT-TYPE
+    SYNTAX       TSapIngressDot1pEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about a particular dot1p match for a sap-ingress policy.
+         Entries are created by user.
+         Entries are deleted by user.
+
+         There is no StorageType object, entries have a presumed
+         StorageType of nonVolatile.
+        "
+    INDEX { tSapIngressIndex, tSapIngressDot1pValue }
+    ::= { tSapIngressDot1pTable 1 }
+
+TSapIngressDot1pEntry ::= SEQUENCE
+    {
+        tSapIngressDot1pValue               Dot1PPriority,
+        tSapIngressDot1pRowStatus           RowStatus,
+        tSapIngressDot1pFC                  TNamedItemOrEmpty,
+        tSapIngressDot1pPriority            TPriorityOrDefault,
+        tSapIngressDot1pLastChanged         TimeStamp
+    }
+
+tSapIngressDot1pValue OBJECT-TYPE
+    SYNTAX       Dot1PPriority (0..7)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "dot1p value to match in the packet.  this value is
+        also used as an index so that for any dot1p value there
+        is only one possible disposition queue and priority.
+        "
+    ::= { tSapIngressDot1pEntry 1 }
+
+tSapIngressDot1pRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Row Status for this sap-ingress policy's dot1p entry."
+    ::= { tSapIngressDot1pEntry 2 }
+
+tSapIngressDot1pFC OBJECT-TYPE
+    SYNTAX       TNamedItemOrEmpty
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "tSapIngressDot1pFC specifies the forwarding class or the sub
+         forwarding class to be used to classify all the traffic that
+         matches the specific Dot1p i.e. tSapIngressDot1pValue.
+
+         Specification of a sub forwarding class is also allowed. The
+         format of a sub forwarding class is the concatenation of the
+         base forwarding class and a sub class identifier in the form
+
+             base-fc-name[.sub-fc-name]
+
+         To reference a sub forwarding class, the mapping of the sub
+         forwarding class should be existing in this QoS policy.
+
+         Unless tSapIngressDot1pFC is specified explicitly, this match
+         will be ignored for classification purposes."
+    DEFVAL { ''H }
+    ::= { tSapIngressDot1pEntry 3 }
+
+tSapIngressDot1pPriority OBJECT-TYPE
+    SYNTAX       TPriorityOrDefault
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "priority to use for packets that match the dot1p value
+        tSapIngressDot1pValue."
+    ::= { tSapIngressDot1pEntry 4 }
+
+tSapIngressDot1pLastChanged OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "timestamp of last change to this row in tSapIngressDot1pTable."
+    ::= { tSapIngressDot1pEntry 5 }
+
+
+
+--
+-- sap-egress policy table
+--
+tSapEgressTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF TSapEgressEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "information about all sap-egress policies."
+    ::= { tSapEgressObjects 1 }
+
+tSapEgressEntry OBJECT-TYPE
+    SYNTAX       TSapEgressEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about a particular sap-egress policy.
+         Entries are created by user.
+         Entries are deleted by user.
+         There is no StorageType object, entries have a presumed
+         StorageType of nonVolatile.
+
+         the default sap-egress policy (1) cannot be changed or
+         destroyed.
+        "
+    INDEX { tSapEgressIndex }
+    ::= { tSapEgressTable 1 }
+
+TSapEgressEntry ::= SEQUENCE
+    {
+       tSapEgressIndex               TSapEgressPolicyID,
+        tSapEgressRowStatus           RowStatus,
+        tSapEgressScope               TItemScope,
+        tSapEgressDescription         TItemDescription,
+        tSapEgressLastChanged         TimeStamp,
+        tSapEgressPolicyName          TLNamedItemOrEmpty
+ 
+    }
+
+tSapEgressIndex OBJECT-TYPE
+    SYNTAX       TSapEgressPolicyID
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "the sap-egress policy ID is used as index for the table."
+    ::= { tSapEgressEntry 1 }
+
+tSapEgressRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Row Status of this policy's entry."
+    ::= { tSapEgressEntry 2 }
+
+tSapEgressScope OBJECT-TYPE
+    SYNTAX       TItemScope
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "scope of the sap-egress policy."
+    DEFVAL { template }
+    ::= { tSapEgressEntry 3 }
+
+tSapEgressDescription OBJECT-TYPE
+    SYNTAX       TItemDescription
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "user-supplied description of this sap-egress policy."
+    DEFVAL { ''H }
+    ::= { tSapEgressEntry 4 }
+
+tSapEgressLastChanged OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "timestamp of last change to this row in tSapEgressTable."
+    ::= { tSapEgressEntry 5 }
+
+tSapEgressPolicyName OBJECT-TYPE
+    SYNTAX       TLNamedItemOrEmpty
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "The value of tSapEgressPolicyName specifies the name to associate
+        with this policy."
+    DEFVAL { ''H }
+    ::= { tSapEgressEntry 10 }
+
+
+--
+-- sap-egress policy fc table
+--
+
+tSapEgressFCTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF TSapEgressFCEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  "  "
+    ::= { tSapEgressObjects 3 }
+
+tSapEgressFCEntry OBJECT-TYPE
+    SYNTAX       TSapEgressFCEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about a particular sap-egress policy's
+         forwarding class mappings to queues and dot1p values.
+         Entries are created/deleted by user.
+         There is no StorageType object, entries have a presumed
+         StorageType of nonVolatile.
+        "
+    INDEX { tSapEgressIndex, tSapEgressFCName }
+    ::= { tSapEgressFCTable 1 }
+
+TSapEgressFCEntry ::= SEQUENCE
+    {
+        tSapEgressFCName                   TFCName,
+        tSapEgressFCRowStatus              RowStatus,
+        tSapEgressFCLastChanged            TimeStamp,
+        tSapEgressFCDot1PInProfile         Dot1PPriority,
+        tSapEgressFCDot1POutProfile        Dot1PPriority
+  
+    }
+
+tSapEgressFCName OBJECT-TYPE
+    SYNTAX       TFCName
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "forwarding class name."
+    ::= { tSapEgressFCEntry 1 }
+
+tSapEgressFCRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Row Status for this queue."
+    ::= { tSapEgressFCEntry 2 }
+
+tSapEgressFCLastChanged OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "timestamp of last change to this row in tSapEgressFCTable."
+    ::= { tSapEgressFCEntry 5 }
+
+
+tSapEgressFCDot1PInProfile OBJECT-TYPE
+    SYNTAX       Dot1PPriority
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+       "The value of tSapEgressFCDot1PInProfile specifies 802.1p value to set
+       for in-profile frames in this forwarding class.
+
+       An inconsistentValue error is returned if this object is set to any value
+       other than '-1', when tSapEgressFCDot1POutProfile object is set to '-1'."
+    DEFVAL { -1 }
+    ::= { tSapEgressFCEntry 8 }
+
+tSapEgressFCDot1POutProfile OBJECT-TYPE
+    SYNTAX       Dot1PPriority
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+       "The value of tSapEgressFCDot1POutProfile specifies 802.1p value to set
+       for out-profile frames in this forwarding class.
+        
+       An inconsistentValue error is returned if this object is set to any value
+       other than '-1', when tSapEgressFCDot1PInProfile object is set to '-1'."
+    DEFVAL { -1 }
+    ::= { tSapEgressFCEntry 9 }
+
+
+--
+-- network policy table
+--
+
+tNetworkPolicyTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF TNetworkPolicyEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  "  "
+    ::= { tNetworkObjects 1 }
+
+tNetworkPolicyEntry OBJECT-TYPE
+    SYNTAX       TNetworkPolicyEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about a particular Network Policy.
+
+         network policy (1) is the default entry.
+
+         Default Entry is created by the agent, other entries are
+         created by user.
+
+         Default Entry cannot be modified/deleted. The other
+         entries are deleted by user.
+
+         There is no StorageType object, entries have a presumed
+         StorageType of nonVolatile.
+
+         The default Egress FC entries are created as an action
+         of setting the rowstatus."
+    INDEX { tNetworkPolicyIndex }
+    ::= { tNetworkPolicyTable 1 }
+
+TNetworkPolicyEntry ::= SEQUENCE
+    {
+        tNetworkPolicyIndex                       XNetworkPolicyID,
+        tNetworkPolicyRowStatus                   RowStatus,
+        tNetworkPolicyScope                       TItemScope,
+        tNetworkPolicyDescription                 TItemDescription,
+        tNetworkPolicyIngressDefaultActionFC      TFCName,
+        tNetworkPolicyIngressDefaultActionProfile TProfile,
+        tNetworkPolicyLastChanged                 TimeStamp
+
+    }
+
+tNetworkPolicyIndex OBJECT-TYPE
+    SYNTAX       XNetworkPolicyID (1..65535|65536|65537)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  ""
+    REFERENCE    ""
+    ::= { tNetworkPolicyEntry 1 }
+
+tNetworkPolicyRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION  ""
+    ::= { tNetworkPolicyEntry 2 }
+
+tNetworkPolicyScope OBJECT-TYPE
+    SYNTAX       TItemScope
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION  ""
+    DEFVAL { template }
+    ::= { tNetworkPolicyEntry 5 }
+
+tNetworkPolicyDescription OBJECT-TYPE
+    SYNTAX       TItemDescription
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "tNetworkPolicyDescription holds the description for this policy."
+    DEFVAL { ''H }
+    ::= { tNetworkPolicyEntry 6 }
+
+tNetworkPolicyIngressDefaultActionFC OBJECT-TYPE
+    SYNTAX       TFCName
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "tNetworkPolicyIngressDefaultActionFC specifies the default
+         forwarding class to be used while classifying the ingress traffic."
+    DEFVAL { 'be'H }
+    ::= { tNetworkPolicyEntry 7 }
+
+tNetworkPolicyIngressDefaultActionProfile OBJECT-TYPE
+    SYNTAX       TProfile
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "tNetworkPolicyIngressDefaultActionProfile specifies the
+         default profile to be used for the ingressing traffic."
+    DEFVAL { in }
+    ::= { tNetworkPolicyEntry 8 }
+
+tNetworkPolicyLastChanged OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Timestamp of last change to this row in tNetworkPolicyTable."
+    ::= { tNetworkPolicyEntry 10 }
+
+
+--
+-- network ingress policy dot1p table
+--
+
+tNetworkIngressDot1pTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF TNetworkIngressDot1pEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  " "
+    ::= { tNetworkObjects 3 }
+
+tNetworkIngressDot1pEntry OBJECT-TYPE
+    SYNTAX       TNetworkIngressDot1pEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about a dot1p map for a network policy.
+
+         Some default entries are created by the agent for the
+         default network policy (1). These cannot be deleted or
+         modified. Other entries are created/deleted by user.
+
+         There is no StorageType object, entries have a presumed
+         StorageType of nonVolatile.
+        "
+    INDEX { tNetworkPolicyIndex, tNetworkIngressDot1pValue }
+    ::= { tNetworkIngressDot1pTable 1 }
+
+TNetworkIngressDot1pEntry ::= SEQUENCE
+    {
+        tNetworkIngressDot1pValue       Dot1PPriority,
+        tNetworkIngressDot1pRowStatus   RowStatus,
+        tNetworkIngressDot1pFC          TFCName,
+        tNetworkIngressDot1pProfile     TDEProfile,
+        tNetworkIngressDot1pLastChanged TimeStamp
+    }
+
+tNetworkIngressDot1pValue OBJECT-TYPE
+    SYNTAX       Dot1PPriority (0..7)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  ""
+    ::= { tNetworkIngressDot1pEntry 1 }
+
+tNetworkIngressDot1pRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION  ""
+    ::= { tNetworkIngressDot1pEntry 2 }
+
+tNetworkIngressDot1pFC OBJECT-TYPE
+    SYNTAX       TFCName
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION  ""
+    DEFVAL { ''H }
+    ::= { tNetworkIngressDot1pEntry 3 }
+
+tNetworkIngressDot1pProfile OBJECT-TYPE
+    SYNTAX       TDEProfile
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        ""
+    ::= { tNetworkIngressDot1pEntry 4 }
+
+tNetworkIngressDot1pLastChanged OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "timestamp of last change to this row in tNetworkIngressDot1pTable."
+    ::= { tNetworkIngressDot1pEntry 5 }
+
+--
+-- network ingress policy lspexp table
+--
+
+tNetworkIngressLSPEXPTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF TNetworkIngressLSPEXPEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  "  "
+    ::= { tNetworkObjects 4 }
+
+tNetworkIngressLSPEXPEntry OBJECT-TYPE
+    SYNTAX       TNetworkIngressLSPEXPEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about LSP EXP mapping for a network policy.
+
+         Some default entries are created by the agent for the
+         default network policy (1). These cannot be deleted or
+         modified. Other entries are created/deleted by user.
+
+         There is no StorageType object, entries have a presumed
+         StorageType of nonVolatile."
+    INDEX { tNetworkPolicyIndex, tNetworkIngressLSPEXP }
+    ::= { tNetworkIngressLSPEXPTable 1 }
+
+TNetworkIngressLSPEXPEntry ::= SEQUENCE
+    {
+        tNetworkIngressLSPEXP            TLspExpValue,
+        tNetworkIngressLSPEXPRowStatus   RowStatus,
+        tNetworkIngressLSPEXPFC          TFCName,
+        tNetworkIngressLSPEXPProfile     TProfile,
+        tNetworkIngressLSPEXPLastChanged TimeStamp
+    }
+
+tNetworkIngressLSPEXP OBJECT-TYPE
+    SYNTAX       TLspExpValue (0..7)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  ""
+    ::= { tNetworkIngressLSPEXPEntry 1 }
+
+tNetworkIngressLSPEXPRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION  ""
+    ::= { tNetworkIngressLSPEXPEntry 2 }
+
+tNetworkIngressLSPEXPFC OBJECT-TYPE
+    SYNTAX       TFCName
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION  ""
+    DEFVAL { ''H }
+    ::= { tNetworkIngressLSPEXPEntry 3 }
+
+tNetworkIngressLSPEXPProfile OBJECT-TYPE
+    SYNTAX       TProfile
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        ""
+    ::= { tNetworkIngressLSPEXPEntry 4 }
+
+tNetworkIngressLSPEXPLastChanged OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "timestamp of last change to this row in tNetworkIngressLSPEXPTable."
+    ::= { tNetworkIngressLSPEXPEntry 5 }
+
+--
+-- network egress fc table
+--
+
+tNetworkEgressFCTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF TNetworkEgressFCEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about all network policies' egress FC traffic disposition."
+    ::= { tNetworkObjects 7 }
+
+tNetworkEgressFCEntry OBJECT-TYPE
+    SYNTAX       TNetworkEgressFCEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Information about a particular network policy's egress
+         per-forwarding-class traffic disposition.
+
+         Entries are created/deleted as an action of creating/deleting
+         a row in the tNetworkPolicyTable.
+
+         There is no StorageType object, entries have a presumed
+         StorageType of nonVolatile."
+    INDEX { tNetworkPolicyIndex, tNetworkEgressFCName }
+    ::= { tNetworkEgressFCTable 1 }
+
+TNetworkEgressFCEntry ::= SEQUENCE
+    {
+        tNetworkEgressFCName              TFCName,
+        tNetworkEgressFCLspExpInProfile   TLspExpValue,
+        tNetworkEgressFCLspExpOutProfile  TLspExpValue,
+        tNetworkEgressFCDot1pInProfile    Dot1PPriority,
+        tNetworkEgressFCDot1pOutProfile   Dot1PPriority,
+        tNetworkEgressFCLastChanged       TimeStamp,
+        tNetworkEgressFCRowStatus	  RowStatus
+  
+    }
+
+tNetworkEgressFCName OBJECT-TYPE
+    SYNTAX       TFCName
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "the name of the forwarding class (FC)."
+    ::= { tNetworkEgressFCEntry 1 }
+
+
+tNetworkEgressFCLspExpInProfile OBJECT-TYPE
+    SYNTAX       TLspExpValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "the lsp-exp value to use for in-profile traffic."
+    ::= { tNetworkEgressFCEntry 4 }
+
+tNetworkEgressFCLspExpOutProfile OBJECT-TYPE
+    SYNTAX       TLspExpValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "the lsp-exp value to use for out-of-profile traffic."
+    ::= { tNetworkEgressFCEntry 5 }
+
+tNetworkEgressFCDot1pInProfile OBJECT-TYPE
+    SYNTAX       Dot1PPriority
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "the Dot1p to use for in-profile traffic."
+    ::= { tNetworkEgressFCEntry 6 }
+
+tNetworkEgressFCDot1pOutProfile OBJECT-TYPE
+    SYNTAX       Dot1PPriority
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "the Dot1p to use for out-of-profile traffic."
+    ::= { tNetworkEgressFCEntry 7 }
+
+tNetworkEgressFCLastChanged OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "timestamp of last change to this row in tNetworkEgressFCTable."
+    ::= { tNetworkEgressFCEntry 13 }
+
+tNetworkEgressFCRowStatus   OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Row Status for this row in tNetworkEgressFCTable."
+    ::= { tNetworkEgressFCEntry 8 }
+--
+-- Conformance Information
+--
+
+xhaulQosCompliances OBJECT IDENTIFIER ::= { xhaulQosConformance 1 }
+xhaulQosGroups      OBJECT IDENTIFIER ::= { xhaulQosConformance 2 }
+xhaulQosDCCompliances OBJECT IDENTIFIER ::= { xhaulQosConformance 3 }
+xhaulQosDCGroups      OBJECT IDENTIFIER ::= { xhaulQosConformance 4 }
+
+--
+-- compliance statements
+--
+
+
+END

@@ -1,0 +1,919 @@
+--
+-- extracted from draft-ietf-pwe3-tdm-mib-05.txt and adapted to opticsIM tree
+--
+
+   PW-TDM-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+-- 2010 add Interger 32, Counter32 and mib-2
+--
+     MODULE-IDENTITY, OBJECT-TYPE,
+     Unsigned32, Integer32, Counter32, mib-2
+        FROM SNMPv2-SMI
+--
+
+-- OpticsIM insertion
+--
+           opticsimCESMib FROM OPTICSIM-CESREG-MIB 
+--    
+
+     MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF
+
+-- 2010 add Time Stamp
+--
+     TEXTUAL-CONVENTION, TruthValue,  RowStatus, TimeStamp
+        FROM SNMPv2-TC
+--
+
+     InterfaceIndexOrZero
+        FROM IF-MIB
+
+-- OpticsIM insertion and 2010 change
+       OpticsIMPWLabelType, PwIndexType
+-- end insertion and 2010 change
+          FROM PW-TC-STD-MIB                 -- [RFCxxxx] 
+
+-- begin March 2010 change
+     PerfCurrentCount, PerfIntervalCount
+        FROM PerfHist-TC-MIB
+     OpticsIMETSTrafficDescrType 
+        FROM OpticsIMETS-MIB
+-- end March 2010 change
+
+     pwIndex
+        FROM PW-STD-MIB;
+
+
+   -- The TDM MIB
+
+     pwCTDMMIB MODULE-IDENTITY
+         LAST-UPDATED "1004010000Z" 
+         ORGANIZATION "Alcatel Optics"
+         CONTACT-INFO "Alcatel Optics"
+         DESCRIPTION
+		 "To reflect the latest update in RFC5604 , 
+                  1-add the following new rows into pwCTDMCfgEntry:
+                  	pwCTDMCfgJtrBfrDepth,
+		  	pwCTDMCfgPktFiller,
+		  	pwCTDMCfgPayloadSuppression,
+		  	pwCTDMCfgPktReplacePolicy,
+		  	pwCTDMCfgAvePktLossTimeWindow,
+		  	pwCTDMCfgExcessivePktLossThreshold,
+			pwTDMCfgAlarmThreshold, 
+			pwTDMCfgClearAlarmThreshold, 
+		  	pwCTDMCfgStraypacketsThreshold,
+		  	pwCTDMCfgMalformedPacketsThreshold,
+		  	pwCTDMCfgBufferOverrunThreshold,
+		  	pwCTDMCfgBufferUnderrunThreshold,
+		  	pwCTDMCfgRemotePacktLossThreshold,
+		  	pwCTDMCfgStrayPacketDetect,
+		  	pwCTDMCfgCESoETHFrameLossThreshold
+                  
+                  2-add the following new rows into pwCTDMEntry:
+                  	pwCTDMRTPHdrSsrcIn, 
+			pwCTDMRTPHdrSsrcInActual,
+			pwCTDMRTPHdrSsrcOut, 
+			pwCTDMRTPPayloadTypeIn,
+			pwCTDMRTPPayloadTypeInActual,
+			pwCTDMRTPPayloadTypeOut,
+			pwCTDMBandwidth,
+			pwCTDMClassOfService
+
+		  3-update the syntax of pwCTDMCfgClockSource to include system(7).
+		  
+		  4-add a new mib object opticsIMCESoEthDifferentialTimestampFrequency below pwCTDMObjects.
+
+		  5- add mefCES(200) in pwCTDMEntry description.
+                  "
+
+         REVISION "0711290000Z"
+	 DESCRIPTION
+                 "The MIB module and tables are renamed from opticsIM reference to draft IETF reference 
+                  (that's the opticsIM string is removed).
+                 "
+
+         REVISION "0610190000Z"  --  October 12, 2006 
+         DESCRIPTION
+                 "This module is extracted from ietf pw3 draft and adapted to OpticsIM tree in order 
+                 to compile"
+
+         REVISION "0603010000Z"
+         DESCRIPTION
+         "This MIB contains managed object definitions for
+          encapsulating TDM (T1,E1, T3, E3, NxDS0) as
+          pseudo-wires over packet-switching networks (PSN).
+
+          This MIB supplements the PW-STD-MIB as in: Zelig, D.,
+          Nadeau,T. 'Pseudo Wire (PW) Management Information Base'.
+          The PW-STD-MIB contains structures and MIB associations
+          generic to Pseudo-Wire (PW) emulation. PW-specific
+          MIBs (such as this) contain config and stats for specific
+          PW types.
+
+          Copyright (C) The Internet Society (2006). This version
+          of this MIB module is part of RFC yyyy; see the RFC
+          itself for full legal notices.
+   -- RFC Ed.: replace yyyy with actual RFC number & remove this
+          note"
+
+     REVISION  "0603010000Z"  
+     DESCRIPTION
+         "Changes since last draft:
+         1-Remove Vc from all objects
+         2-Move MIB root to transmission
+         3-Change default of pwCTDMCfgSetUp2SynchTimeOut
+           to 5000ms
+         4-Change PM running counters to daily intervals
+         5-Enhance description of pwCTDMCfgPktReplacePolicy
+         6-Enhance description of ES, SES, and UAS
+         7-Aligned objects with other PW MIBs"
+
+
+     REVISION  "0510230000Z"  
+     DESCRIPTION
+         "Changes since last draft:
+         1-Align object names with PW-STD-MIB and PW-TC-STD-MIB
+         2-clean up some text
+         3-pwCTDMCfgIndexNext SYNTAX was changed to TestAndIncr
+         4-Add explanation to descriptions of few objects
+         5-Performance objecs were modified to better represent
+           their counts and type"
+
+     REVISION  "0507120000Z"  
+     DESCRIPTION
+         "Changes since last draft:
+          1-Merged all configurable objects from Satop MIB with
+          objects of pwCTDMCfgTable in this MIB module.
+          2-pwCTDMCfgJtrBfrDepth-changed units to microsec.
+          3-pwCTDMAvePktLossTimeWindow moved to the
+            pwCTDMCfgTable.
+          4-In pwCTDMCfgConfErr, the enum(1)was renamed to
+          PayloadSize.
+          5-Renamed pwCSatopCfgConsecPktsLoss2Normal and
+          pwCSatopCfgConsecMissPktNorma2Loss to
+          pwCTDMCfgConsecPktsInSynch and to
+          pwCTDMCfgConsecMissPktsOutSynch respectively."
+
+     REVISION "0404200000Z"  
+     DESCRIPTION
+         "Initial version, published as
+          draft-ietf-pwe3-TDM-mib-00.txt"
+
+     ::= { opticsimCESMib 4 }
+   -- RFC Editor: replace XXX with IANA-assigned number & remove this
+   -- note. Please see IANA considerations section
+
+   -- Local Textual conventions
+   PwTDMCfgIndex ::= TEXTUAL-CONVENTION
+     STATUS      current
+     DESCRIPTION
+          "Index into any of the relevant pwCXXXCfgTable."
+     SYNTAX  Unsigned32
+
+   -- Tables, Scalars
+   pwCTDMObjects       OBJECT IDENTIFIER
+                                ::= { pwCTDMMIB 1 }
+   -- Conformance
+   pwCTDMConformance   OBJECT IDENTIFIER
+                                ::= { pwCTDMMIB 3 }
+
+   -- TDM PW table
+
+   pwCTDMTable OBJECT-TYPE
+     SYNTAX        SEQUENCE OF PwCTDMEntry
+     MAX-ACCESS    not-accessible
+     STATUS        current
+     DESCRIPTION
+         "This table contains basic information including ifIndex,
+          and pointers to entries in the relevant TDM config
+          tables for this TDM PW."
+     ::= { pwCTDMObjects 1 }
+
+   pwCTDMEntry OBJECT-TYPE
+     SYNTAX        PwCTDMEntry
+     MAX-ACCESS    not-accessible
+     STATUS        current
+     DESCRIPTION
+         "This table is indexed by the same index that was
+          created for the associated entry in the PW Table
+          (in the PW-STD-MIB).
+
+            - The PwIndex.
+
+          An entry is created in this table by the agent for every
+          entry in the pwTable with a pwType equal to one of the
+          following:
+          e1Satop(17), t1Satop(18), e3Satop(19), t3Satop(20),
+          basicCesPsn(21), basicTdmIp(22),  tdmCasCesPsn(23),
+          tdmCasTdmIp(24),
+ -- begin 2010 changes
+          mefCEF(200).
+ -- end 2010 changes
+	 "
+     INDEX  { pwIndex }
+
+        ::= { pwCTDMTable 1 }
+
+   PwCTDMEntry ::= SEQUENCE {
+
+        pwCTDMIfIndex                   InterfaceIndexOrZero,
+        pwCGenTDMCfgIndex               PwTDMCfgIndex,
+
+        pwCTDMConfigError               BITS,
+
+        pwCTDMBoundPWLabel              OpticsIMPWLabelType,  
+        pwCPSNBoundPWLabel              OpticsIMPWLabelType,
+        
+  -- begin 2010 changes 
+	pwCTDMRTPHdrSsrcIn		PwIndexType,
+	pwCTDMRTPHdrSsrcInActual	PwIndexType,
+	pwCTDMRTPHdrSsrcOut		PwIndexType, 
+	pwCTDMRTPPayloadTypeIn		Unsigned32,
+	pwCTDMRTPPayloadTypeInActual	Unsigned32,
+	pwCTDMRTPPayloadTypeOut		Unsigned32,
+	pwCTDMBandwidth 		INTEGER,
+	pwCTDMClassOfService		OpticsIMETSTrafficDescrType
+  -- end 2010 changes 
+
+        }
+
+   pwCTDMIfIndex OBJECT-TYPE
+     SYNTAX        InterfaceIndexOrZero
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "This is a unique index within the ifTable. It represents
+          the interface index of the full link or the interface
+          index for the bundle holding the group of
+          time slots to be transmitted via this PW connection.
+
+          A value of zero indicates an interface index that has yet
+          to be determined.
+          Once set, if the TDM ifIndex is (for some reason) later
+          removed, the agent SHOULD delete the associated PW rows
+          (e.g., this pwCTDMTable entry). If the agent does not
+          delete the rows,  the agent MUST set this object to
+          zero."
+     ::= { pwCTDMEntry 2 }
+
+   pwCGenTDMCfgIndex OBJECT-TYPE
+     SYNTAX        PwTDMCfgIndex
+     MAX-ACCESS    read-create
+
+     STATUS        current
+     DESCRIPTION
+         "Index to the generic parameters in the TDM configuration
+          table that appears in this MIB module. It is likely that
+          multiple TDM PWs of the same characteristic will share
+          a single TDM Cfg entry."
+     ::= { pwCTDMEntry 3 }
+
+   pwCTDMConfigError OBJECT-TYPE
+     SYNTAX BITS {
+           other                         ( 0),
+           tdmTypeIncompatible           ( 1),
+           peerRtpIncompatible           ( 2),
+           peerPayloadSizeIncompatible   ( 3)
+     }
+     MAX-ACCESS    read-only
+     STATUS        current
+     DESCRIPTION
+         "Any of the bits are set if the local configuration is
+          not compatible with the peer configuration as available
+          from the various parameters options.
+
+         -tdmTypeIncompatible bit is set if the local configuration
+          is not carrying the same TDM type as the peer configuration.
+
+          -peerRtpIncompatible bit is set if the local configuration
+          is configured to send RTP packets for this PW, and the
+          remote is not capable of accepting RTP packets.
+
+          -peerPayloadSizeIncompatible bit is set if the local
+          configuration is not carrying the same Payload Size as the
+          peer configuration.  "
+     ::= { pwCTDMEntry 5}
+
+    pwCTDMBoundPWLabel OBJECT-TYPE  
+       SYNTAX        OpticsIMPWLabelType
+       MAX-ACCESS    read-create  
+       STATUS        current  
+       DESCRIPTION  
+           "The local PW Identifier used to identifiy the emulated circuit of TDM-bound direction.
+             "  
+       ::= { pwCTDMEntry 112 }  
+
+    pwCPSNBoundPWLabel OBJECT-TYPE  
+       SYNTAX        OpticsIMPWLabelType
+       MAX-ACCESS    read-create  
+       STATUS        current  
+       DESCRIPTION  
+           "The local PW Identifier used to identifiy the emulated circuit of PSN-bound direction.
+             "  
+       ::= { pwCTDMEntry 13 } 
+
+  -- begin 2010 changes 
+    pwCTDMRTPHdrSsrcIn OBJECT-TYPE
+       SYNTAX        PwIndexType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DESCRIPTION
+          "The expected value of Synchronization Source (SSRC) field of the
+	   RTP header of the incoming pseudowire packets.
+
+          The default value can be 2*inlable of the psudowire."
+     ::= { pwCTDMEntry 14 }
+
+    pwCTDMRTPHdrSsrcInActual OBJECT-TYPE	
+       SYNTAX        PwIndexType
+       MAX-ACCESS    read-only
+       STATUS        current
+       DESCRIPTION
+          "The actual value of Synchronization Source (SSRC) field of the
+	   RTP header of the incoming pseudowire packets."
+     ::= { pwCTDMEntry 15 }
+
+    pwCTDMRTPHdrSsrcOut	OBJECT-TYPE
+       SYNTAX        PwIndexType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DESCRIPTION
+          "The value of Synchronization Source (SSRC) field of the
+	   RTP header of the outgoing pseudowire packets.
+
+	   The default value can be 2*outlable of the psudowire."
+     ::= { pwCTDMEntry 16 }
+
+    pwCTDMRTPPayloadTypeIn OBJECT-TYPE
+       SYNTAX        Unsigned32 (0..127)
+       MAX-ACCESS    read-create
+       STATUS        current
+       DESCRIPTION
+          "The expected value of the Payload Type field of the RTP header on the
+	   incoming Pseudowire packets.
+         
+          The default value is 101."
+     ::= { pwCTDMEntry 17 }
+
+    pwCTDMRTPPayloadTypeInActual OBJECT-TYPE
+       SYNTAX        Unsigned32 (0..127)
+       MAX-ACCESS    read-create
+       STATUS        current
+       DESCRIPTION
+          "The actual value of the Payload Type field of the RTP header on the
+	   incoming Pseudowire packets."
+     ::= { pwCTDMEntry 18 }
+
+
+    pwCTDMRTPPayloadTypeOut OBJECT-TYPE
+       SYNTAX        Unsigned32 (0..127)
+       MAX-ACCESS    read-create
+       STATUS        current
+       DESCRIPTION
+          "The value of the Payload Type field of the RTP header on the
+	   outgoing Pseudowire packets.
+         
+          The default value is 101."
+     ::= { pwCTDMEntry 19 }
+    
+     pwCTDMBandwidth OBJECT-TYPE
+       SYNTAX        INTEGER
+       MAX-ACCESS    read-only
+       STATUS        current
+       DESCRIPTION
+          "This value indicates the total amount of bandwidth necessary to carry the TDM Service required.
+          It's specified in kilobits per second (Kbps).  
+          This value is calculated by agent depending on Payload size and TDM interface rate, etc."
+     ::= { pwCTDMEntry 20 }
+     
+     pwCTDMClassOfService OBJECT-TYPE
+       SYNTAX        OpticsIMETSTrafficDescrType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DESCRIPTION
+          "This value indicates the Class of Service the TDM service is expected to be carried in PW."
+     ::= { pwCTDMEntry 21 }
+  -- end 2010 changes 
+
+   -- End of TDM PW table
+
+   -- PW Generic TDM PW Configuration Table
+
+   pwCTDMCfgIndexNext OBJECT-TYPE
+     SYNTAX            Unsigned32
+     MAX-ACCESS        read-only
+     STATUS            current
+     DESCRIPTION
+         "This object contains the value to be used for
+          pwCTDMCfgIndex when creating entries in the
+          pwCTDMCfgTable. The value 0 indicates that no
+          unassigned entries are available.  To obtain the
+          value of pwCTDMCfgIndexNext for a new entry in the
+          pwCTDMCfgTable, the manager issues a management
+          protocol retrieval operation. The agent will
+          determine through its local policy when this
+          index value will be made available for reuse."
+     ::= { pwCTDMObjects 2 }
+
+
+   pwCTDMCfgTable   OBJECT-TYPE
+     SYNTAX                  SEQUENCE OF PwCTDMCfgEntry
+     MAX-ACCESS              not-accessible
+     STATUS                  current
+     DESCRIPTION
+         "This table contains a set of parameters that may be
+          referenced by one or more TDM PWs in pwCTDMTable."
+
+     ::= { pwCTDMObjects 3 }
+
+   pwCTDMCfgEntry   OBJECT-TYPE
+     SYNTAX            PwCTDMCfgEntry
+     MAX-ACCESS        not-accessible
+     STATUS            current
+     DESCRIPTION
+         "These parameters define the characteristics of a
+          TDM PW. They are grouped here to ease NMS burden.
+          Once an entry is created here it may be re-used
+          by many PWs."
+
+     INDEX  { pwCTDMCfgIndex }
+
+        ::= { pwCTDMCfgTable 1 }
+
+   PwCTDMCfgEntry::= SEQUENCE {
+        pwCTDMCfgIndex                    PwTDMCfgIndex,
+        pwCTDMCfgRowStatus                RowStatus,
+        pwCTDMCfgConfErr                  BITS,
+        pwCTDMCfgPayloadSize              Unsigned32,
+        pwCTDMCfgRtpHdrUsed               TruthValue,
+
+  --      pwCTDMCfgTimestampMode            INTEGER,
+        pwCTDMCfgClockSource               INTEGER,
+
+  -- begin 2010 changes 
+        pwCTDMCfgJtrBfrDepth              Unsigned32,
+        pwCTDMCfgPktFiller                Unsigned32,
+	pwCTDMCfgPayloadSuppression       INTEGER,
+	pwCTDMCfgPktReplacePolicy         INTEGER,
+	pwCTDMCfgAvePktLossTimeWindow     Integer32,
+	pwCTDMCfgExcessivePktLossThreshold   Unsigned32,
+	pwCTDMCfgAlarmThreshold			Unsigned32, 
+	pwCTDMCfgClearAlarmThreshold		Unsigned32, 
+	pwCTDMCfgStraypacketsThreshold    Unsigned32,
+	pwCTDMCfgMalformedPacketsThreshold    Unsigned32,
+	pwCTDMCfgBufferOverrunThreshold    Unsigned32,
+	pwCTDMCfgBufferUnderrunThreshold   Unsigned32,
+	pwCTDMCfgRemotePacketLossThreshold  Unsigned32,
+	pwCTDMCfgStrayPacketDetect            TruthValue,
+	pwCTDMCfgCESoETHFrameLossThreshold 	Unsigned32		
+  -- end 2010 changes
+        }
+
+   pwCTDMCfgIndex   OBJECT-TYPE
+     SYNTAX        PwTDMCfgIndex
+     MAX-ACCESS    not-accessible
+     STATUS        current
+     DESCRIPTION
+         "Index to an entry in this table. The value is a copy of the
+          assigned pwCTDMCfgIndexNext"
+     ::= { pwCTDMCfgEntry 1 }
+
+   pwCTDMCfgRowStatus    OBJECT-TYPE
+     SYNTAX               RowStatus
+     MAX-ACCESS           read-create
+     STATUS               current
+     DESCRIPTION
+         "Object used for creating, modifying, and deleting
+          a row from this table. The following objects should not be
+          modified if the entry is in used and the status is active:
+          pwCTDMCfgPayloadSize, pwCTDMCfgRtpHdrUsed,
+          pwCTDMCfgJtrBfrDepth, and pwCTDMCfgPayloadSuppression.
+          The row should not be deleted if the entry is in used"
+     ::= { pwCTDMCfgEntry 2 }
+
+   pwCTDMCfgConfErr OBJECT-TYPE
+     SYNTAX BITS {
+           other           ( 0),
+           payloadSize     ( 1),
+           jtrBfrDepth     ( 2)
+     }
+     MAX-ACCESS    read-only
+     STATUS        current
+     DESCRIPTION
+         "Various configuration errors. Illegal settings within
+          the pwCTDMCfg table."
+     ::= { pwCTDMCfgEntry 3 }
+
+   pwCTDMCfgPayloadSize OBJECT-TYPE
+     SYNTAX        Unsigned32
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The value of this object indicates the PayLoad Size (in bytes)
+          to be defined during the PW setUp. Upon TX, implementation
+          must be capable of carrying that amount of bytes.
+          Upon RX, when the LEN field is set to 0, the payload of
+          packet  MUST assume this size, and if the actual
+          packet size is inconsistent with this length,
+          the packet MUST be considered to be malformed. "
+     ::= { pwCTDMCfgEntry 4 }
+
+
+   pwCTDMCfgRtpHdrUsed OBJECT-TYPE
+     SYNTAX        TruthValue
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "If set to False: an RTP header is not pre-pended to the
+          TDM packet."
+     ::= { pwCTDMCfgEntry 6 }
+
+
+ --  pwCTDMCfgTimestampMode  OBJECT-TYPE
+ --    SYNTAX        INTEGER
+ --                   {
+ --                    notApplicable (1),
+ --                    absolute      (2),
+ --                    differential  (3)
+ --                   }
+
+ --    MAX-ACCESS    read-create
+ --    STATUS        current
+ --    DESCRIPTION
+ --        "Timestamp generation MAY be used in one of the following
+ --         modes:
+ --        "Clocking options for TDM-bound IWF.Timestamp generation MAY be used in one of the following
+ --         modes:
+ --         1. Absolute mode: the PSN-bound IWF sets timestamps
+ --          using the clock recovered from the incoming TDM attachment
+ --          circuit. As a consequence, the timestamps are closely
+ --          correlated with the sequence numbers. All TDM implementations
+ --          that support usage of the RTP header MUST support this mode.
+ --         2. Differential mode: Both IWFs have access to a common high-
+ --          quality timing source, and this source is used for timestamp
+ --          generation. Support of this mode is OPTIONAL. "
+
+ --    ::= { pwCTDMCfgEntry 18 }
+
+   pwCTDMCfgClockSource    OBJECT-TYPE
+     SYNTAX        INTEGER
+                    {
+                     notApplicable (1),
+                     adaptive      (2),
+                     differential  (3),
+                     tdmLine       (4),
+                     external      (5),
+                     freeRunning   (6),
+-- begin 2010 change
+                     system        (7) 
+-- end 2010 change
+                    }
+
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The clock used to play out the data at the PSN-bound IWF.
+          The allowed options are:
+          1. Adaptive timing: the clock is deduced solely based on the frames
+           arrival times.
+          2. Differential timing: both IWFs have access to a common high-
+           quality timing source, and the relationship between the TDM source 
+           clock and this common clock is encoded in the frames.
+           Support of this mode is OPTIONAL.
+          3. TDM Line timing: use of the clock from the incoming TDM line (loopback).
+          4. External timing: use of an external reference clock source.
+           Support of this mode is OPTIONAL.
+          5. Free-run timing: use of a free-running oscillator.
+           Support of this mode is OPTIONAL. 
+          6. System timing: use of the system clock. The system clock soure is configured at system level in schronization           	  domain, which is the reference clock distributed for all applicable hardware entities and can be BITS or Line or           1588, etc." 
+
+     ::= { pwCTDMCfgEntry 20 }
+
+-- begin 2010 change
+   pwCTDMCfgJtrBfrDepth OBJECT-TYPE
+     SYNTAX        Unsigned32
+     UNITS         "microsecond"
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The size of this buffer SHOULD be locally
+          configured to allow accommodation to the PSN-specific packet
+          delay variation.
+
+          If configured to a value not supported by the
+          implementation, the agent MUST return an error code
+          'jtrBfrDepth' in 'pwTDMConfigError'.
+
+          The value shall be in units of microsecond. 
+          The default value is specific to NE implementation.
+
+          NOTE: jitter buffers are a limited resource to
+          be managed.  The actual size should be at least twice as big
+          as the value of pwTDMCfgJtrBfrDepth."
+     ::= { pwCTDMCfgEntry 21 }
+
+
+
+   pwCTDMCfgPktFiller OBJECT-TYPE
+      SYNTAX        Unsigned32 (0..255)
+      MAX-ACCESS    read-create
+      STATUS        current
+      DESCRIPTION
+          "Filler byte pattern played out on the TDM
+          interface if pwTDMCfgPktReplacePolicy
+          was set to filler(3).
+          Object MAY be changed only when the related PW is
+          defined as not active.
+
+          The default value is 255,i.e. Play all ones, equal to AIS indications."
+      ::= { pwCTDMCfgEntry 22 }
+
+
+
+   pwCTDMCfgPayloadSuppression  OBJECT-TYPE
+     SYNTAX        INTEGER
+                    {
+                       enable  ( 1),
+                       disable ( 2)
+                    }
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "Selecting 'enable' means: Payload suppression is allowed.
+          Payload MAY be omitted in order to conserve bandwidth.
+          Selecting 'disable' means: No suppression under any
+          condition.
+          Object MAY be changed at any time.
+          
+          The default value is disable."
+     ::= { pwCTDMCfgEntry 23 }
+
+
+   pwCTDMCfgPktReplacePolicy OBJECT-TYPE
+     SYNTAX        INTEGER
+                         {
+                          allOnes (1),
+                          implementationSpecific(2),
+                          filler (3)  --user defined
+                          }
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "This parameter determines the value to be played when CE bound
+          packets over/underflow the jitter buffer, or are missing
+          for any reason.  This byte pattern is sent (played) on
+          the TDM line.  Selecting implementationSpecific(2) implies an
+          agent-specific algorithm.  Selecting filler(3) requires
+          the setting of pwTDMCfgPktFiller.
+          Object MAY be changed only when the related PW is
+          defined as not active.
+
+          The default value is allones, i.e. play AIS."
+     ::= { pwCTDMCfgEntry 24 }
+
+   pwCTDMCfgAvePktLossTimeWindow OBJECT-TYPE
+     SYNTAX        Integer32
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The length of time over which the average packet
+          loss rate should be computed to detect excessive packet
+          loss rate.
+          Object MAY be changed only when the related PW is
+          defined as not active.
+
+          The value shall be in units of millisecond. The default value is 1000 millisecond (1 s)."
+     ::= { pwCTDMCfgEntry 25 }
+
+   pwCTDMCfgExcessivePktLossThreshold OBJECT-TYPE
+     SYNTAX        Unsigned32
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "Excessive packet loss is detected by computing the
+          average number of lost packetloss over a pwTDMCfgAvePktLossTimeWindow
+          amount of time and comparing it with this threshold value.
+          The rate is expressed in number of packets.
+          
+          Object MAY be changed only when the related PW is
+          defined as not active.
+
+          The default value is 10 packets. "
+     ::= { pwCTDMCfgEntry 26 }
+
+   pwCTDMCfgAlarmThreshold OBJECT-TYPE
+     SYNTAX        Unsigned32
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "Alarms are only reported when the defect state persists
+          for the length of time specified by this object.
+          Object MAY be changed only when the related PW is
+          defined as not active.
+
+	  The value shall be in units of milisec. The default value is 2500."
+     ::= { pwCTDMCfgEntry 27 }
+
+   pwCTDMCfgClearAlarmThreshold OBJECT-TYPE
+     SYNTAX        Unsigned32
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "Alarm MUST be cleared after the corresponding defect is
+          undetected for the amount of time specified by this object.
+          Object MAY be changed only when the related PW is
+          defined as not active.
+
+	 The value shall be in units of milisec. The default value is 10000."
+     ::= { pwCTDMCfgEntry 28 }
+
+   pwCTDMCfgStraypacketsThreshold OBJECT-TYPE
+     SYNTAX        Unsigned32 (1..300)
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The number of stray packets in the Pseudowire within 1 second must be met 
+          in order to declare an alarm, if pwCTDMCfgStrayPacketDetect was set to True.
+
+          Stray packet: If the SSRC field of incoming Pseudowire packets do not match the
+	  configured value of inssrc, the packet is discarded and stray packet count is incremented.        
+
+          The default value is 300."
+     ::= { pwCTDMCfgEntry 29 }
+
+   pwCTDMCfgMalformedPacketsThreshold OBJECT-TYPE
+     SYNTAX        Unsigned32 (1..300)
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The number of Malformed packets in the Pseudowire within 1 second must be met 
+          in order to declare an alarm.
+
+          Malformed packets: are detected by mismatch between the expected packet size (taking the value of the L bit into 	  	  account) and the actual packet size inferred from the PSN and PW demultiplexing layers. When RTP is used, lack of             correspondence between the PT value and that allocated for this direction of the PW is used for this purpose as               well.
+
+          The default value is 300.
+         "
+     ::= { pwCTDMCfgEntry 30 }
+
+   pwCTDMCfgBufferOverrunThreshold OBJECT-TYPE
+     SYNTAX        Unsigned32 (1..300)
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The number of times a newly-arriving packet dropped due to Buffer overrun in the Pseudowire within 1 second must be met 
+          in order to declare an alarm.
+
+          The default value is 300."
+     ::= { pwCTDMCfgEntry 31 }
+
+   pwCTDMCfgBufferUnderrunThreshold OBJECT-TYPE
+     SYNTAX        Unsigned32 (1..300)
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The number of times a packet needed to be played out and the jitter buffer was empty in the Pseudowire within 1 second must be met 
+          in order to declare an alarm.
+         
+          The default value is 300."
+     ::= { pwCTDMCfgEntry 32 }
+
+   pwCTDMCfgRemotePacketLossThreshold OBJECT-TYPE
+     SYNTAX        Unsigned32 (1..300)
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The number of received packets with their R bit set in the Pseudowire within 1 second must be met 
+          in order to declare an alarm.
+         
+          The default value is 300."
+     ::= { pwCTDMCfgEntry 33 }
+
+   pwCTDMCfgStrayPacketDetect OBJECT-TYPE    		
+     SYNTAX        TruthValue
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "Enable or Disable the Stray packet detection mechanism for the Pseudowire.
+
+          The default value is false."
+     ::= { pwCTDMCfgEntry 34 }
+
+   pwCTDMCfgCESoETHFrameLossThreshold OBJECT-TYPE
+     SYNTAX        Unsigned32 (1..300)
+     MAX-ACCESS    read-create
+     STATUS        current
+     DESCRIPTION
+         "The number of lost packets in the Pseudowire within 1 second must be met 
+          in order to declare an alarm.
+         
+          The default value is 1."
+     ::= { pwCTDMCfgEntry 35 }
+
+-- end 2010 change
+
+   -- END of Table
+   
+-- begin 2010 changes
+   
+   -- CES differential timestamp frequency
+   
+     opticsIMCESoEthDifferentialTimestampFrequency OBJECT-TYPE  
+       SYNTAX         INTEGER
+       MAX-ACCESS        read-write  
+       STATUS            current  
+       DESCRIPTION  
+           "This value is differential timestamp frequency of the system (in units of KHz).
+           
+            The allowed values are 77760 or 16384 or 25000 KHz. The exact frequency values supported is dependent on the network element."  
+       ::= { pwCTDMObjects 4 }  
+     
+-- end 2010 changes
+
+
+
+
+   -- Conformance Information
+
+
+   pwCTDMGroups      OBJECT IDENTIFIER ::= { pwCTDMConformance 1 }
+
+   pwCTDMCompliances OBJECT IDENTIFIER ::= { pwCTDMConformance 2 }
+
+
+   pwTDMModuleCompliance MODULE-COMPLIANCE
+      STATUS  current
+      DESCRIPTION
+          "The compliance statement for agent that support TDM PW
+           over  PSN operation."
+
+      MODULE  -- this module
+          MANDATORY-GROUPS { pwCTDMGroup
+                           }
+
+                     OBJECT pwCTDMCfgRtpHdrUsed
+                     MIN-ACCESS read-only
+                     DESCRIPTION
+                         "The ability to set the whether to use the
+                          RTP header or not is not required."
+
+
+      ::= { pwCTDMCompliances 1 }
+
+   -- Units of conformance.
+
+   pwCTDMGroup OBJECT-GROUP
+     OBJECTS {
+              pwCTDMIfIndex,
+              pwCGenTDMCfgIndex,
+              pwCTDMConfigError,
+              pwCTDMBoundPWLabel,  
+              pwCPSNBoundPWLabel,
+        
+  -- begin 2010 changes 
+	      pwCTDMRTPHdrSsrcIn,
+	      pwCTDMRTPHdrSsrcInActual,
+	      pwCTDMRTPHdrSsrcOut, 
+	      pwCTDMRTPPayloadTypeIn,
+	      pwCTDMRTPPayloadTypeInActual,
+	      pwCTDMRTPPayloadTypeOut,
+	      pwCTDMBandwidth,
+	      pwCTDMClassOfService,
+  -- end 2010 changes 
+
+              pwCTDMCfgIndexNext,
+
+              pwCTDMCfgRowStatus,
+              pwCTDMCfgConfErr,
+              pwCTDMCfgPayloadSize,
+
+ --             pwCTDMCfgTimestampMode,
+              pwCTDMCfgClockSource,
+
+-- begin 2010 changes
+              pwCTDMCfgJtrBfrDepth,
+              pwCTDMCfgPktFiller,
+	      pwCTDMCfgPayloadSuppression,
+	      pwCTDMCfgPktReplacePolicy,
+	      pwCTDMCfgAvePktLossTimeWindow,
+	      pwCTDMCfgExcessivePktLossThreshold,
+	      pwCTDMCfgAlarmThreshold, 
+	      pwCTDMCfgClearAlarmThreshold, 
+	      pwCTDMCfgStraypacketsThreshold,
+	      pwCTDMCfgMalformedPacketsThreshold,
+	      pwCTDMCfgBufferOverrunThreshold,
+	      pwCTDMCfgBufferUnderrunThreshold,
+	      pwCTDMCfgRemotePacketLossThreshold,
+	      pwCTDMCfgStrayPacketDetect,
+	      pwCTDMCfgCESoETHFrameLossThreshold		
+-- end 2010 changes
+              }
+     STATUS  current
+     DESCRIPTION
+         "Collection of objects for basic TDM PW config and
+          status."
+     ::= { pwCTDMGroups 1 }
+
+
+    END
+

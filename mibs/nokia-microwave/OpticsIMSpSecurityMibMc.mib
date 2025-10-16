@@ -1,0 +1,954 @@
+------------------------------------------------------------------------------------
+--  "CONFIDENTIAL. All rights reserved. Alcatel. This computer program is protected
+--  under Copyright. 
+--  Recipient is to retain the program in confidence, and is not permitted to copy, use,
+--  distribute, modify or translate the program without authorization. Passing on and 
+--  copying,use and communication of its contents is not permitted without written 
+--  authorization."
+
+OPTICSIM-SECURITY-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32, Unsigned32, IpAddress, Gauge32  FROM SNMPv2-SMI
+    DisplayString, RowStatus,TruthValue,TEXTUAL-CONVENTION  FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP FROM SNMPv2-CONF
+    tsdimBasicMib,tsdimBasicMC FROM TSDIM-BASICREG-MIB;
+
+opticsIMSecurityMib MODULE-IDENTITY
+    LAST-UPDATED "202206150000Z"
+    ORGANIZATION "Alcatel TSD"
+    CONTACT-INFO "Alcatel TSD"
+    DESCRIPTION
+        "Optics-IM Security MIB "
+
+    REVISION "202206150000Z"
+    DESCRIPTION
+	"Added opticsIMInitialPasswordReset object.
+	"
+
+    REVISION "201702280000Z"
+    DESCRIPTION
+	"-SNMPIDL-530, added new value secureCertificatedAndRemoteMngt (3) to opticsIMSecurityNEMode object.
+	"
+
+  REVISION "201603310000Z"
+    DESCRIPTION
+	"-SNMPIDL-516, added new value (secureCertificated (2)) to opticsIMSecurityNEMode object.
+	"
+
+    REVISION "201511130000Z"
+    DESCRIPTION
+	"-SNMPIDL-507, update LAST-UPDATED and REVISION date format adding the 2 digits missing (20) for yers after 1999.
+Added a REVISION block corresponding to the LAST-UPDATED timestamp.
+       - SNMPIDL-508, added a space between opening and closing braces and the enclosed content.
+	"
+
+    REVISION "201401060000Z"
+    DESCRIPTION
+        "OPTnm24759: Qiu Linhai
+	     To change the unit of following attributes in opticsIMStormCtlTable from Mbps to Kbps: 
+		opticsIMUnknownUnicastBandwidth
+		opticsIMUnknownL2MCBandwidth
+		opticsIMKnownL2MCBandwidth             
+		opticsIMBCASTBandwidth
+          "
+
+    REVISION "201204120000Z"
+    DESCRIPTION
+	"OPTnm07660: D.Spreafico
+	     Added:  	     
+	       opticsIMUserServerMsg  to opticsIMUserOperationTable.
+          "
+    
+   REVISION "201111030000Z"
+   DESCRIPTION
+        "OPTnm02586: D.Spreafico
+	     Added:  	     
+	       opticsIMSecurityNEMode
+          "
+    
+    REVISION "201004010000Z"
+    DESCRIPTION
+        "Linhai Qiu:
+	     Added:  	     
+	       -- opticsIMIPACLNextIndex
+	       -- opticsIMIPAclTable
+	       -- opticsIMStormcontrolNextIndex
+           -- opticsIMStormCtlTable
+           -- opticsIMPacketFilteringNextIndex
+           -- opticsIMPksFilteringTable
+           -- opticsIMNumofMacAddrPerPort           
+          "
+    
+    REVISION "200808070000Z"
+    DESCRIPTION
+        "D.Spreafico:
+	     Added:
+           -- the new table opticsIMManagersAccessListTable
+           -- the scalar object accessListIndexNext
+           -- the textual convention OpticsIMInterfaceType.
+
+         S.Winlsow: 
+           Fixed inconsistent OBJECT-GROUP Name for opticsIMCtSecurityGroup S. Winslow"
+	
+    REVISION "200710110000Z"
+    DESCRIPTION
+        "Nir Levin:
+	     New user profile, dedicated to NM, have been inserted:
+           nmadmin (6), nmconstructor (7), nmoperator (8) and nmviewer (9) are
+           the new admitted values.
+           "
+	
+    REVISION "200411260000Z"
+    DESCRIPTION
+        "Added the new value for defining user rights and a value to manage it."
+
+    REVISION "200005090000Z"
+    DESCRIPTION
+        "Initial Release Optics-IM Security MIB"
+::= { tsdimBasicMib 7 }
+
+opticsIMSecurityMibObject   OBJECT IDENTIFIER ::= { opticsIMSecurityMib 1 }
+
+OpticsIMUserRights ::= TEXTUAL-CONVENTION
+    STATUS current
+    DESCRIPTION
+         "This enumerated lists all possible level of security admitted for
+          a user."
+    SYNTAX INTEGER { 
+        administrator(1),
+        constructor(2),
+        operator(3),
+        viewer(4),
+        undefined(5),
+	  nmadmin(6),
+        nmconstructor (7),
+        nmoperator (8),
+        nmviewer (9)
+        }
+
+OpticsIMUserActions ::= TEXTUAL-CONVENTION
+    STATUS current
+    DESCRIPTION
+         "This enumerated lists all possible operation admitted in the 
+         OpticsIMCtUserTable."
+    SYNTAX INTEGER { 
+        userCreation(1),
+        userDeletion(2),
+        checkPassword(3),
+        changePasswordByUser(4),
+        changePasswordByAdmin(5),
+        operatorList(6)}
+
+
+OpticsIMInterfaceType ::= TEXTUAL-CONVENTION
+    STATUS current
+    DESCRIPTION "The value of this object identifies the Type of the management interface."
+    SYNTAX INTEGER {
+        snmp     (0),
+        http     (1),
+        ftp      (2),
+        telnet   (3) }
+
+-- opticsIMCtUserTable 
+
+opticsIMCtUserTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMCtUserEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table contains the LAC security information."
+::= { opticsIMSecurityMibObject 1 }
+
+OpticsIMCtUserEntry ::= SEQUENCE {
+    opticsIMCtUserIndex Integer32,
+    opticsIMCtUserId DisplayString,
+    opticsIMCtUserPassword  DisplayString,
+    opticsIMCtRowStatus RowStatus,
+    opticsIMCtUserRights OpticsIMUserRights
+    }
+
+opticsIMCtUserEntry OBJECT-TYPE
+    SYNTAX OpticsIMCtUserEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "The row describes the LAC user information."
+    INDEX { opticsIMCtUserIndex }
+::= { opticsIMCtUserTable 1 }
+
+opticsIMCtUserIndex OBJECT-TYPE 
+    SYNTAX Integer32 
+    MAX-ACCESS not-accessible
+    STATUS current 
+    DESCRIPTION  
+        "This object defines the index of the table." 
+::= { opticsIMCtUserEntry 1 } 
+
+opticsIMCtUserId OBJECT-TYPE 
+    SYNTAX DisplayString
+    MAX-ACCESS read-only 
+    STATUS current 
+    DESCRIPTION   
+        "This object contains the CT username identifier" 
+::= { opticsIMCtUserEntry 2 } 
+
+opticsIMCtUserPassword OBJECT-TYPE 
+    SYNTAX DisplayString 
+    MAX-ACCESS read-only 
+    STATUS current 
+    DESCRIPTION 
+        "This object contains CT password.
+          It is strongly required that the Agent has to deny any access 
+          to this columnar object, although MAX-ACCESS value is 'read-only' " 
+::= { opticsIMCtUserEntry 3 } 
+
+opticsIMCtRowStatus OBJECT-TYPE 
+    SYNTAX RowStatus 
+    MAX-ACCESS read-only
+    STATUS current 
+    DESCRIPTION 
+        "This object is used to create new CT user. 
+          It is strongly required that the Agent has to deny any access 
+          to this columnar object, although MAX-ACCESS value is 'read-only' " 
+::= { opticsIMCtUserEntry 4 } 
+
+opticsIMCtUserRights OBJECT-TYPE 
+    SYNTAX OpticsIMUserRights
+    MAX-ACCESS read-create 
+    STATUS current
+    DESCRIPTION
+        "This object is used to define the user rights." 
+::= { opticsIMCtUserEntry 5 }
+
+-- OpticsIMUserOperationTable
+
+opticsIMUserOperationTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMUserOperationEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "This table is used for hiding the OpticsIMCtUserTable managenment."
+::= { opticsIMSecurityMibObject 2 }
+
+OpticsIMUserOperationEntry ::= SEQUENCE {
+    opticsIMUserOperationIndex Integer32,
+    opticsIMUserOperationOperation OpticsIMUserActions,
+    opticsIMUserUsername  DisplayString,
+    opticsIMUserPassword  DisplayString,
+    opticsIMCorollaryUsername  DisplayString,
+    opticsIMCorollaryPassword  DisplayString,
+    opticsIMUserRights OpticsIMUserRights,
+-- Begin OPTnm07660: D.Spreafico
+    opticsIMUserServerMsg  DisplayString
+-- End OPTnm07660: D.Spreafico
+    }
+
+opticsIMUserOperationEntry OBJECT-TYPE
+    SYNTAX OpticsIMUserOperationEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION 
+        "The row used for hiding the OpticsIMCtUserTable managenment."
+    INDEX { opticsIMUserOperationIndex }
+::= { opticsIMUserOperationTable 1 }
+
+opticsIMUserOperationIndex OBJECT-TYPE 
+    SYNTAX Integer32 
+    MAX-ACCESS not-accessible
+    STATUS current 
+    DESCRIPTION  
+        "This object defines the index of the table." 
+::= { opticsIMUserOperationEntry 1 } 
+
+opticsIMUserOperationOperation OBJECT-TYPE 
+    SYNTAX OpticsIMUserActions
+    MAX-ACCESS read-create
+    STATUS current 
+    DESCRIPTION  
+        "Enumerated indication what operation has to be executed." 
+::= { opticsIMUserOperationEntry 2 } 
+
+opticsIMUserUsername OBJECT-TYPE 
+    SYNTAX DisplayString
+    MAX-ACCESS read-create
+    STATUS current 
+    DESCRIPTION  
+        "Object containing the Username on which the operation will be applied." 
+::= { opticsIMUserOperationEntry 3 } 
+
+opticsIMUserPassword OBJECT-TYPE 
+    SYNTAX DisplayString
+    MAX-ACCESS read-create
+    STATUS current 
+    DESCRIPTION  
+        "Object containing the Password of the Username on which the operation will be 
+          applied." 
+::= { opticsIMUserOperationEntry 4 } 
+
+opticsIMCorollaryUsername OBJECT-TYPE 
+    SYNTAX DisplayString
+    MAX-ACCESS read-create
+    STATUS current 
+    DESCRIPTION  
+        "Object containing the Username of the Administrator that executes the 
+         operation." 
+::= { opticsIMUserOperationEntry 5 } 
+
+opticsIMCorollaryPassword OBJECT-TYPE 
+    SYNTAX DisplayString
+    MAX-ACCESS read-create
+    STATUS current 
+    DESCRIPTION  
+        "This object has the twofold meaning;
+         In case of Creation it will contain the Administrator password; while in change 
+         Password by owner it will contain the newest password value"
+::= { opticsIMUserOperationEntry 6 } 
+
+opticsIMUserRights OBJECT-TYPE 
+    SYNTAX OpticsIMUserRights
+    MAX-ACCESS read-create 
+    STATUS current
+    DESCRIPTION
+        "This object is used to define the user rights to be applied in case of creation."
+::= { opticsIMUserOperationEntry 7 }
+
+-- Begin OPTnm07660: D.Spreafico
+opticsIMUserServerMsg  OBJECT-TYPE 
+    SYNTAX DisplayString
+    MAX-ACCESS read-create 
+    STATUS current
+    DESCRIPTION
+        "This object is used to return to the manager a string associated to the user operation."
+::= { opticsIMUserOperationEntry 8 }
+-- End OPTnm07660: D.Spreafico
+
+-- Start opticsIMAccessListTable
+
+ opticsIMManagersAccessListIndexNext OBJECT-TYPE  
+       SYNTAX            Unsigned32  
+       MAX-ACCESS        read-only  
+       STATUS            current  
+       DESCRIPTION  
+           "This object contains an appropriate value to be used  
+            for opticsIMManagersAccessListIndex         when creating entries in the  
+            opticsIMManagersAccessListTable . The value 0 indicates that no  
+            unassigned entries are available.  To obtain the  
+            value of opticsIMManagersAccessListIndex         for a new entry in the  
+            opticsIMManagersAccessListTable , the manager issues a management  
+            protocol retrieval operation. The agent will determine 
+            through its local policy when this index value will be made  
+            available for reuse."  
+        
+::= { opticsIMSecurityMibObject 3 }
+
+opticsIMManagersAccessListTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMManagersAccessListEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table defines the access list of Interfaces allowed to access to the NE.
+        "
+::= { opticsIMSecurityMibObject 4 }
+
+OpticsIMManagersAccessListEntry ::= SEQUENCE {
+    opticsIMManagersAccessListIndex         INTEGER,
+    opticsIMManagersAccessListInterfaceType OpticsIMInterfaceType,
+    opticsIMManagersAccessListAddress       DisplayString,
+    opticsIMManagersAccessListMask          DisplayString,
+    opticsIMManagersAccessListRowStatus     RowStatus 
+
+}
+
+opticsIMManagersAccessListEntry OBJECT-TYPE
+    SYNTAX OpticsIMManagersAccessListEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "see description of opticsIMManagersAccessListTable "
+    INDEX { opticsIMManagersAccessListIndex }
+::= { opticsIMManagersAccessListTable 1 }
+
+opticsIMManagersAccessListIndex OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Index of opticsIMManagersAccessListEntry for the specific interface type"
+::= { opticsIMManagersAccessListEntry 1}
+
+opticsIMManagersAccessListInterfaceType OBJECT-TYPE
+    SYNTAX OpticsIMInterfaceType
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "It defines the type of the management interface."
+::= { opticsIMManagersAccessListEntry 2}
+
+opticsIMManagersAccessListAddress  OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+        "It defines the address associated to the manager of type defined 
+         in opticsIMManagersAccessListInterfaceType object.
+         The address type is according to the opticsIMManagersAccessListInterfaceType value: 
+         in case of snmp (0), http (1), ftp (2), and telnet (3) values the opticsIMManagersAccessListAddress  
+         is an Ip Address DisplayString encoded aligned to SNMPv2-SMI."
+::= { opticsIMManagersAccessListEntry 3}
+
+opticsIMManagersAccessListMask OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+        "It defines the manager address mask. 
+         The address mask is according to the opticsIMManagersAccessListInterfaceType value: 
+         in case of snmp (0), http (1), ftp (2), and telnet (3) values the opticsIMManagersAccessListMask 
+         is an Ip Address DisplayString encoded aligned to SNMPv2-SMI."
+::= { opticsIMManagersAccessListEntry 4}
+
+opticsIMManagersAccessListRowStatus OBJECT-TYPE 
+    SYNTAX RowStatus 
+    MAX-ACCESS read-create 
+    STATUS current 
+    DESCRIPTION 
+        "This object is used to create new entry on Access List. 
+        " 
+::= { opticsIMManagersAccessListEntry 5 } 
+
+-- End opticsIMManagersAccessListTable
+
+
+--  END
+
+-- TSDIM-Security-MC DEFINITIONS ::= BEGIN
+--     IMPORTS
+--     MODULE-IDENTITY, OBJECT-TYPE FROM SNMPv2-SMI
+--     MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--     opticsIMBasicMC FROM TSDIM-BASICREG-MIB;
+
+-- opticsIMSecurityMCCompl
+
+-- opticsIMSecurityMCCompl MODULE-IDENTITY
+-- LAST-UPDATED "0004140000Z"
+-- ORGANIZATION "Alcatel TSD"
+-- CONTACT-INFO "Alcatel TSD"
+-- DESCRIPTION
+--      "Initial Release"
+-- ::= { opticsIMSecurityMCConf 1 }
+
+opticsIMSecurityMCConf  OBJECT IDENTIFIER ::= { tsdimBasicMC 4 }
+opticsIMSecurityMCCompl OBJECT IDENTIFIER ::= { opticsIMSecurityMCConf 1 }
+opticsIMSecurityMCGroup OBJECT IDENTIFIER ::= { opticsIMSecurityMCConf 2 }
+
+opticsIMSecurityMc MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION 
+        "This module compliance describes a set of objects required 
+         for TSD-IM SNMP Agent implementation. These objects are
+         defined inside opticsIMSecurityMib"
+
+    MODULE -- opticsIMSecurityMib
+
+GROUP opticsIMCtSecurityGroup
+    DESCRIPTION
+        "This group contains the objects used in CT access authorization."
+
+::= { opticsIMSecurityMCCompl 1 }
+
+-- Units of conformance
+
+-- Modified S. Winslow
+-- Inconsistent OBJECT spelling
+-- opticsIMOptSecurityGroup OBJECT-GROUP
+opticsIMCtSecurityGroup OBJECT-GROUP
+    OBJECTS { opticsIMCtUserId,
+        opticsIMCtUserRights,
+        opticsIMUserOperationOperation,
+        opticsIMUserUsername,
+        opticsIMUserPassword,
+        opticsIMCorollaryUsername,
+        opticsIMCorollaryPassword,
+        opticsIMUserRights }
+    STATUS current
+    DESCRIPTION 
+        "This group describes the objects needed for the CT access
+         requirement functionality "
+::= { opticsIMSecurityMCGroup 1 }          
+
+-- Added by Linhai Qiu
+-- TSS3 R3.0
+
+ -- IP ACL Begin
+opticsIMIPACLNextIndex OBJECT-TYPE
+  SYNTAX      INTEGER
+  MAX-ACCESS  read-only
+  STATUS      current
+  DESCRIPTION
+    "This object contains an appropriate value to be used for opticsIMIPAclIndex 
+     when creating entries in the opticsIMIPAclTable.
+     The value 0 indicates that no unassigned entries are available.
+     To obtain the opticsIMIPAclIndex value for a new entry, the manager issues 
+     a management protocol retrieval operation to obtain the current value of 
+     this object. After each retrieval, the agent should modify the value to 
+     the next unassigned index."
+::= { opticsIMSecurityMibObject 6 }
+
+opticsIMIPAclTable  OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMIPAclEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table defines the IP ACL profile per system"
+::= { opticsIMSecurityMibObject 7 }   
+ 
+opticsIMIPAclEntry OBJECT-TYPE
+    SYNTAX OpticsIMIPAclEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table defines the IP ACL profile per system"
+    INDEX { opticsIMIPAclIndex }
+::= { opticsIMIPAclTable 1}
+ 
+OpticsIMIPAclEntry ::= SEQUENCE {
+ opticsIMIPAclIndex         INTEGER,
+    opticsIMIPSourceAddr       IpAddress,   
+    opticsIMIPAddrMask          IpAddress,
+    opticsIMMinTCPSourcePort   INTEGER,
+    opticsIMMaxTCPSourcePort   INTEGER,
+    opticsIMMinTCPDestinationPort   INTEGER,
+    opticsIMMaxTCPDestinationPort   INTEGER, 
+    opticsIMMinUDPSourcePort   INTEGER,
+    opticsIMMaxUDPSourcePort   INTEGER,
+    opticsIMMinUDPDestinationPort   INTEGER,
+    opticsIMMaxUDPDestinationPort   INTEGER,
+    opticsIMIPProtocol   INTEGER,    
+    opticsIMIPAclStatus         RowStatus 
+}
+ 
+opticsIMIPAclIndex OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "The index for IP ACL. This value is equal to opticsIMIPACLNextIndex"
+::= { opticsIMIPAclEntry 1 }
+ 
+opticsIMIPSourceAddr OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The source IP Address (IP address of network manager"
+::= { opticsIMIPAclEntry 2 }   
+ 
+opticsIMIPAddrMask OBJECT-TYPE
+    SYNTAX IpAddress
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The mask for source IP Address"
+::= { opticsIMIPAclEntry 3 } 
+ 
+opticsIMMinTCPSourcePort OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The minimum TCP source port, the '0' means 'don't care'"
+::= { opticsIMIPAclEntry 4 }   
+ 
+opticsIMMaxTCPSourcePort OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The maximum TCP source port, the '0' means 'don't care'"
+::= { opticsIMIPAclEntry 5 } 
+ 
+opticsIMMinTCPDestinationPort OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The minimum TCP destination port, the '0' means 'don't care'"
+::= { opticsIMIPAclEntry 6 } 
+ 
+opticsIMMaxTCPDestinationPort OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The maximum TCP destination port, the '0' means 'don't care'"
+::= { opticsIMIPAclEntry 7 }           
+ 
+opticsIMMinUDPSourcePort OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The minimum TCP source port, the '0' means 'don't care'"
+::= { opticsIMIPAclEntry 8 }   
+ 
+opticsIMMaxUDPSourcePort OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The maximum TCP source port, the '0' means 'don't care'"
+::= { opticsIMIPAclEntry 9 } 
+ 
+opticsIMMinUDPDestinationPort OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The minimum TCP destination port, the '0' means 'don't care'"
+::= { opticsIMIPAclEntry 10 } 
+ 
+opticsIMMaxUDPDestinationPort OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The maximum TCP destination port, the '0' means 'don't care'"
+::= { opticsIMIPAclEntry 11 }   
+ 
+opticsIMIPProtocol OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The Protocol field of IP header,0-255, the default is null "
+::= { opticsIMIPAclEntry 12 }
+ 
+opticsIMIPAclStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+        "The row status for opticsIMIPAcl " 
+::= { opticsIMIPAclEntry 13 }
+ 
+-- IP ACL End   
+ 
+-- Storm Control Begin      
+opticsIMStormcontrolNextIndex OBJECT-TYPE
+  SYNTAX      INTEGER
+  MAX-ACCESS  read-only
+  STATUS      current
+  DESCRIPTION
+    "This object contains an appropriate value to be used for opticsIMStormcontrolIndex 
+     when creating entries in the opticsIMStormCtlTable.
+     The value 0 indicates that no unassigned entries are available.
+     To obtain the opticsIMStormcontrolIndex value for a new entry, the manager issues 
+     a management protocol retrieval operation to obtain the current value of 
+     this object. After each retrieval, the agent should modify the value to 
+     the next unassigned index."
+::= { opticsIMSecurityMibObject 8 }
+
+opticsIMStormCtlTable  OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMStormCtlEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table defines the storm control function per port"
+::= { opticsIMSecurityMibObject 9 }   
+ 
+opticsIMStormCtlEntry OBJECT-TYPE
+    SYNTAX OpticsIMStormCtlEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table defines the storm control function per port"
+    INDEX { opticsIMStormControlIndex }
+::= { opticsIMStormCtlTable 1 }
+ 
+OpticsIMStormCtlEntry ::= SEQUENCE {
+    opticsIMStormControlIndex         INTEGER,
+    opticsIMUnknownUnicastEnable     TruthValue,
+    opticsIMUnknownUnicastBandwidth  Gauge32,  
+    opticsIMUnknownUnicastBucket     Gauge32,
+    opticsIMUnknownL2MCEnable       TruthValue,
+    opticsIMUnknownL2MCBandwidth    Gauge32, 
+    opticsIMUnknownL2MCBucket       Gauge32,
+    opticsIMKnownL2MCEnable         TruthValue,
+    opticsIMKnownL2MCBandwidth      Gauge32,               
+    opticsIMKnownL2MCBucket         Gauge32,     
+    opticsIMBCASTEnable             TruthValue,
+    opticsIMBCASTBandwidth          Gauge32,  
+    opticsIMBCASTBucket             Gauge32,  
+    opticsIMStormCtlStatus          RowStatus 
+}
+ 
+opticsIMStormControlIndex OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "The user label for storm control profile. This value is equal to 
+        opticsIMStormcontrolNextIndex "
+::= { opticsIMStormCtlEntry 1 }
+ 
+opticsIMUnknownUnicastEnable OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "A boolean indicating if the unknown unicast storm control is enabled.
+        When it is set to 'True' the storm control is enabled. Otherwise 
+        the storm control is disabled. Default value is false"
+::= { opticsIMStormCtlEntry 2 }
+ 
+opticsIMUnknownUnicastBandwidth OBJECT-TYPE
+    SYNTAX Gauge32
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "To set the bandwidth for unknown unicast frame, the unit is Kbps.
+		Default value is zero."
+::= { opticsIMStormCtlEntry 3 }     
+ 
+opticsIMUnknownUnicastBucket OBJECT-TYPE
+    SYNTAX Gauge32
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "To set the Bucket Size for metering unknown unicast frame; the values are product
+		 dependant on. Default value is zero.
+		 For example the possible value is: 4kb,16kb,64kb, 256kb,1Mb, 4Mb, 8Mb and 16Mb"
+::= { opticsIMStormCtlEntry 4 }
+ 
+opticsIMUnknownL2MCEnable OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "A boolean indicating if the unknown layer2 multicast storm control is enabled.
+        When it is set to 'True' the storm control is enabled. Otherwise 
+        the storm control is disabled. Default value is false" 
+::= { opticsIMStormCtlEntry 5 }
+ 
+opticsIMUnknownL2MCBandwidth OBJECT-TYPE
+    SYNTAX Gauge32
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "To set the bandwidth for Unknown_L2MC frames, the unit is Kbps.
+		Default value is zero." 
+::= { opticsIMStormCtlEntry 6 }
+ 
+opticsIMUnknownL2MCBucket OBJECT-TYPE
+    SYNTAX Gauge32
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "To set bucket size for metering the bandwidth for Unknown_L2MC frames.
+		 The values are product dependant on. Default value is zero.
+		 For example, possible value is: 4kb,16kb,64kb, 256kb,1Mb, 4Mb, 8Mb and 16Mb" 
+::= { opticsIMStormCtlEntry 7 }
+ 
+opticsIMKnownL2MCEnable OBJECT-TYPE
+    SYNTAX TruthValue 
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "A boolean indicating if the known layer 2 multicast storm control is enabled.
+        When it is set to 'True' the storm control is enabled. Otherwise 
+        the storm control is disabled. Default value is false." 
+::= { opticsIMStormCtlEntry 8 }
+ 
+opticsIMKnownL2MCBandwidth OBJECT-TYPE
+    SYNTAX Gauge32
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "To set the bandwidth for known_L2MC frames, the unit is Kbps.
+		Default value is zero." 
+::= { opticsIMStormCtlEntry 9 }
+ 
+opticsIMKnownL2MCBucket OBJECT-TYPE
+    SYNTAX Gauge32
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "To set the bucket size for metering known_L2MC frames.
+         The values are product dependant on. Default value is zero.
+		 For example, the possible value is: 4kb,16kb,64kb, 256kb,1Mb, 4Mb, 8Mb and 16Mb" 
+::= { opticsIMStormCtlEntry 10 }
+ 
+opticsIMBCASTEnable OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "A boolean indicating if the broadcast storm control is enabled.
+        When it is set to 'True' the storm control is enabled. Otherwise 
+        the storm control is disabled. Default value is false." 
+::= { opticsIMStormCtlEntry 11 }
+ 
+opticsIMBCASTBandwidth OBJECT-TYPE
+    SYNTAX Gauge32
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "To set the bandwidth for broadcast frame, the unit is Kbps.
+		Default value is zero." 
+::= { opticsIMStormCtlEntry 12 } 
+ 
+opticsIMBCASTBucket OBJECT-TYPE
+    SYNTAX Gauge32
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "To set the bucket size for metering broadcast frame.
+         The values are product dependant on. Default value is zero. 	
+		 For example, the possible value is: 4kb, 16kb,64kb, 256kb,1Mb, 4Mb, 8Mb and 16Mb " 
+::= { opticsIMStormCtlEntry 13}
+ 
+opticsIMStormCtlStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+        "This object is used to create new entry for storm control" 
+::= { opticsIMStormCtlEntry 14 } 
+
+ 
+-- Storm Control End 
+ 
+-- Unknow uicast/broadcast/multicast filtering Begin      
+
+opticsIMPacketFilteringNextIndex OBJECT-TYPE
+  SYNTAX      INTEGER
+  MAX-ACCESS  read-only
+  STATUS      current
+  DESCRIPTION
+    "This object contains an appropriate value to be used for opticsIMPacketFilteringIndex 
+     when creating entries in the opticsIMPksFilteringTable.
+     The value 0 indicates that no unassigned entries are available.
+     To obtain the opticsIMPacketFilteringIndex value for a new entry, the manager issues 
+     a management protocol retrieval operation to obtain the current value of 
+     this object. After each retrieval, the agent should modify the value to 
+     the next unassigned index."
+::= { opticsIMSecurityMibObject 10 }
+
+opticsIMPksFilteringTable  OBJECT-TYPE
+    SYNTAX SEQUENCE OF OpticsIMPksFilteringEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table defines the packets filtering per port"
+::= { opticsIMSecurityMibObject 11 }   
+ 
+opticsIMPksFilteringEntry OBJECT-TYPE
+    SYNTAX OpticsIMPksFilteringEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table defines the packets filtering profile"
+    INDEX { opticsIMPacketFilteringIndex }
+::= { opticsIMPksFilteringTable 1 }
+ 
+
+OpticsIMPksFilteringEntry ::= SEQUENCE {
+ opticsIMPacketFilteringIndex       INTEGER,
+    opticsIMUnknownUnicastFiltering       TruthValue,
+    opticsIMUnknownMulticastFiltering     TruthValue,
+    opticsIMBroadcastFiltering     TruthValue,
+    opticsIMPksFilteringStatus         RowStatus 
+}
+ 
+opticsIMPacketFilteringIndex OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "The index of packet filtering profile, this value is equal to opticsIMPacketFilteringNextIndex"
+::= { opticsIMPksFilteringEntry 1 } 
+ 
+opticsIMUnknownUnicastFiltering OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "A boolean indicating if the unknown unicast filtering is enabled.
+        When it is set to 'True' the packet filtering is enabled. Otherwise 
+        the packet filtering is disabled. Default value is false."
+::= { opticsIMPksFilteringEntry 2 }  
+ 
+opticsIMUnknownMulticastFiltering OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "A boolean indicating if the unknown unicast filtering is enabled.
+        When it is set to 'True' the packet filtering is enabled. Otherwise 
+        the packet filtering is disabled.Default value is false."
+::= { opticsIMPksFilteringEntry 3 }
+ 
+opticsIMBroadcastFiltering OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "A boolean indicating if the broadcast filtering is enabled.
+        When it is set to 'True' the packet filtering is enabled. Otherwise 
+        the packet filtering is disabled. Default value is false."
+::= { opticsIMPksFilteringEntry 4 }
+ 
+opticsIMPksFilteringStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+        "This object is used to create new entry for unknown unicast/broadcast/multicast filtering"
+::= { opticsIMPksFilteringEntry 5 }       
+ 
+
+ 
+-- Unknow uicast/broadcast/multicast filtering End     
+ 
+-- Begin - Number of MAC addr per port
+ 
+opticsIMNumofMacAddrPerPort OBJECT-TYPE
+    SYNTAX INTEGER (1 ..65535)
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The number of MAC addr per port, only the MAC learning addr is impacted, the static MAC addr is not included."
+    ::=  { opticsIMSecurityMibObject 12 }  
+ 
+-- End Number of MAC addr per port
+
+-- Begin - security NE mode
+ 
+opticsIMSecurityNEMode OBJECT-TYPE
+   SYNTAX INTEGER {
+        unSecure (0),
+        secure (1),
+        secureCertificated (2),
+        secureCertificatedAndRemoteMngt (3)
+                  }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The security mode (or level) the NE is working on."
+    ::=  { opticsIMSecurityMibObject 13 }  
+ 
+-- End security NE mode
+
+opticsIMInitialPasswordReset OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "This object is used by managing system to require to the agent to reset to the factory value the password of the predefined user.
+To reset the password the 'true' value has to be sent to the agent on a SET request. The agent, once received the request , has to return the opticsIMInitialPasswordReset object to 'false' value.
+A GET request on this object has to return always a 'false' value. "
+    ::=  { opticsIMSecurityMibObject 14 }  
+
+END
+

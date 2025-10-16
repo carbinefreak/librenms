@@ -1,0 +1,19 @@
+OPTICSIM-PROTMAPPINGREG-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+    MODULE-IDENTITY FROM SNMPv2-SMI
+    tsdim, tsdimBasicMib FROM TSDIM-BASICREG-MIB;
+
+opticsimProtMappingReg MODULE-IDENTITY
+    LAST-UPDATED "0211280000Z"
+    ORGANIZATION "Alcatel TND"
+    CONTACT-INFO "Alcatel TND"
+    DESCRIPTION
+        "Initial Release OPTICS-IM Protocol Mapping REGISTRATION MODULE"
+::= { tsdimBasicMib 250 }
+
+-- Registration Tree
+
+opticsimProtMappingMib     OBJECT IDENTIFIER ::= { tsdim 30 }
+opticsimProtMappingMC      OBJECT IDENTIFIER ::= { opticsimProtMappingMib 99 }
+
+END

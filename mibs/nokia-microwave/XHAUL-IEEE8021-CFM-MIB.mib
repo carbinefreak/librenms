@@ -1,0 +1,934 @@
+XHAUL-IEEE8021-CFM-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    Dot1agCfmInterfaceStatus,
+    Dot1agCfmLowestAlarmPri,
+    Dot1agCfmMDLevel,
+    Dot1agCfmMaintAssocName,
+    Dot1agCfmMaintDomainNameType,
+    Dot1agCfmMepId, Dot1agCfmMepIdOrZero,
+    Dot1agCfmMpDirection,
+    dot1agCfmMaCompEntry, dot1agCfmMaIndex,
+    dot1agCfmMaMepListEntry,
+    dot1agCfmMaNetEntry, dot1agCfmMdEntry,
+    dot1agCfmMdIndex, dot1agCfmMepDbEntry,
+    dot1agCfmMepEntry,
+    dot1agCfmMepIdentifier,
+    dot1agCfmMepTransmitLbmDestMacAddress,
+    dot1agCfmMepTransmitLtmSeqNumber
+                                            FROM IEEE8021-CFM-MIB
+ 
+    InterfaceIndex, InterfaceIndexOrZero
+                                            FROM IF-MIB
+    MODULE-COMPLIANCE, NOTIFICATION-GROUP,
+    OBJECT-GROUP
+                                            FROM SNMPv2-CONF
+    Counter32, Gauge32, Integer32,
+    MODULE-IDENTITY, NOTIFICATION-TYPE,
+    OBJECT-TYPE, Unsigned32
+                                            FROM SNMPv2-SMI
+    DateAndTime, DisplayString, MacAddress,
+    RowStatus, TEXTUAL-CONVENTION,
+    TimeInterval, TruthValue
+                                            FROM SNMPv2-TC
+    TItemDescription, TLNamedItem,
+    TLNamedItemOrEmpty, TNamedItem
+                                            FROM XHAUL-TC-MIB
+
+     xhaulim, xhaulBasicMib 		FROM XHAUL-BASICREG-MIB
+    ;
+
+xhaulIEEE8021CfmMIBModule      MODULE-IDENTITY
+    LAST-UPDATED "202002100000Z"
+    ORGANIZATION "Nokia"
+    CONTACT-INFO "Nokia Xhaul Support "
+    DESCRIPTION
+        "This document is the SNMP MIB module to manage and provision dot1ag Connectivity Fault Management module functionality for the Nokia Xhaul products. 
+         This includes extensions to the IEEE8021-CFM MIB.
+	"
+
+    REVISION    "202002100000Z"
+    DESCRIPTION
+        "Rev 4.0                10 February 2020 00:00
+         - Changed enumeration labels for xhaulDot1agCfmMepSoamPriorities object ."
+
+    REVISION    "202001290000Z"
+    DESCRIPTION
+        "Rev 3.0                29 January 2020 00:00
+         - Added xhaulDot1agCfmMepSoamPriorities object to 			xhaulDot1agCfmMepTable."
+
+    REVISION    "201910030000Z"
+    DESCRIPTION
+        "Rev 2.0                3 October 2019 00:00
+         - Removed xhaulDot1agCfmMepAisStateChanged  NOTIFICATION-TYPE 
+         - removed VlanId,
+    VlanIdOrNone, dot1agCfmDefaultMdEntry, Dot1agCfmPortStatus references ."
+
+    REVISION    "201907230000Z"
+    DESCRIPTION
+        "Rev 1.0                23 July 2019 00:00
+         Added new enumerated values to XhaulDot1agCfmCcmInterval Textual-Convention."
+
+    REVISION    "201905120000Z"
+    DESCRIPTION
+        "Rev 1.0                06 May 2019 00:00
+         Initial version of the XHAUL-IEEE8021-CFM-MIB."
+
+    ::= { xhaulBasicMib 14 }
+
+xhaulDot1agMIB                OBJECT IDENTIFIER ::= 
+{ xhaulim 10 }
+
+-- tables, scalars
+
+xhaulDot1agCfmManagementObjects   OBJECT IDENTIFIER ::= { xhaulDot1agMIB 3 }
+
+xhaulDot1agCfmMa                  OBJECT IDENTIFIER ::= { xhaulDot1agMIB 6 }
+
+xhaulDot1agCfmMep                 OBJECT IDENTIFIER ::= { xhaulDot1agMIB 7 }
+
+xhaulDot1agCfmMdMgmt              OBJECT IDENTIFIER ::= { xhaulDot1agMIB 12 }
+
+xhaulDot1agCfmMaMgmt              OBJECT IDENTIFIER ::= 
+{ xhaulDot1agMIB 13 }
+
+-- conformance
+
+xhaulDot1agMIBConformance         OBJECT IDENTIFIER ::= { xhaulDot1agMIB 14 }
+
+xhaulDot1agCfmCompliances         OBJECT IDENTIFIER ::= { xhaulDot1agMIBConformance 1 }
+
+-- traps
+
+xhaulDot1agNotifications          OBJECT IDENTIFIER ::= { xhaulDot1agMIB 15 }
+
+
+
+Dot1agCfmStatisticOpcodeName     ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An enumerated value indicating the CFM PDU Opcode to which a statistic
+         may be associated.
+
+         other(1)              Indicates the CFM PDU type does not match
+                               any other type explicitly detailed below.
+
+         ccm(2)                Connectivity check messages.
+
+         lbr(3)                Loopback response messages.
+
+         lbm(4)                Loopback request messages.
+
+         ltr(5)                Linktrace response messages.
+
+         ltm(6)                Linktrace request messages.
+
+         ais(7)                Alarm indication signal messages.
+
+         lck(8)                Ethernet locked signal messages.
+
+         tst(9)                Ethernet test signal messages.
+
+         laps(10)              Linear automatic protection switching messages.
+
+         raps(11)              Ring automatic protection switching messages.
+
+         mcc(12)               Maintenance communications channel messages.
+
+         lmr(13)               Ethernet loss measurement response messages.
+
+         lmm(14)               Ethernet loss measurement messages.
+
+         odm(15)               One way delay measurement messages.
+
+         dmr(16)               Delay measurement response messages.
+
+         dmm(17)               Delay measurement message.
+
+         exr(18)               Ethernet experimental response messages.
+
+         exm(19)               Ethernet experimental messages.
+
+         csf(20)               Client signal fail messages.
+
+         vsr(21)               Vendor specific response messages.
+
+         vsm(22)               Vendor specific messages.
+
+         osl(23)               One way synthetic loss measurement messages.
+
+         slr(24)               Synthetic loss measurement response messages.
+
+         slm(25)               Synthetic loss measurement messages.
+
+         gnm(26)               Generic notification messages."
+    REFERENCE
+        "Y.1731 clauses 7 and 8"
+    SYNTAX      INTEGER {
+        other (1),
+        ccm   (2),
+        lbr   (3),
+        lbm   (4),
+        ltr   (5),
+        ltm   (6),
+        ais   (7),
+        lck   (8),
+        tst   (9),
+        laps  (10),
+        raps  (11),
+        mcc   (12),
+        lmr   (13),
+        lmm   (14),
+        odm   (15),
+        dmr   (16),
+        dmm   (17),
+        exr   (18),
+        exm   (19),
+        csf   (20),
+        vsr   (21),
+        vsm   (22),
+        osl   (23),
+        slr   (24),
+        slm   (25),
+        gnm   (26)
+    }
+
+XhaulDot1agCfmMaintDomainNameOrEmpty ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The data type XhaulDot1agCfmMaintDomainNameOrEmpty specifies a generic
+         Maintenance Domain Name as described by IEEE8021-CFM-MIB
+         Dot1agCfmMaintDomainName.
+
+         In addition, a zero-length name is also accepted when IEEE8021-CFM-MIB
+         Dot1agCfmMaintDomainNameType value is set to 'none (1)'."
+    SYNTAX      OCTET STRING (SIZE (0..43))
+
+XhaulDot1agCfmMaintAssocNameType  ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "A value that represents a type (and thereby the format) of a
+         Dot1agCfmMaintAssocName. The values refer directly to the
+         Dot1agCfmMaintAssocNameType with the additional ituReserved(xx)
+         defined for iccBased(32). This is a refinement of the
+         Dot1agCfmMaintAssocNameType and follows the same rules and details as
+         it does.
+
+         ieeeReserved(0)   Reserved for definition by IEEE 802.1
+                           recommend to not use zero unless
+                           absolutely needed.
+         primaryVid(1)     Primary VLAN ID.
+                           12 bits represented in a 2-octet integer:
+                           - 4 least significant bits of the first
+                             byte contains the 4 most significant
+                             bits of the 12 bits primary VID
+                           - second byte contains the 8 least
+                             significant bits of the primary VID
+
+                                  0 1 2 3 4 5 6 7 8
+                                  +-+-+-+-+-+-+-+-+
+                                  |0 0 0 0| (MSB) |
+                                  +-+-+-+-+-+-+-+-+
+                                  |  VID   LSB    |
+                                  +-+-+-+-+-+-+-+-+
+
+         charString(2)     RFC2579 DisplayString, except that the
+                           character codes 0-31 (decimal) are not
+                           used. (1..45) octets
+         unsignedInt16(3)  2-octet integer/big endian
+         rfc2865VpnId(4)   RFC 2685 VPN ID
+                           3 octet VPN authority Organizationally
+                           Unique Identifier followed by 4 octet VPN
+                           index identifying VPN according to the OUI:
+
+                                  0 1 2 3 4 5 6 7 8
+                                  +-+-+-+-+-+-+-+-+
+                                  | VPN OUI (MSB) |
+                                  +-+-+-+-+-+-+-+-+
+                                  |   VPN OUI     |
+                                  +-+-+-+-+-+-+-+-+
+                                  | VPN OUI (LSB) |
+                                  +-+-+-+-+-+-+-+-+
+                                  |VPN Index (MSB)|
+                                  +-+-+-+-+-+-+-+-+
+                                  |  VPN Index    |
+                                  +-+-+-+-+-+-+-+-+
+                                  |  VPN Index    |
+                                  +-+-+-+-+-+-+-+-+
+                                  |VPN Index (LSB)|
+                                  +-+-+-+-+-+-+-+-+
+         iccBased(32)      The ICC value for Y.1731.
+                           It is taken from the ituReserved(xx) range of
+                           the Dot1agCfmMaintAssocNameType."
+    SYNTAX      INTEGER {
+        primaryVid    (1),
+        charString    (2),
+        unsignedInt16 (3),
+        rfc2865VpnId  (4),
+        iccBased      (32)
+    }
+
+XhaulDot1agCfmIdPermission        ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "Indicates what, if anything, is to be included in the Sender ID TLV
+         transmitted in CCMs, LBMs, LTMs, and LTRs.
+
+         This is a refinement of Dot1agCfmIdPermission.
+
+         The valid values are:
+
+         sendIdNone(1)      The Sender ID TLV is not to be sent.
+         sendIdChassis(2)   The Chassis ID Length, Chassis ID
+                            Subtype, and Chassis ID fields of  the
+                            Sender ID TLV are to be sent."
+    REFERENCE
+        "802.1ag clause 12.14.6.1.3:d and 21.5.3"
+    SYNTAX      INTEGER {
+        sendIdNone    (1),
+        sendIdChassis (2)
+    }
+
+XhaulDot1agCfmCcmInterval         ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "Indicates the interval at which CCMs are sent by a MEP. The possible
+         values are:
+         intervalInvalid   (0), No CCMs are sent (disabled)
+	    interval3330us (1), CCMs are sent every 333 milliseconds
+         interval10ms(2)    CCMs are sent every 10 milliseconds.
+         interval100ms(3)   CCMs are sent every 100 milliseconds.
+         interval1s(4)      CCMs are sent every 1 second.
+         interval10s(5)     CCMs are sent every 10 seconds.
+         interval1min(6)    CCMs are sent every minute.
+         interval10min(7)   CCMs are sent every 10 minutes."
+    REFERENCE
+        "802.1ag clauses 12.14.6.1.3:e, 20.8.1 and 21.6.1.3"
+    SYNTAX      INTEGER {
+        intervalInvalid   (0),
+	   interval3330us (1),
+        interval10ms  (2),
+        interval100ms (3),
+        interval1s    (4),
+        interval10s   (5),
+        interval1min  (6),
+        interval10min (7)
+    }
+
+-------------------------------------------------------
+-- xhaulDot1agCfmMepMgmtTable
+-------------------------------------------------------
+
+xhaulDot1agCfmMepMgmtTable        OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulDot1agCfmMepMgmtEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulDot1agCfmMepMgmtTable manages the row creation and deletion of
+         dot1agCfmMepTable rows. This table replaces the standard row creation
+         model for Dot1ag CFM MEPs to better facilitate Nokia SROS series
+         requirements. The use of writing to the
+         IEEE-8021-CFM-MIB::dot1agCfmMepRowStatus object is deprecated and
+         should be discouraged in favor of this table."
+    ::= { xhaulDot1agCfmManagementObjects 1 }
+
+xhaulDot1agCfmMepMgmtEntry        OBJECT-TYPE
+    SYNTAX      XhaulDot1agCfmMepMgmtEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulDot1agCfmMepMgmtEntry consists of the configuration objects
+         used for the purpose of row creation for Nokia SROS Dot1ag MEPs. To
+         create a MEP one must specify its type and endpoint association."
+    AUGMENTS    { dot1agCfmMepEntry }
+    ::= { xhaulDot1agCfmMepMgmtTable 1 }
+
+XhaulDot1agCfmMepMgmtEntry        ::= SEQUENCE
+{
+    xhaulDot1agCfmMepMgmtRowStatus    RowStatus,
+    xhaulDot1agCfmMepMgmtIfIndex      InterfaceIndexOrZero,
+    xhaulDot1agCfmMepMgmtDirection    Dot1agCfmMpDirection
+}
+
+xhaulDot1agCfmMepMgmtRowStatus    OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepMgmtRowStatus specifies the row status of
+         the dot1ag CFM MEP. This object replaces the use of the
+         IEEE-8021-CFM-MIB::dot1agCfmMepRowStatus object."
+    ::= { xhaulDot1agCfmMepMgmtEntry 1 }
+
+
+xhaulDot1agCfmMepMgmtIfIndex      OBJECT-TYPE
+    SYNTAX      InterfaceIndexOrZero
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepMgmtIfIndex specifies, along with
+         xhaulDot1agCfmMepMgmtPrimaryVid, the interface index of the interface
+         to which the MEP is attached.
+
+         This object refers directly to IEEE8021-CFM-MIB::dot1agCfmMepIfIndex.
+
+         This object may be specified during row creation when
+         xhaulDot1agCfmMepMgmtType is set to either the value 'default' or
+         'sapPrimaryVlan'."
+    ::= { xhaulDot1agCfmMepMgmtEntry 4 }
+
+xhaulDot1agCfmMepMgmtDirection    OBJECT-TYPE
+    SYNTAX      Dot1agCfmMpDirection
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepMgmtDirection specifies the direction in
+         which the MEP faces on the Bridge port.
+
+         This object refers directly to
+         IEEE8021-CFM-MIB::dot1agCfmMepDirection.
+
+         This object applies to any MEP type as specified by the object
+         xhaulDot1agCfmMepMgmtType."
+    DEFVAL      { down }
+    ::= { xhaulDot1agCfmMepMgmtEntry 50 }
+
+
+-------------------------------------------------------
+-- xhaulDot1agCfmMaNetTable
+-------------------------------------------------------
+
+xhaulDot1agCfmMaNetTable          OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulDot1agCfmMaNetEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulDot1agCfmMaNetTable AUGMENTS the standard MIB table,
+         dot1agCfmMaNetTable. This table is used to enhance Maintenance
+         Association functionality for Ethernet Connectivity Fault Management
+         (ETH-CFM)."
+    ::= { xhaulDot1agCfmMa 1 }
+
+xhaulDot1agCfmMaNetEntry          OBJECT-TYPE
+    SYNTAX      XhaulDot1agCfmMaNetEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulDot1agCfmMaNetEntry consists of the configuration objects used
+         to enhance the Maintenance Association functionality."
+    AUGMENTS    { dot1agCfmMaNetEntry }
+    ::= { xhaulDot1agCfmMaNetTable 1 }
+
+XhaulDot1agCfmMaNetEntry          ::= SEQUENCE
+{
+    xhaulDot1agCfmMaNetTotalMEPCount  Counter32
+}
+
+xhaulDot1agCfmMaNetTotalMEPCount  OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMaNetTotalMEPCount indicates the number of
+         unique MEPs configured (both local and remote) that are associated
+         with this MA.
+
+         When the number of MEPs exceed the normal MA limits, the MA is
+         considered to be an extended MA and will use a resource from the
+         'Extended MA' resource entry in xhaulDot1agCfmComponentLimitTable."
+    ::= { xhaulDot1agCfmMaNetEntry 2 }
+
+
+-------------------------------------------------------
+-- xhaulDot1agCfmMepTable
+-------------------------------------------------------
+
+xhaulDot1agCfmMepTable            OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulDot1agCfmMepEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table augments the Maintenance Association End Point (MEP) table
+         of the IEEE8021-CFM-MIB."
+    ::= { xhaulDot1agCfmMep 1 }
+
+xhaulDot1agCfmMepEntry            OBJECT-TYPE
+    SYNTAX      XhaulDot1agCfmMepEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A conceptual row in the xhaulDot1agCfmMepTable. This row exists only if
+         the association dot1agCfmMepEntry is active."
+    AUGMENTS    { dot1agCfmMepEntry }
+    ::= { xhaulDot1agCfmMepTable 1 }
+
+XhaulDot1agCfmMepEntry            ::= SEQUENCE
+{
+    xhaulDot1agCfmMepAisEnable        TruthValue,
+    xhaulDot1agCfmMepAisMegLevel      BITS,
+    xhaulDot1agCfmMepAisPriority      Unsigned32,
+    xhaulDot1agCfmMepAisInterval      Unsigned32,
+    xhaulDot1agCfmMepEthRxAisInterval Unsigned32,
+    xhaulDot1agCfmMepEthAisTxCount    Counter32,
+    xhaulDot1agCfmMepDescription      TItemDescription,
+    xhaulDot1agCfmMepCcmPaddingSize   Unsigned32,
+    xhaulDot1agCfmMepCcmIgnoreTLVs    BITS,
+    xhaulDot1agCfmMepTxLbmTimeout     Unsigned32,
+    xhaulDot1agCfmMepTxLbmInterval    Unsigned32,
+    xhaulDot1agCfmMepLbmPaddingSize   Unsigned32,
+    xhaulDot1agCfmMepIfSupportEnable  TruthValue,
+    xhaulDot1agCfmMepSoamPriorities	BITS
+}
+
+xhaulDot1agCfmMepAisEnable        OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepAisEnable specifies whether AIS frames
+         are generated from the Maintenance Entity Group (MEG)."
+    DEFVAL      { false }
+    ::= { xhaulDot1agCfmMepEntry 4 }
+
+xhaulDot1agCfmMepAisMegLevel      OBJECT-TYPE
+    SYNTAX      BITS {
+        level1 (0),
+        level2 (1),
+        level3 (2),
+        level4 (3),
+        level5 (4),
+        level6 (5),
+        level7 (6)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepAisMegLevel specifies the levels that
+         should be notified to suppress alarms resulting from defect conditions
+         detected by the MEP."
+    DEFVAL      { {} }
+    ::= { xhaulDot1agCfmMepEntry 5 }
+
+xhaulDot1agCfmMepAisPriority      OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..7)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepAisPriority specifies at what priority
+         the AIS frames should be transmitted."
+    DEFVAL      { 7 }
+    ::= { xhaulDot1agCfmMepEntry 6 }
+
+xhaulDot1agCfmMepAisInterval      OBJECT-TYPE
+    SYNTAX      Unsigned32 (1 | 60)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepAisInterval specifies at what intervals
+         to transmit AIS frames."
+    DEFVAL      { 1 }
+    ::= { xhaulDot1agCfmMepEntry 7 }
+
+xhaulDot1agCfmMepEthRxAisInterval OBJECT-TYPE
+    SYNTAX      Unsigned32 (1 | 60)
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepEthRxAisInterval indicates the AIS
+         Interval received in the last AIS Frame."
+    DEFVAL      { 1 }
+    ::= { xhaulDot1agCfmMepEntry 8 }
+
+xhaulDot1agCfmMepEthAisTxCount    OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepEthAisTxCount indicates number of AIS
+         frames transmitted on the MEP."
+    ::= { xhaulDot1agCfmMepEntry 10 }
+
+xhaulDot1agCfmMepDescription      OBJECT-TYPE
+    SYNTAX      TItemDescription
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepDescription specifies a user supplied
+         detailed description for this ETH-CFM MEP."
+    DEFVAL      { "" }
+    ::= { xhaulDot1agCfmMepEntry 29 }
+
+xhaulDot1agCfmMepCcmPaddingSize   OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 3..1500)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepCcmPaddingSize specifies the number of
+         additional octets inserted into the CCM PDU for the Data TLV padding.
+         If xhaulDot1agCfmMepCcmPaddingSize is set to zero (0), no Data TLV will
+         be added to the CCM PDUs."
+    DEFVAL      { 0 }
+    ::= { xhaulDot1agCfmMepEntry 31 }
+
+xhaulDot1agCfmMepCcmIgnoreTLVs    OBJECT-TYPE
+    SYNTAX      BITS {
+        interfaceStatus (0),
+        portStatus      (1)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepCcmIgnoreTLVs specifies the set of TLVs
+         that are received in a CCM PDU for the Remote MEP state machine of the
+         MEP that will be validated for format correctness but their values
+         will be ignored and marked 'Absent' by ETH-CFM."
+    DEFVAL      { {} }
+    ::= { xhaulDot1agCfmMepEntry 32 }
+
+
+xhaulDot1agCfmMepTxLbmTimeout     OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..10)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepTxLbmTimeout specifies the duration, in
+         seconds, before a loopback PDU sent by the node is considered to be
+         timed out."
+    DEFVAL      { 5 }
+    ::= { xhaulDot1agCfmMepEntry 39 }
+
+xhaulDot1agCfmMepTxLbmInterval    OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 1..600)
+    UNITS       "centiseconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepTxLbmInterval specifies the duration,
+         in centiseconds, between loopback PDU transmissions.  A value of zero
+         is only valid if there are 5 or fewer loopbacks in the test (as defined
+         by dot1agCfmMepTransmitLbmMessages)."
+    DEFVAL      { 0 }
+    ::= { xhaulDot1agCfmMepEntry 40 }
+
+xhaulDot1agCfmMepLbmPaddingSize   OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 3..9000)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepLbmPaddingSize specifies the number of
+         additional octets inserted into the LBM PDU for the Data TLV padding.
+         If xhaulDot1agCfmMepLbmPaddingSize is set to zero (0), no Data TLV will
+         be added to the LBM PDUs.  Note that setting this value is mutually
+         exclusive with setting dot1agCfmMepTransmitLbmDataTlv."
+    DEFVAL      { 0 }
+    ::= { xhaulDot1agCfmMepEntry 41 }
+
+xhaulDot1agCfmMepIfSupportEnable  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepIfSupportEnable specifies whether or not
+         the MEP will generate AIS PDUs when the endpoint associated to this
+         MEP is down regardless of CCM failures."
+    DEFVAL      { false }
+    ::= { xhaulDot1agCfmMepEntry 42 }
+
+xhaulDot1agCfmMepSoamPriorities OBJECT-TYPE
+    SYNTAX      BITS {
+        priority0 (0),
+        priority1 (1),
+        priority2 (2),
+        priority3 (3),
+        priority4 (4),
+        priority5 (5),
+        priority6 (6),
+        priority7 (7)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMepSoamPriorities specifies the priorities (up to 8) the MEP responder  will be enabled.
+	By default, the Y.1731 PM responder functionality will be enabled for SLM/DMM PDU with VLAN priority matching the configured MEP CFM PDU Priority"
+    DEFVAL      { {} }
+    ::= { xhaulDot1agCfmMepEntry 43 }
+
+-------------------------------------------------------
+-- xhaulDot1agCfmMdMgmtTable
+-------------------------------------------------------
+
+xhaulDot1agCfmMdMgmtTable         OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulDot1agCfmMdMgmtEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulDot1agCfmMdMgmtTable manages the row creation and deletion of
+         dot1agCfmMdTable rows. This table replaces the standard row creation
+         model for Dot1ag CFM Maintenance Domains to better facilitate Nokia
+         SROS series requirements. The use of writing to the
+         IEEE-8021-CFM-MIB::dot1agCfmMdRowStatus object is deprecated and
+         should be discouraged in favor of this table."
+    ::= { xhaulDot1agCfmMdMgmt 1 }
+
+xhaulDot1agCfmMdMgmtEntry         OBJECT-TYPE
+    SYNTAX      XhaulDot1agCfmMdMgmtEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulDot1agCfmMdMgmtEntry consists of the configuration objects
+         used for the purpose of row creation for Nokia SROS Dot1ag Maintenance
+         Domains."
+    AUGMENTS    { dot1agCfmMdEntry }
+    ::= { xhaulDot1agCfmMdMgmtTable 1 }
+
+XhaulDot1agCfmMdMgmtEntry         ::= SEQUENCE
+{
+    xhaulDot1agCfmMdMgmtRowStatus     RowStatus,
+    xhaulDot1agCfmMdMgmtFormat        Dot1agCfmMaintDomainNameType,
+    xhaulDot1agCfmMdMgmtName          XhaulDot1agCfmMaintDomainNameOrEmpty,
+    xhaulDot1agCfmMdMgmtMdLevel       Dot1agCfmMDLevel,
+    xhaulDot1agCfmMdMgmtAdminName     TLNamedItemOrEmpty
+}
+
+xhaulDot1agCfmMdMgmtRowStatus     OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMdMgmtRowStatus specifies the row status of
+         the dot1ag CFM MEP. This object replaces the use of the
+         IEEE-8021-CFM-MIB::dot1agCfmMdRowStatus object."
+    ::= { xhaulDot1agCfmMdMgmtEntry 1 }
+
+xhaulDot1agCfmMdMgmtFormat        OBJECT-TYPE
+    SYNTAX      Dot1agCfmMaintDomainNameType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMdMgmtFormat specifies the type (and thereby
+         format) of the Maintenance Domain Name.
+
+         This object refers directly to IEEE8021-CFM-MIB::dot1agCfmMdFormat.
+
+         This object may be specified only during row creation."
+    DEFVAL      { charString }
+    ::= { xhaulDot1agCfmMdMgmtEntry 2 }
+
+xhaulDot1agCfmMdMgmtName          OBJECT-TYPE
+    SYNTAX      XhaulDot1agCfmMaintDomainNameOrEmpty
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMdMgmtName specifies the Maintenance Domain
+         name. The type/format of this object is determined by the value of the
+         dot1agCfmMdNameType object.
+
+         This object refers directly to IEEE8021-CFM-MIB::dot1agCfmMdName.
+
+         This object may be specified only during row creation."
+    DEFVAL      { '44454641554c54'H }
+    ::= { xhaulDot1agCfmMdMgmtEntry 3 }
+
+xhaulDot1agCfmMdMgmtMdLevel       OBJECT-TYPE
+    SYNTAX      Dot1agCfmMDLevel
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMdMgmtMdLevel specifies the Maintenance
+         Domain level.
+
+         This object refers directly to IEEE8021-CFM-MIB::dot1agCfmMdMdLevel.
+
+         This object may be specified only during row creation."
+    DEFVAL      { 0 }
+    ::= { xhaulDot1agCfmMdMgmtEntry 4 }
+
+xhaulDot1agCfmMdMgmtAdminName     OBJECT-TYPE
+    SYNTAX      TLNamedItemOrEmpty
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMdMgmtAdminName specifies a name that can be
+         used to uniquely identify a CFM Maintenance Domain. Historically, only
+         the arbitrary integer index, dot1agCfmMdIndex, would be used for this
+         purpose. A string provides greater flexibility and allows some amount
+         of context to also be included.
+
+         This object refers directly to
+         XHAUL-IEEE8021-CFM-MIB::xhaulDot1agCfmMdAdminName.
+
+         This object may be specified only during row creation. If not
+         specified, the value will be auto-generated by the system."
+    DEFVAL      { ''H }
+    ::= { xhaulDot1agCfmMdMgmtEntry 5 }
+
+
+-------------------------------------------------------
+-- xhaulDot1agCfmMaMgmtTable
+-------------------------------------------------------
+
+xhaulDot1agCfmMaMgmtTable         OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulDot1agCfmMaMgmtEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulDot1agCfmMaMgmtTable manages the row creation and deletion of
+         dot1agCfmMaNetTable rows. This table replaces the standard row
+         creation model for Dot1ag CFM Maintenance Domain Associations to
+         better facilitate Nokia SROS series requirements. The use of writing
+         to the IEEE-8021-CFM-MIB::dot1agCfmMaNetRowStatus object is deprecated
+         and should be discouraged in favor of this table."
+    ::= { xhaulDot1agCfmMaMgmt 1 }
+
+xhaulDot1agCfmMaMgmtEntry         OBJECT-TYPE
+    SYNTAX      XhaulDot1agCfmMaMgmtEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulDot1agCfmMaMgmtEntry consists of the configuration objects
+         used for the purpose of row creation for Nokia SROS Dot1ag Maintenance
+         Domain Associations."
+    AUGMENTS    { dot1agCfmMaNetEntry }
+    ::= { xhaulDot1agCfmMaMgmtTable 1 }
+
+XhaulDot1agCfmMaMgmtEntry         ::= SEQUENCE
+{
+    xhaulDot1agCfmMaMgmtRowStatus     RowStatus,
+    xhaulDot1agCfmMaMgmtFormat        XhaulDot1agCfmMaintAssocNameType,
+    xhaulDot1agCfmMaMgmtName          Dot1agCfmMaintAssocName,
+    xhaulDot1agCfmMaMgmtCcmInterval   XhaulDot1agCfmCcmInterval,
+    xhaulDot1agCfmMaMgmtAdminName     TLNamedItemOrEmpty,
+    xhaulDot1agCfmMaMgmtHoldDownTimer Unsigned32,
+    xhaulDot1agCfmMaMgmtAutoDiscAdmin TruthValue,
+    xhaulDot1agCfmMaMgmtIdPermission  XhaulDot1agCfmIdPermission
+}
+
+xhaulDot1agCfmMaMgmtRowStatus     OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMaMgmtRowStatus specifies the row status of
+         the dot1ag CFM Maintenance Association. This object replaces the use
+         of the IEEE-8021-CFM-MIB::dot1agCfmMaNetRowStatus object."
+    ::= { xhaulDot1agCfmMaMgmtEntry 1 }
+
+xhaulDot1agCfmMaMgmtFormat        OBJECT-TYPE
+    SYNTAX      XhaulDot1agCfmMaintAssocNameType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMaMgmtFormat specifies the type (and thereby
+         format) of the Maintenance Association Name.
+
+         This object refers directly to IEEE8021-CFM-MIB::dot1agCfmMaNetFormat.
+
+         This object may be specified only during row creation."
+    ::= { xhaulDot1agCfmMaMgmtEntry 2 }
+
+xhaulDot1agCfmMaMgmtName          OBJECT-TYPE
+    SYNTAX      Dot1agCfmMaintAssocName
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMaMgmtName specifies the Short Maintenance
+         Association name. The type/format of this object is determined by the
+         value of the dot1agCfmMaNetNameType object. This name must be unique
+         within a maintenance domain.
+
+         This object refers directly to IEEE8021-CFM-MIB::dot1agCfmMaNetName.
+
+         This object may be specified only during row creation."
+    ::= { xhaulDot1agCfmMaMgmtEntry 3 }
+
+xhaulDot1agCfmMaMgmtCcmInterval   OBJECT-TYPE
+    SYNTAX      XhaulDot1agCfmCcmInterval
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMaMgmtCcmInterval specifies the interval
+         between CCM transmissions to be used by all MEPs in the MA.
+
+         This object refers directly to
+         IEEE8021-CFM-MIB::dot1agCfmMaNetCcmInterval."
+    DEFVAL      { interval10s }
+    ::= { xhaulDot1agCfmMaMgmtEntry 4 }
+
+xhaulDot1agCfmMaMgmtAdminName     OBJECT-TYPE
+    SYNTAX      TLNamedItemOrEmpty
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMaMgmtAdminName specifies a name that can be
+         used to uniquely identify a CFM Maintenance Association. Historically,
+         only the arbitrary integer index, dot1agCfmMaIndex, would be used for
+         this purpose. A string provides greater flexibility and allows some
+         amount of context to also be included.
+
+         This object refers directly to
+         XHAUL-IEEE8021-CFM-MIB::xhaulDot1agCfmMaNetAdminName.
+
+         This object may be specified only during row creation. If not
+         specified, the value will be auto-generated by the system."
+    DEFVAL      { ''H }
+    ::= { xhaulDot1agCfmMaMgmtEntry 5 }
+
+xhaulDot1agCfmMaMgmtHoldDownTimer OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 1..1000)
+    UNITS       "centiseconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMaMgmtHoldDownTimer specifies the time, in
+         centiseconds, that a MEP in the association will delay declaring a
+         fault.  This delay is added on to the existing
+         3.5 * dot1agCfmMaNetCcmInterval value used to determine if a
+         connectivity fault to the peer should be raised.
+
+         A value of zero (0) indicates that no additional delay should be added
+         to the existing 3.5 * dot1agCfmMaNetCcmInterval value.
+
+         This object refers directly to
+         XHAUL-IEEE8021-CFM-MIB-CFM-MIB::xhaulDot1agCfmMaNetHoldDownTimer."
+    DEFVAL      { 0 }
+    ::= { xhaulDot1agCfmMaMgmtEntry 6 }
+
+xhaulDot1agCfmMaMgmtAutoDiscAdmin OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMaMgmtAutoDiscAdmin specifies if remote MEP
+         automatic discovery is enabled in the association.  A value of 'true'
+         indicates that a new remote MEP entry will be added to the
+         dot1agCfmMepDbTable when the node receives a CCM PDU from a remote
+         MEP that is not yet in that table (up to the maximum limit of MEPs
+         allowed in the association).  A value of 'false' indicates that remote
+         MEPs must be manually configured in the association
+         dot1agCfmMaMepListTable before being added to the association
+         dot1agCfmMepDbTable.
+         This object refers directly to
+         XHAUL-IEEE8021-CFM-MIB-CFM-MIB::xhaulDot1agCfmMaNetAutoDiscAdmin."
+    DEFVAL      { false }
+    ::= { xhaulDot1agCfmMaMgmtEntry 7 }
+
+xhaulDot1agCfmMaMgmtIdPermission  OBJECT-TYPE
+    SYNTAX      XhaulDot1agCfmIdPermission
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulDot1agCfmMaMgmtIdPermission specifies what, if
+         anything, is to be included in the Sender ID TLV (21.5.3) transmitted
+         by MPs configured in this MA. This object is configurable on MA
+         entries that do not consist of component entries. This object refers
+         directly to
+         XHAUL-IEEE8021-CFM-MIB-CFM-MIB::xhaulDot1agCfmMaNetIdPermission."
+    REFERENCE
+        "802.1ag clause 12.14.6.1.3:d"
+    DEFVAL      { sendIdNone }
+    ::= { xhaulDot1agCfmMaMgmtEntry 8 }
+
+END

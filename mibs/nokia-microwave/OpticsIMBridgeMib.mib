@@ -1,0 +1,1403 @@
+OPTICSIM-BRIDGE-MIB DEFINITIONS ::= BEGIN
+
+
+
+     IMPORTS
+          MacAddress, RowStatus, TruthValue
+               FROM SNMPv2-TC
+
+          ifIndex, InterfaceIndexOrZero
+               FROM IF-MIB
+
+          opticsimEthMib, opticsimEthMC
+               FROM OPTICSIM-ETHREG-MIB
+
+          dot1qVlanIndex, VlanIndex, dot1qTpGroupEntry, dot1qVlanStaticEntry, PortList
+               FROM Q-BRIDGE-MIB
+
+          OBJECT-TYPE, MODULE-IDENTITY, Unsigned32, Integer32, Gauge32
+               FROM SNMPv2-SMI
+
+          opticsIMMgrPollingIndex
+               FROM OPTICSIM-COMMROU-MIB
+
+          OpticsIMUserLabel
+               FROM TSDIM-SNMP-TC
+
+          OBJECT-GROUP
+               FROM SNMPv2-CONF
+
+          dot1dBasePort
+               FROM BRIDGE-MIB
+;
+
+
+       opticsimBridgeMib MODULE-IDENTITY
+            LAST-UPDATED  "202105310000Z"
+            ORGANIZATION  "Alcatel Optics"
+            CONTACT-INFO  "Alcatel Optics"
+            DESCRIPTION
+                "Optics-IM BRIDGE MIB"
+
+            REVISION  "202109160000Z"
+            DESCRIPTION
+         "Changed the columnar objects on opticsIMBridgePCPDecodingTable table (form 'xxPort' to 'xxPCP').
+         "
+
+            REVISION  "202105310000Z"
+            DESCRIPTION
+		 "Added opticsIMBridgeUseDEI scalar object and opticsIMBridgePCPDecodingTable table.
+		 "
+
+            REVISION  "201511130000Z"
+            DESCRIPTION
+	"-SNMPIDL-507, update LAST-UPDATED and REVISION date format adding the 2 digits missing (20) for yers after 1999.
+Added a REVISION block corresponding to the LAST-UPDATED timestamp.
+       - SNMPIDL-508, added a space between opening and closing braces and the enclosed content.
+	"
+
+            REVISION  "201105200000Z"
+            DESCRIPTION
+                "D. Spreafico: added opticsIMDSCPRegenTable, opticsIMVLANRegenTable"
+
+            REVISION  "201006170000Z"
+            DESCRIPTION
+                "Added conformance groups:
+                 opticsimBridgeVlanPortGroup,
+                 opticsimBridgePortGroup,
+                 opticsimBridgeTypeGroup,
+                 opticsIMMACAddressDataGroup,
+                 opticsimdot1qTpGroupGroup,
+                 opticsIMlearntEntryNumGroup,
+                 opticsimSVID1StatusGroup,
+                 opticsIMsegregatedPortSetGroup,
+                 opticsIMNePBProfileGroup,
+                 opticsimEthOamScalarGroup,
+                 opticsimEthOamLbmGroup"
+
+            REVISION  "201005130000Z"
+            DESCRIPTION
+                "P. Villa: added opticsIMlearntEntryNumFlushingForced"
+
+            REVISION  "200908060000Z"
+            DESCRIPTION
+                "P.Villa: Upgraded opticsimBridgeType adding bridge8021ah and bridge8021adah"
+
+            REVISION "200904230000Z"
+            DESCRIPTION
+                "He Zong Ying:
+                 The opticsimEthOamLbmTxInterval is the interval between two LBM frames sent.
+                 It is measured in 100 milli-second in the range [1-100]*100 ms, with default
+                 = 1second"
+
+            REVISION "200802280000Z"
+            DESCRIPTION 
+                "Addition of opticsIMlearntEntryNumEnableFlooding to OpticsIMlearntEntryNumEntry
+                 Addition of opticsIMsegregatedPortSetIndexNext
+                 Changed behavior of opticsIMsegregatedPortSetIndex"        
+
+            REVISION "200711290000Z"
+            DESCRIPTION
+                "Ed. 10 Changes (P. Villa)    
+                 - added opticsIMBridgePortMaxLearntEntries to  OpticsimBridgePortEntry
+                 - added opticsIMlearntEntryNumLowerTh, opticsIMlearntEntryNumUpperTh,
+                    opticsIMlearntEntryNumTca to OpticsIMlearntEntryNumEntry"
+
+            REVISION "200702280000Z"
+            DESCRIPTION
+                "Ed. 9 Changes (P. Villa)
+                  New objects are added for managing ETH OAM Multicast destination Address:
+                  - opticsimEthOamCCMMulticastLowerMAC
+                  - opticsimEthOamLTMMulticastLowerMAC"
+
+            REVISION "200607310000Z"
+            DESCRIPTION
+                 "Ed. 8 Changes (C. Addeo)
+                  New objects are added for managing ETH OAM Loopback:
+                  - opticsimEthOamBridgeMAC
+                  - opticsimEthOamEtherType
+                  - opticsimEthOamLbmReplyTimeout
+                  - opticsimEthOamLbmTable"
+
+            REVISION "200601260000Z"
+            DESCRIPTION
+                 "Ed. 7 Changes
+                  Changed behavior of opticsIMBridgePortPCPTableProfile with assigned default value(0)"
+
+            REVISION "200510270000Z"
+            DESCRIPTION
+                "Ed.6 Changes
+                 1) Addition to opticsimBridgePort of:
+                   - opticsimBridgePortUseDEI;
+                   - opticsIMBridgePortPCPTableProfile;
+                 2) Addition of opticsimNePBProfile"
+
+            REVISION "200509130000Z"
+            DESCRIPTION
+                "Ed 5 Changes
+                1) Addition of opticsIMlearntEntryNumTable
+                2) Addition of opticsimSVID1Status
+                3) Addition of opticsIMsegregatedPortSetTable "
+
+            REVISION "200506070000Z"
+            DESCRIPTION
+                 "Ed 4 Changes
+                  1) Addition of opticsIMMACAddressDataTable
+                  2) Addition of opticsimdot1qTpGroupTable"
+
+            REVISION   "200409100000Z"
+            DESCRIPTION
+                "Ed 3 Changes
+                 1) Adding none in opticsimBridgeType"
+
+            REVISION "200403230000Z"
+            DESCRIPTION
+                "Ed 2 Changes from First Release:
+                 1) Adding bridge8021ad in opticsimBridgeType"
+
+            REVISION "200310210000Z"
+            DESCRIPTION
+                "First release of Optics-IM BRIDGE MIB"
+
+            ::= { opticsimEthMib 8 }
+
+--
+
+-- Node definitions
+
+--
+
+
+
+		opticsimBridgeMibObject OBJECT IDENTIFIER ::= { opticsimBridgeMib 1 }
+
+		opticsimEthOamMibObject OBJECT IDENTIFIER ::= { opticsimBridgeMib 2 }
+
+
+		opticsimBridgeVlanPortTable OBJECT-TYPE
+
+			SYNTAX SEQUENCE OF OpticsimBridgeVlanPortEntry
+
+			MAX-ACCESS not-accessible
+
+			STATUS current
+
+			DESCRIPTION
+
+				" A table contains information of port state for each vlan"
+
+			::= { opticsimBridgeMibObject 1 }
+
+
+
+		opticsimBridgeVlanPortEntry OBJECT-TYPE
+
+			SYNTAX OpticsimBridgeVlanPortEntry
+
+			MAX-ACCESS not-accessible
+
+			STATUS current
+
+			DESCRIPTION
+
+				" A list contains port-specific information
+
+
+
+				of Port Information for different vlans"
+
+			INDEX { ifIndex, dot1qVlanIndex }
+
+			::= { opticsimBridgeVlanPortTable 1 }
+
+
+
+		OpticsimBridgeVlanPortEntry ::=
+
+			SEQUENCE {
+
+				opticsimBridgeVlanPortState
+
+					INTEGER
+
+			 }
+
+
+
+		opticsimBridgeVlanPortState OBJECT-TYPE
+
+			SYNTAX INTEGER  { 
+				disabled ( 1 ), 
+				dataframediscarded ( 2 ), 
+				learning( 3 ), 
+				forwarding( 4 )  }
+
+			MAX-ACCESS read-only
+
+			STATUS current
+
+			DESCRIPTION
+
+				" The port's current state in current vlan. This state controls what
+
+				action a port takes on reception of a frame.
+
+
+
+				- disabled (1) means the port is disabled by the administrative
+
+				control.
+
+
+
+				- dataframediscarding (2) means the data frame received in this
+
+				port should be discarded, but the control frame (such as BPDU)
+
+				should be passed. The information of data frame and control frame
+
+				      is not learned.
+
+
+
+				- learning (3) means the data frame and control frame (such as BPDU)
+
+				can be learned, but can not be forwarded to other Bridge Port.
+
+
+
+				- forwarding (4) means the data frame and control frame can be learned
+
+				and forwarded."
+
+			::= { opticsimBridgeVlanPortEntry 1 }
+
+
+
+		opticsimBridgePortTable OBJECT-TYPE
+
+			SYNTAX SEQUENCE OF OpticsimBridgePortEntry
+
+			MAX-ACCESS not-accessible
+
+			STATUS current
+
+			DESCRIPTION
+
+				" A table contains information of port"
+
+			::= { opticsimBridgeMibObject 2 }
+
+
+
+		opticsimBridgePortEntry OBJECT-TYPE
+
+			SYNTAX OpticsimBridgePortEntry
+
+			MAX-ACCESS not-accessible
+
+			STATUS current
+
+			DESCRIPTION
+
+				" A list contains port-specific information
+
+
+
+				of Port"
+
+			INDEX { ifIndex }
+
+			::= { opticsimBridgePortTable 1 }
+
+
+
+		OpticsimBridgePortEntry ::=
+
+			SEQUENCE {
+
+				opticsimBridgePortUserLabel        OpticsIMUserLabel,
+                                opticsimBridgePortUseDEI           TruthValue,
+                                opticsIMBridgePortPCPTableProfile  Unsigned32,
+                                opticsIMBridgePortMaxLearntEntries           INTEGER
+   
+			 }
+
+
+
+		opticsimBridgePortUserLabel OBJECT-TYPE
+
+			SYNTAX OpticsIMUserLabel
+
+			MAX-ACCESS read-create
+
+			STATUS current
+
+			DESCRIPTION
+
+				"A textual string containing User Label of Ethernet Bridge Port."
+
+			::= { opticsimBridgePortEntry 1 }
+
+
+                opticsimBridgePortUseDEI OBJECT-TYPE
+			SYNTAX TruthValue
+			MAX-ACCESS read-create
+			STATUS current
+			DESCRIPTION
+				"This object contains information about DEI Use in 
+                                 Provider Bridge Network Port. If the Provider 
+                                 bridge Network Port does not support DEI Use,
+                                 this object is false (Default value)"
+			::= { opticsimBridgePortEntry 2 }
+
+                opticsIMBridgePortPCPTableProfile OBJECT-TYPE
+                        SYNTAX      Unsigned32
+                        MAX-ACCESS  read-create
+                        STATUS      current
+                        DESCRIPTION
+                                "This object defines 'on per port basis' PCP Table profiles (each including both PCP Decoding and PCP Encoding Tables) admitted on  Provider Bridge Network Ports complying with below values:
+                                 - (Default) on per NE basis PCP Decoding/Encoding Table Profile (0),
+                                 - 5P3D (1),
+                                 - 8P0D (2),
+                                 - 7P1D (3),
+                                 - 6P2D (4).
+                                  Default value is based on 'on per NE basis' admitted Provider Bridge profile (5P3D PCP Table profile value in case of Customer-defined profile1)"
+                        ::= { opticsimBridgePortEntry 3  }
+
+                opticsIMBridgePortMaxLearntEntries OBJECT-TYPE
+                        SYNTAX	INTEGER 
+                        MAX-ACCESS read-create
+                        STATUS     current
+                        DESCRIPTION
+                                " The max limit of MAC Addresses that can be learnt 
+                        	  on per port basis in 1 second time interval. 
+                                  After  the allowed on per port basis 
+                                  maximum threshold value has been exceeded, 
+                                  any additional MAC Address will be discarded.
+
+			          Setting this parameter to 0 means disabling Learning for that 
+                                  Port. The default number is 1000 MAC Address/sec. "
+                        ::= { opticsimBridgePortEntry 4 }
+
+                  
+		opticsimBridgeType OBJECT-TYPE
+
+			SYNTAX INTEGER  {
+				none ( 0 ),
+				bridge8021D ( 1 ),
+				bridge8021Q ( 2 ),
+				bridge8021ad ( 3 ),
+                bridge8021ah   (4),
+                bridge8021adah (5) }
+
+			MAX-ACCESS read-write
+
+			STATUS current
+
+			DESCRIPTION
+
+				" Indicates what types of mechanism this Bridge perfoms.
+				- none (0) This NE cannot perform any bridge mechanism
+				- bridge8021D (1) This Bridge performs 802.1D mechanism and can not support VLAN
+				- bridge8021Q (2) This Bridge performs 802.1Q mechanism
+				- bridge8021ad (3) This Bridge performs 802.1ad mechanism"
+
+			::= { opticsimBridgeMibObject 3 }
+
+                opticsIMMACAddressDataTable OBJECT-TYPE
+
+                        SYNTAX SEQUENCE OF OpticsIMMACAddressDataEntry
+
+                        MAX-ACCESS not-accessible
+
+                        STATUS current
+
+                        DESCRIPTION
+
+                                "Entries of this table contain selective filtering criteria,
+
+                                 created on request by the manager, for retrieving MAC
+
+                                 Address Data.
+
+                                 The output of selective MAC Address Data retrieval will
+
+                                 define Mac Addresses entries stored in NE
+
+                                 Filtering Database(s).
+
+                                 The objects providing selective filtering criteria
+
+                                 (opticsIMMACAddressFilterMacAddress - MANDATORY,
+
+                                  opticsIMMACAddressFilterVlan - OPTIONAL ,
+
+                                  opticsIMMACAddressFilterIfIndex - OPTIONAL)
+
+                                 will trigger retrieval of MAC Address Data if
+
+				 the opticsIMMACAddressFilterARowStatus is up.
+
+                                 In case of loss of connection between the NE and
+
+                                 one manager, the corresponding entry is deleted."
+
+                       ::= { opticsimBridgeMibObject 4 }
+
+
+
+               opticsIMMACAddressDataEntry OBJECT-TYPE
+
+                       SYNTAX OpticsIMMACAddressDataEntry
+
+                       MAX-ACCESS not-accessible
+
+                       STATUS current
+
+                       DESCRIPTION
+
+                               "An entry of the opticsIMMACAddressDataTable"
+
+                       INDEX   { opticsIMMgrPollingIndex }
+
+                       ::= { opticsIMMACAddressDataTable 1 }
+
+
+
+               OpticsIMMACAddressDataEntry ::= SEQUENCE {
+
+                       opticsIMMACAddressFilterMacAddress    MacAddress,
+
+                       opticsIMMACAddressFilterVlan          VlanIndex,
+
+                       opticsIMMACAddressFilterIfIndex       InterfaceIndexOrZero,
+
+                       opticsIMMACAddressFilterRowStatus     RowStatus,
+
+                       opticsIMMACAddressFilterOperStatus    INTEGER
+
+                       }
+
+
+
+               opticsIMMACAddressFilterMacAddress OBJECT-TYPE
+
+                       SYNTAX     MacAddress
+
+                       MAX-ACCESS read-create
+
+                       STATUS     current
+
+                       DESCRIPTION
+
+                               "MAC Address value as input Mandatory key search"
+
+                       ::= { opticsIMMACAddressDataEntry 1 }
+
+
+
+               opticsIMMACAddressFilterVlan OBJECT-TYPE
+
+                       SYNTAX     VlanIndex
+
+                       MAX-ACCESS read-create
+
+                       STATUS     current
+
+                       DESCRIPTION
+
+                               "VLAN value (in the range between 1 and 4094) inclusive as 
+
+                                input Optional key search [Default value: 0]"
+
+                       ::= { opticsIMMACAddressDataEntry 2 }
+
+
+
+               opticsIMMACAddressFilterIfIndex OBJECT-TYPE
+
+                       SYNTAX     InterfaceIndexOrZero
+
+                       MAX-ACCESS read-create
+
+                       STATUS     current
+
+                       DESCRIPTION
+
+                               "Interface index value as input Optional key search
+
+                                [Default value:0]"
+
+                       ::= { opticsIMMACAddressDataEntry 3 }
+
+
+
+                opticsIMMACAddressFilterRowStatus OBJECT-TYPE
+
+                        SYNTAX     RowStatus
+
+                        MAX-ACCESS read-create
+
+                        STATUS     current
+
+                        DESCRIPTION
+
+                                "Row Status controlling MAC Address Data Entry retrieval
+
+                                 process. Below RowStatus values are supported:
+
+                                 - active  - The row is active and valid and MAC
+
+                                        Address Data Entry retrieval process is ongoing.
+
+                                 - createAndGo - The row will be created and activated.
+
+                                 - destroy     - The row will be destroyed,
+
+                                        destroying outputs of MAC Address Data
+
+                                        Entry retrieval process"
+
+                        ::= { opticsIMMACAddressDataEntry 4 }
+
+
+
+                opticsIMMACAddressFilterOperStatus OBJECT-TYPE
+                        SYNTAX INTEGER  {
+                                   up (1),
+                                   down (2)
+			                }
+
+                        MAX-ACCESS read-only
+
+                        STATUS     current
+
+                        DESCRIPTION
+
+                                "Operational status reporting status of MAC Address Data Entry retrieval process.
+                                 - UP value corresponds to a terminated MAC Address
+                                    Data Entry retrieval process,
+                                 - DOWN value corresponds to in progress MAC Address
+                                     Data Entry retrieval process"
+
+                        ::= { opticsIMMACAddressDataEntry 5 }
+
+
+
+opticsimdot1qTpGroupTable OBJECT-TYPE
+
+    SYNTAX     SEQUENCE OF Opticsimdot1qTpGroupEntry
+
+    MAX-ACCESS not-accessible
+
+    STATUS     current
+
+    DESCRIPTION
+
+            " A table that contains information about MAC multicast group entries."
+
+    ::= { opticsimBridgeMibObject  5 }
+
+
+
+opticsimdot1qTpGroupEntry OBJECT-TYPE
+
+    SYNTAX     Opticsimdot1qTpGroupEntry
+
+    MAX-ACCESS not-accessible
+
+    STATUS     current
+
+    DESCRIPTION
+
+            "An entry of opticsimdot1qTpGroupTable"
+
+    AUGMENTS { dot1qTpGroupEntry }
+
+    ::= { opticsimdot1qTpGroupTable 1 }
+
+
+
+Opticsimdot1qTpGroupEntry ::= SEQUENCE {
+
+        opticsimdot1qTpGroupStatus
+
+            INTEGER
+
+}
+
+
+
+opticsimdot1qTpGroupStatus OBJECT-TYPE
+
+    SYNTAX	INTEGER
+
+    MAX-ACCESS read-only
+
+    STATUS     current
+
+    DESCRIPTION
+
+            " The status of this entry.  The meanings of the values are:
+
+
+
+    other(1) - none of the following.  
+
+
+
+    invalid(2) - this entry is no longer valid (e.g., because aged out), but has not yet been flushed from the table.
+
+
+
+    mgmt(3) - the value of the corresponding instance of dot1qTpGroupAddress is also the value of an existing instance of opticsimStaticMulticastAddress.
+
+
+
+    registeredByIgmp (4) - the entry, registered by IGMP Snooping protocol, is valid and in use.
+
+
+
+    registeredByGmrp (5) - the entry, registered by GMRP protocol, is valid and in use.
+
+"
+
+    ::= { opticsimdot1qTpGroupEntry 1 }
+
+--- -----------------------------------------------------------------------------
+--- ATTENTION: removed the opticsIMlearntEntryNumTable because it generates a
+--- Segmentation Fault in mibcomp generation (tmake mib_step2)
+--- -----------------------------------------------------------------------------
+
+
+-- -------------------------------------------------------------
+
+-- opticsimSVID1Status
+
+-- -------------------------------------------------------------
+
+
+
+opticsimSVID1Status OBJECT-TYPE
+
+		SYNTAX INTEGER 
+
+		MAX-ACCESS read-write
+
+		STATUS current
+
+		DESCRIPTION
+
+			" Indicates the status of S-VID=1:
+                       - disabled (0) 
+                       - enabled (1) (default value)"
+
+        ::= { opticsimBridgeMibObject 7 }
+
+
+
+
+
+
+
+
+
+
+opticsIMsegregatedPortSetTable OBJECT-TYPE
+
+    SYNTAX      SEQUENCE OF OpticsIMsegregatedPortSetEntry
+
+    MAX-ACCESS  not-accessible
+
+    STATUS      current
+
+    DESCRIPTION
+
+        "This table contains static configured ports sets. 
+
+        The ports belonging to the same port set are prevented 
+
+        to communicate each other."
+
+    ::= { opticsimBridgeMibObject 8 }
+
+
+
+opticsIMsegregatedPortSetEntry OBJECT-TYPE
+
+    SYNTAX      OpticsIMsegregatedPortSetEntry
+
+    MAX-ACCESS  not-accessible
+
+    STATUS      current
+
+    DESCRIPTION
+
+        "Static information for a segregated port set."
+
+    INDEX   { opticsIMsegregatedPortSetIndex }
+
+    ::= { opticsIMsegregatedPortSetTable 1 }
+
+
+
+OpticsIMsegregatedPortSetEntry ::=
+
+    SEQUENCE {
+
+ 	opticsIMsegregatedPortSetIndex
+
+            Unsigned32,        
+
+        opticsIMsegregatedPortSetPorts
+
+            PortList,
+
+        opticsIMsegragatedPortSetRowStatus
+
+            RowStatus
+
+    }
+
+
+
+
+
+opticsIMsegregatedPortSetIndex OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"index of the segregated port set.
+         When creating a new row in the table the value of this
+	 index may be obtained by retrieving the value of
+         opticsIMsegregatedPortSetIndexNext.
+	 The range is 1..SegregatedPortSets, where SegregatedPortSets
+         is product dependent and it will be specified in the
+	 product specification document."
+	::= { opticsIMsegregatedPortSetEntry 1 }
+
+opticsIMsegregatedPortSetPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+
+    "The set of ports which are permanently assigned to the port list of
+	this segregated port set by management.
+
+     The bit position in the port list is coded according to the dot1dBasePort parameter.
+
+     The default value of this object is a string of zeros of appropriate length, 
+     indicating not being a member."
+
+    
+
+	::= { opticsIMsegregatedPortSetEntry 2 }
+
+
+
+opticsIMsegragatedPortSetRowStatus OBJECT-TYPE
+
+    SYNTAX      RowStatus
+
+    MAX-ACCESS  read-create
+
+    STATUS      current
+
+    DESCRIPTION
+
+        "This object indicates the status of this entry."
+
+    ::= { opticsIMsegregatedPortSetEntry 3 }
+
+	
+
+opticsIMNePBProfile OBJECT-TYPE
+    SYNTAX     INTEGER
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+        "This object defines 'on per NE basis' admitted Provider
+         Bridge profiles with below values:
+         - 5P3D (1) - Default value,
+         - 8P0D (2),
+         - 7P1D (3),
+         - 6P2D (4),
+         - Customer-defined profile1 (5) whose support is NE product specific"
+    ::= { opticsimBridgeMibObject 9 }	
+
+	
+-- -------------------------------------------------------------
+
+-- The Static segregated port set Database
+
+-- -------------------------------------------------------------
+
+opticsIMsegregatedPortSetIndexNext OBJECT-TYPE
+    SYNTAX Unsigned32 (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"This object contains an appropriate value to be used for 
+	 opticsIMsegregatedPortSetIndex  when creating entries in
+	 the opticsIMsegregatedPortSetTable.
+	 The value 0 indicates that no unassigned entries are 
+	 available.
+	 To obtain the opticsIMsegregatedPortSetIndex value for a new entry, 
+         the manager issues a management protocol retrieval operation to obtain 
+         the current value of this object.  
+         After each retrieval, the agent should modify 
+	 the value to the next unassigned index."
+::= { opticsimBridgeMibObject 10 }
+
+
+-- -------------------------------------------------------------
+-- DSCP Regeneration Table
+-- -------------------------------------------------------------
+
+opticsIMDSCPRegenTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMDSCPRegenEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A list of Regenerated Forwarding Class for each received
+        DSCP on each port of a bridge.  The Regenerated
+        Forwarding Class value may be used to index the Traffic
+        Class Table for each input port."
+    
+    ::= { opticsimBridgeMibObject 11 }
+
+opticsIMDSCPRegenEntry OBJECT-TYPE
+    SYNTAX      OpticsIMDSCPRegenEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A mapping of incoming DSCP to a Regenerated
+        Class."
+    INDEX   { dot1dBasePort, opticsIMDSCP }
+    ::= { opticsIMDSCPRegenTable 1 }
+
+OpticsIMDSCPRegenEntry ::=
+    SEQUENCE {
+        opticsIMDSCP 
+            INTEGER,
+        opticsIMRegenDSCPClass
+            INTEGER
+    }
+
+opticsIMDSCP OBJECT-TYPE
+    SYNTAX      INTEGER (0..63)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The DSCP for a frame received on this port."
+    ::= { opticsIMDSCPRegenEntry 1 }
+
+opticsIMRegenDSCPClass OBJECT-TYPE
+    SYNTAX      INTEGER (0..7)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Regenerated Forwarding Class the incoming DSCP is mapped to for this port."
+    ::= { opticsIMDSCPRegenEntry 2 }
+
+-- -------------------------------------------------------------
+-- VLAN Regeneration Table
+-- -------------------------------------------------------------
+
+opticsIMVLANRegenTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMVLANRegenEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A list of Regenerated Forwarding Class for each received
+        VLANID on each port of a bridge.  The Regenerated
+        Forwarding Class value may be used to index the Traffic
+        Class Table for each input port."
+    
+    ::= { opticsimBridgeMibObject 12 }
+
+opticsIMVLANRegenEntry OBJECT-TYPE
+    SYNTAX      OpticsIMVLANRegenEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A mapping of incoming VlanID to a Regenerated
+        Class."
+    INDEX   { dot1dBasePort, opticsIMVlanID }
+    ::= { opticsIMVLANRegenTable 1 }
+
+OpticsIMVLANRegenEntry ::=
+    SEQUENCE {
+        opticsIMVlanID
+            INTEGER,
+        opticsIMRegenVlanIDClass
+            INTEGER
+    }
+
+opticsIMVlanID OBJECT-TYPE
+    SYNTAX      INTEGER (0..4096)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The VlanID for a frame received on this port."
+    ::= { opticsIMVLANRegenEntry 1 }
+
+opticsIMRegenVlanIDClass OBJECT-TYPE
+    SYNTAX      INTEGER (0..7)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Regenerated Forwarding Class the incoming VlanID is mapped to for this port."
+    ::= { opticsIMVLANRegenEntry 2 }
+
+-- --------------------------------------------------------------
+-- Bridge Scalar Objetcts
+-- --------------------------------------------------------------
+
+opticsIMBridgeUseDEI OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "If the Use_DEI is set to true(1) then the 
+        drop_eligible parameter is encoded in the DEI of transmitted
+        frames, and the drop_eligible parameter shall be true(1) for a
+        received frame if the DEI is set in the S-TAG or the Priority
+        Code Point Decoding Table indicates drop_eligible True for
+        the received PCP value. If the Use_DEI parameter is false(2),
+        the DEI shall be transmitted as zero and ignored on receipt.
+        The default value of the Use_DEI parameter is false(2)."  
+    ::= { opticsimBridgeMibObject 13 }
+
+-- --------------------------------------------------------------
+-- opticsIMBridgePCPDecodingTable
+-- --------------------------------------------------------------
+
+opticsIMBridgePCPDecodingTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMBridgePCPDecodingEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table that contains information about Priority Code
+        Point Decoding Table for a Port of a provider bridge.
+        All writable objects in this table must
+        be persistent over power up restart/reboot."
+    ::= { opticsimBridgeMibObject  14 }
+
+opticsIMBridgePCPDecodingEntry OBJECT-TYPE
+    SYNTAX      OpticsIMBridgePCPDecodingEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A list of objects containing Priority Code Point Decoding
+        information for a port of a provider bridge."
+    INDEX { opticsIMBridgePCPDecodingPortNum,
+            opticsIMBridgePCPDecodingPriorityCodePoint }
+    ::= { opticsIMBridgePCPDecodingTable 1 }
+
+OpticsIMBridgePCPDecodingEntry ::= SEQUENCE {
+      opticsIMBridgePCPDecodingPortNum
+          Integer32,
+      opticsIMBridgePCPDecodingPriorityCodePoint 
+          Integer32,
+      opticsIMBridgePCPDecodingDropEligible
+          TruthValue
+}
+
+opticsIMBridgePCPDecodingPortNum OBJECT-TYPE
+    SYNTAX      Integer32 (1..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A unique identifier of a port controlled by this VLAN
+        bridging entity."
+    ::= { opticsIMBridgePCPDecodingEntry 1 }
+
+opticsIMBridgePCPDecodingPriorityCodePoint  OBJECT-TYPE
+    SYNTAX      Integer32 (0..7)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The specific PCP value."
+    ::= { opticsIMBridgePCPDecodingEntry 2 }
+
+opticsIMBridgePCPDecodingDropEligible OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The drop eligibility value to allow for a coloring frames."
+    ::= { opticsIMBridgePCPDecodingEntry 3 }
+
+-- --------------------------------------------------------------
+-- Scalar Objetcts
+-- --------------------------------------------------------------
+
+
+opticsimEthOamBridgeMAC OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The MAC address of the Bridge that is used as ETH OAM LB messages MAC SA."
+    ::= { opticsimEthOamMibObject 1 }
+
+
+opticsimEthOamEtherType OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The EtherType associated to ETH OAM messages in transmission and
+          reception.The suggested value is 0x88E6."
+    ::= { opticsimEthOamMibObject 2 }
+
+
+opticsimEthOamLbmReplyTimeout OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The LBR timeout after the corresponding LBM has been sent. It is
+          measured in seconds in the range [1-30], with default =5."
+    ::= { opticsimEthOamMibObject 3 }
+
+
+
+
+-- --------------------------------------------------------------
+-- The ETH OAM Loopback Table
+-- --------------------------------------------------------------
+
+
+opticsimEthOamLbmTable OBJECT-TYPE
+   SYNTAX      SEQUENCE OF OpticsimEthOamLbmEntry
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION
+      "The Loopback table. Entries in this table are
+      created/removed by user.
+
+      This table allows the management entity to initiate
+      transmission of Loopback messages. The steps to use the entries in this table are:
+
+      1) Wait for opticsimEthOamLbmMgmt value to be 'unlocked'.
+      2) Change opticsimEthOamLbmMgmt value from 'unlocked' to
+         'locked' to ensure no other management entity will use
+         the service.
+      3) Setup the different data to be sent (prio bits, etc,...).
+      4) Change opticsimEthOamLbmMgmt value from 'locked'
+         to 'transmit' to initiate transmission of the Loopback
+         message.
+      6) Once the result of the operation has been obtained, 
+         change back opticsimEthOamLbmMgmt value to 'unlocked'
+         to allow other management entities to use the table."
+   ::= { opticsimEthOamMibObject 4 }
+
+opticsimEthOamLbmEntry OBJECT-TYPE
+   SYNTAX      OpticsimEthOamLbmEntry
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION
+      "The TransmitLoopback table entry."
+   INDEX { opticsimEthOamLbmDestMacAddress,
+               opticsimEthOamLbmVlan }
+   ::= { opticsimEthOamLbmTable 1 }
+
+OpticsimEthOamLbmEntry ::= SEQUENCE {
+   opticsimEthOamLbmDestMacAddress      MacAddress,
+   opticsimEthOamLbmVlan          		        VlanIndex,
+   opticsimEthOamLbmVlanPriority       		Integer32,
+   opticsimEthOamLbmEthFrameType       	Integer32,
+   opticsimEthOamLbmML       		            Integer32,
+   opticsimEthOamLbmMgmt             		    Integer32,
+   opticsimEthOamLbmReplyStatus        		Integer32,
+   opticsimEthOamLbmRowStatus     		    RowStatus
+   }
+
+opticsimEthOamLbmDestMacAddress OBJECT-TYPE
+   SYNTAX      MacAddress
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION
+      "An indication of the Target MAC Address Field to be
+      transmitted: a unicast destination MAC address."
+   ::= { opticsimEthOamLbmEntry 1 }
+
+
+opticsimEthOamLbmVlan OBJECT-TYPE
+   SYNTAX      VlanIndex
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION
+      " VLAN. 12 bit value to be used in the VLAN tag."
+   ::= { opticsimEthOamLbmEntry 2 }
+
+
+   opticsimEthOamLbmVlanPriority OBJECT-TYPE
+   SYNTAX      Integer32(0..7)
+   MAX-ACCESS  read-create
+   STATUS      current
+   DESCRIPTION
+      "Priority. 3 bit value to be used in the VLAN tag.The default value =0."
+   ::= { opticsimEthOamLbmEntry 3 }
+
+   opticsimEthOamLbmEthFrameType  OBJECT-TYPE
+   SYNTAX      Integer32
+   MAX-ACCESS  read-create
+   STATUS      current
+   DESCRIPTION
+      " The Ethernet frame type:
+		 - Ethv2 ( 1 ),
+		 - LLC SNAP ( 2 ). 
+		 The default value =Ethv2."
+   ::= { opticsimEthOamLbmEntry 4 }
+
+
+   opticsimEthOamLbmML OBJECT-TYPE
+   SYNTAX      Integer32(0..7)
+   MAX-ACCESS  read-create
+   STATUS      current
+   DESCRIPTION
+      "Maintenance Level.The default value =4."
+   ::= { opticsimEthOamLbmEntry 5 }
+
+
+opticsimEthOamLbmMgmt OBJECT-TYPE
+   SYNTAX      Integer32
+   MAX-ACCESS  read-create
+   STATUS      current
+   DESCRIPTION
+      "Status of the transmit Loopback service:
+
+      (1) unlocked.    The service is available.
+      (2) locked. The service is not available (in use by a
+                 management entity).
+      (3) transmit. The service is transmitting, or waiting the answer to sent
+           the Loopback message (within timeout).
+
+      This column will also be used to avoid concurrency or race
+      conditions problems that could occurr if two or more
+      management entities try to use the service at the same
+      time.
+	  The default value =unlocked."
+   ::= { opticsimEthOamLbmEntry 6 }
+
+
+opticsimEthOamLbmReplyStatus OBJECT-TYPE
+   SYNTAX      Integer32
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+      "Status of the reply to the transmit Loopback service:
+
+      (1) OK.  The corresponding LBR has been correctly received.
+      (2) KO error.  A LBR for that <MAC, VLAN> has been received within the timeout, but it is invalid.
+      (3) KO timeout. No corresponding LBR has been received within the timeout.
+      (4) not available.  No loopback message result is available.
+      (5) Waiting. The timeout is not yet aged.
+		 The default value =not available."
+   ::= { opticsimEthOamLbmEntry 7 }
+
+
+ opticsimEthOamLbmRowStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+       "Below RowStatus values are supported:
+        - active  - The row is active and valid.
+        - createAndGo - The row will be created and activated.
+        - destroy     - The row will be destroyed."
+   ::= { opticsimEthOamLbmEntry 8 }
+
+
+--- Multicast Address for CCM and LTM 
+
+
+opticsimEthOamCCMMulticastLowerMAC OBJECT-TYPE
+   SYNTAX      OCTET STRING (SIZE(3))
+   MAX-ACCESS  read-write
+   STATUS      current
+   DESCRIPTION
+      "Continuity Check Message (CCM) Multicast destination MAC Address is represented from 
+       01-80-c2-xx-xx-xy with highest hard-coded 24 bits [01-80-c2 - (3 bytes)] and 4 address 
+       bits [y] represented from Maintenance Association(MA) Level.
+       This object defines 24 bits (with hard-coded null 4 lowest address bits[y]) located in 
+       lowest 3 bytes of CCM Multicast destination MAC Address to be transmitted. 
+       Default value: 00-00-00"
+   ::= { opticsimEthOamMibObject 5 }
+
+opticsimEthOamLTMMulticastLowerMAC OBJECT-TYPE
+   SYNTAX      OCTET STRING (SIZE(3))
+   MAX-ACCESS  read-write
+   STATUS      current
+   DESCRIPTION
+      "Link trace Message (LTM) Multicast destination MAC Address is represented from 
+       01-80-c2-xx-xx-xy with highest hard-coded 24 bits [01-80-c2 - (3 bytes)] and 4 address 
+       bits [y] represented from Maintenance Association(MA) Level.
+       This object defines 24 bits (with hard-coded null 4 lowest address bits[y]) located in 
+       lowest 3 bytes of LTM Multicast destination MAC Address to be transmitted.
+       Default value: 00-00-00"
+   ::= { opticsimEthOamMibObject 6 }
+	          
+opticsimEthOamLbmTxInterval  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The interval between two LBM  frames sent. It is
+          measured in 100 milli-second in the range [1-100]*100 ms, with default = 1second"
+    ::= { opticsimEthOamMibObject 7 }
+	
+
+		opticsimBridgeMCConf OBJECT IDENTIFIER ::= { opticsimEthMC 8 }
+
+
+
+		opticsimBridgeMCCompl OBJECT IDENTIFIER ::= { opticsimBridgeMCConf 1 }
+
+
+
+		opticsimBridgeMCGroup OBJECT IDENTIFIER ::= { opticsimBridgeMCConf 2 }
+
+
+-- Conformance information
+
+opticsimBridgeVlanPortGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsimBridgeVlanPortState
+          }
+  STATUS  current
+  DESCRIPTION
+           "Collection of objects of opticsimBridgeVlanPortTable."
+           ::= { opticsimBridgeMCGroup 1 }
+
+
+opticsimBridgePortGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsimBridgePortUserLabel,
+           opticsimBridgePortUseDEI,
+           opticsIMBridgePortPCPTableProfile,
+           opticsIMBridgePortMaxLearntEntries
+          }
+  STATUS  current
+  DESCRIPTION
+           "Collection of objects of opticsimBridgePortTable."
+           ::= { opticsimBridgeMCGroup 2 }
+
+
+opticsimBridgeTypeGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsimBridgeType
+          }
+  STATUS  current
+  DESCRIPTION
+           "See description of opticsimBridgeType."
+           ::= { opticsimBridgeMCGroup 3 }
+
+
+opticsIMMACAddressDataGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsIMMACAddressFilterMacAddress,
+           opticsIMMACAddressFilterVlan,
+           opticsIMMACAddressFilterIfIndex,
+           opticsIMMACAddressFilterRowStatus,
+           opticsIMMACAddressFilterOperStatus
+          }
+  STATUS  current
+  DESCRIPTION
+           "Collection of objects of opticsIMMACAddressDataTable."
+           ::= { opticsimBridgeMCGroup 4 }
+
+
+opticsimdot1qTpGroupGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsimdot1qTpGroupStatus
+          }
+  STATUS  current
+  DESCRIPTION
+           "Collection of objects of opticsimdot1qTpGroupTable."
+           ::= { opticsimBridgeMCGroup 5 }
+
+--- -----------------------------------------------------------------------------
+--- ATTENTION: removed opticsIMlearntEntryNumGroup as consequence of
+--- opticsIMlearntEntryNumTable removng because it generates a
+--- Segmentation Fault in mibcomp generation (tmake mib_step2)
+--- -----------------------------------------------------------------------------
+
+
+opticsimSVID1StatusGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsimSVID1Status
+          }
+  STATUS  current
+  DESCRIPTION
+           "See description of opticsimSVID1Status."
+           ::= { opticsimBridgeMCGroup 7 }
+
+
+opticsIMsegregatedPortSetGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsIMsegregatedPortSetPorts,
+           opticsIMsegragatedPortSetRowStatus,
+           opticsIMsegregatedPortSetIndexNext
+          }
+  STATUS  current
+  DESCRIPTION
+           "Collection of objects of opticsIMsegregatedPortSetTable."
+           ::= { opticsimBridgeMCGroup 8 }
+
+
+opticsIMNePBProfileGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsIMNePBProfile
+          }
+  STATUS  current
+  DESCRIPTION
+           "See description of opticsIMNePBProfile."
+           ::= { opticsimBridgeMCGroup 9 }
+
+
+opticsimEthOamScalarGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsimEthOamBridgeMAC,
+           opticsimEthOamEtherType,
+           opticsimEthOamLbmReplyTimeout,
+           opticsimEthOamCCMMulticastLowerMAC,
+           opticsimEthOamLTMMulticastLowerMAC,
+           opticsimEthOamLbmTxInterval
+          }
+  STATUS  current
+  DESCRIPTION
+           "Collection of scalar attributes of opticsimEthOamMibObject."
+           ::= { opticsimBridgeMCGroup 10 }
+
+
+opticsimEthOamLbmGroup   OBJECT-GROUP
+  OBJECTS {
+           opticsimEthOamLbmVlanPriority,
+           opticsimEthOamLbmEthFrameType,
+           opticsimEthOamLbmML,
+           opticsimEthOamLbmMgmt,
+           opticsimEthOamLbmReplyStatus,
+           opticsimEthOamLbmRowStatus
+          }
+  STATUS  current
+  DESCRIPTION
+           "Collection of objects of opticsimEthOamLbmTable."
+           ::= { opticsimBridgeMCGroup 11 }
+
+
+END
+
+
+--
+
+-- OPTICSIM-BRIDGE-MIB230304.mib
+
+--
+

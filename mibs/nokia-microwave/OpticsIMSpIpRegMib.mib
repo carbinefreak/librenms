@@ -1,0 +1,29 @@
+-- "CONFIDENTIAL. All rights reserved. Alcatel. This computer program is protected under Copyright. 
+-- Recipient is to retain the program in confidence, and is not permitted to copy, use, distribute, modify or 
+-- translate the program without authorization. Passing on and copying,use and communication of its
+-- contents is not permitted without written authorization."
+
+OPTICSIM-IPREG-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+    MODULE-IDENTITY FROM SNMPv2-SMI
+    tsdim, tsdimBasicMib FROM TSDIM-BASICREG-MIB;
+
+opticsimIpReg MODULE-IDENTITY
+    LAST-UPDATED "0110190000Z"
+    ORGANIZATION "Alcatel TND"
+    CONTACT-INFO "Alcatel TND"
+    DESCRIPTION
+        "Joining of IP MIbs into SNMP ones"
+    REVISION "0009290000Z"
+    DESCRIPTION
+        "Initial Release OPTICS-IM IP REGISTRATION MODULE"
+::= { tsdimBasicMib 50 }
+
+-- IP Registration Tree
+
+opticsimIpMib           OBJECT IDENTIFIER ::= { tsdim 5 }
+opticsimIpMC            OBJECT IDENTIFIER ::= { opticsimIpMib 99 }
+
+END
+
+

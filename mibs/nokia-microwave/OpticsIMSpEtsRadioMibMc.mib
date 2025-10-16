@@ -1,0 +1,155 @@
+
+OpticsIMETS-RADIO-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	OBJECT-TYPE, MODULE-IDENTITY, Integer32
+		FROM SNMPv2-SMI
+	MODULE-COMPLIANCE, OBJECT-GROUP
+		FROM SNMPv2-CONF
+	opticsimEthMib
+		FROM OPTICSIM-ETHREG-MIB
+	opticsIMETSInFlowEntry
+		FROM OpticsIMETS-MIB;
+
+opticsIMEtsRadioMIB MODULE-IDENTITY
+	LAST-UPDATED "200805060000Z"
+	ORGANIZATION 
+		"Alcatel Optics"
+	CONTACT-INFO 
+		"Alcatel Optics"
+	DESCRIPTION 
+		"Initial Release of opticsIMETSInFlowTable augment table, required to support the PW service on WTD radio systems."
+::= { opticsimEthMib 12 }
+
+
+-- Top-level components of this MIB.  
+
+opticsIMETSRadioObjects  OBJECT IDENTIFIER ::= { opticsIMEtsRadioMIB 1 }
+
+-- Conformance  
+
+opticsIMETSRadioConformance  OBJECT IDENTIFIER ::= { opticsIMEtsRadioMIB 2 }
+
+-- End of etsInFlow augment Table  
+-- conformance information  
+
+opticsIMETSRadioGroups  OBJECT IDENTIFIER ::= { opticsIMETSRadioConformance 1 }
+opticsIMETSRadioCompliances  OBJECT IDENTIFIER ::= { opticsIMETSRadioConformance 2 }
+
+opticsIMETSRadioInFlowTable  OBJECT-TYPE
+	SYNTAX SEQUENCE OF OpticsIMETSRadioInFlowEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION 
+		"This table augment the opticsIMETSInFlowTable adding parameters
+		required by WTD system to support PW services"
+	::= { opticsIMETSRadioObjects 1 }
+
+opticsIMETSRadioInFlowEntry  OBJECT-TYPE
+	SYNTAX 	OpticsIMETSRadioInFlowEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION 
+		"This table contains the configuration parameters of the
+		             entity to transport over a packet network in order to 
+		             perform an Ethernet Virtual Connection between two end 
+		             points.
+		             These parameters define the characteristics of a Service transport.
+		             It is indexed by  atmEncapCfgIndex, which uniquely identifying 
+		             the Service to transport into a singular   
+		             connection, and the associated atmEncapCfgIfIndex that represents 
+		             the physical interface connected to.
+		             The  atmEncapCfgIndex refers to the individual entity 
+		             transported by the physical interface.
+		             A row is created by the operator if the  Ethernet Virtual 
+		             Connection has to be created.
+		             The pointers (indexes) to the specific configuration tables 
+		             (opticsImPwTable, opticsIMInFlowTable) have to be updated 
+		             (if needs) after the creation of the specific entries.
+		             
+		             None of the read-create objects values can be changed   
+		             when atmEncapCfgRowStatus is in the active(1) state. Changes are  
+		             allowed when the pwRowStatus is in notInService(2) or  
+		             notReady(3) states only.   
+		             If the operator need to change one of the values for an  
+		             active row (for example in order to fix a mismatch in  
+		             configuration between the local node and the peer), the  
+		             atmEncapCfgRowStatus should be first changed to notInService(2),  
+		             the objects may be changed now, and later to active(1)   
+		             in order to re-initiate the signaling process with the  
+		             new values in effect.  
+		             "
+	AUGMENTS { opticsIMETSInFlowEntry }
+	::= { opticsIMETSRadioInFlowTable 1 }
+
+OpticsIMETSRadioInFlowEntry ::= SEQUENCE {
+	etsRadioServiceProfile
+		INTEGER,
+	etsRadioBandwidth1
+		Integer32,
+	etsRadioBandwidth2
+		Integer32
+}
+
+etsRadioServiceProfile  OBJECT-TYPE
+	SYNTAX     INTEGER {
+		atm (1),
+		tdm2tdm (2),
+		tdm2eth (3),
+		satop (4),
+		cesopsn (5)
+	}
+	MAX-ACCESS read-create
+	STATUS     current
+	DESCRIPTION 
+		"This object defines the type of service to be transported by this ETS flow.
+		The allowed values are:
+		- atm
+		- tdm2tdm
+		- tdm2eth
+		- satop
+		- cesopsn"
+	::= { opticsIMETSRadioInFlowEntry 1 }
+
+etsRadioBandwidth1  OBJECT-TYPE
+	SYNTAX     Integer32
+	UNITS 	"Kbps"
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION 
+		"This read-only object reports the bandwidth required by the radio transmission flow
+		in case of ODU type 1"
+	::= { opticsIMETSRadioInFlowEntry 2 }
+
+etsRadioBandwidth2  OBJECT-TYPE
+	SYNTAX     Integer32 (1..2147483647)
+	UNITS 	"Kbps"
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION 
+		"This read-only object reports the bandwidth required by the radio transmission flow
+		in case of ODU type 2"
+	::= { opticsIMETSRadioInFlowEntry 3 }
+
+-- this module  
+
+etsRadioGroup  OBJECT-GROUP
+	OBJECTS { etsRadioBandwidth2, 
+		etsRadioServiceProfile, 
+		etsRadioBandwidth1 }
+	STATUS     current
+	DESCRIPTION 
+		"Collection of objects that are required in all   
+		            implementations that support the AtmEncap MIB module."
+	::= { opticsIMETSRadioGroups 1 }
+
+-- Compliance requirement for fully compliant implementations.   
+
+etsRadioModuleFullCompliance  MODULE-COMPLIANCE
+	STATUS     current
+	DESCRIPTION 
+		"The compliance statement for agents that provide full  
+		                 support for PW service"
+    MODULE   -- this module
+	::= { opticsIMETSRadioCompliances 1 }
+END

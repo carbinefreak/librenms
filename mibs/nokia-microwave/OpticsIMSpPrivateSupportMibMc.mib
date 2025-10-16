@@ -1,0 +1,690 @@
+OPTICSIM-PRIVATE-SUPPORT-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+       IpAddress, Integer32, Unsigned32 FROM SNMPv2-SMI
+       RowStatus, DisplayString, TruthValue, MacAddress FROM SNMPv2-TC
+       MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP FROM SNMPv2-CONF
+       opticsimRadioMib, opticsimRadioMC FROM OPTICSIM-RADIOREG-MIB
+        InetAddress, InetAddressType  FROM INET-ADDRESS-MIB
+	  InterfaceIndexOrZero     		FROM IF-MIB;
+
+opticsIMPrivateSupportMib MODULE-IDENTITY
+       LAST-UPDATED "202309220000Z"
+       ORGANIZATION "Alcatel Optics"
+       CONTACT-INFO "Alcatel Optics"
+       DESCRIPTION
+       "Radio private Support MIB."
+
+
+        REVISION "202309220000Z"
+        DESCRIPTION	               
+	   "D.Spreafico
+	   -- added opticsIM1588PtpPortIfIndex object to
+	   opticsIM1588PtpPortTable."
+
+
+        REVISION "202305090000Z"
+        DESCRIPTION
+        "D.Spreafico
+         -- added the new object identifier 			opticsIM1731ClientBandwidthNotificationObject
+	    -- added the new scalar object 		opticsIM1731ClientBandwidthNotificationStatus
+        "
+
+        REVISION "201702280000Z"
+        DESCRIPTION
+        "D.Spreafico
+         -- SNMPIDL-531: added the new table opticsIM1731BandwidthNotificationTable 
+        "
+
+       REVISION "201605060000Z"
+       DESCRIPTION
+       "D.Spreafico
+         -- SNMPIDL-522: added new objects to opticsIM1588PtpClockTable:
+		opticsIM1588PtpClockTimeRecoveryState,
+		opticsIM1588PtpClockNetworkPdv,
+		opticsIM1588PtpClockTransportProtocol,
+		opticsIM1588PtpClockClearStatistics
+        "
+
+      REVISION "201601200000Z"
+       DESCRIPTION
+       "D.Spreafico
+         -- Added tables opticsIM1588PtpClockTable and opticsIM1588PtpPortTable.
+        "
+
+       REVISION "201511130000Z"
+       DESCRIPTION
+	"-SNMPIDL-507, update LAST-UPDATED and REVISION date format adding the 2 digits missing (20) for yers after 1999.
+Added a REVISION block corresponding to the LAST-UPDATED timestamp.
+       - SNMPIDL-508, added a space between opening and closing braces and the enclosed content.
+	"
+
+       REVISION "201303140000Z"
+       DESCRIPTION
+       "D.Spreafico
+         -- Added opticsIMRingTopologyGateway, opticsIMRingSectionTopologyNEIndexNext scalar objects and opticsIMSectionRingNodeTable.
+        "
+
+       REVISION "201301100000Z"
+       DESCRIPTION
+       "D.Spreafico
+         -- Added opticsIMPolicyMappingID and opticsIMPolicyObjectID new indexes on opticsIMPolicyTable.
+       "
+
+       REVISION "201105200000Z"
+       DESCRIPTION
+                "Initial Release of Radio private Support MIB."
+ ::= {  opticsimRadioMib 80 }
+
+opticsIMPrivateSupportMibObject     OBJECT IDENTIFIER ::= { opticsIMPrivateSupportMib 1 }
+opticsIMPrivateERPMibObject     OBJECT IDENTIFIER ::= { opticsIMPrivateSupportMib 2 }
+opticsIMPrivate1588MibObject    OBJECT IDENTIFIER ::= { opticsIMPrivateSupportMib 3 }
+opticsIMPrivate1731MibObject    OBJECT IDENTIFIER ::= { opticsIMPrivateSupportMib 4 }
+
+
+-- -------------------------------------------------------------
+-- QoS Policy Identifier Table
+-- -------------------------------------------------------------
+
+opticsIMPolicyTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMPolicyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table allows to associate a policy identifier (opticsIMPolicyID) to specific resources (opticsIMPolicyResource), 
+         the service (opticsIMPolicyMappingID) and the object (opticsIMPolicyObjectID) the policy is applicable on."
+    ::= { opticsIMPrivateSupportMibObject 1 }
+
+opticsIMPolicyEntry OBJECT-TYPE
+    SYNTAX      OpticsIMPolicyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A mapping between a policy identifier and a resource identifier."
+    INDEX   { opticsIMPolicyID, opticsIMPolicyResource, opticsIMPolicyMappingID,opticsIMPolicyObjectID }
+    ::= { opticsIMPolicyTable 1 }
+
+OpticsIMPolicyEntry ::=
+    SEQUENCE {
+        opticsIMPolicyID             Integer32,
+        opticsIMPolicyResource       Integer32,
+        opticsimPolicyRowStatus      RowStatus,
+	opticsIMPolicyMappingID	     Integer32,
+	opticsIMPolicyObjectID 	     Integer32
+    }
+
+opticsIMPolicyID             OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The policy identifier. The allowed values are in charger to the managing system."
+    ::= { opticsIMPolicyEntry 1 }
+
+opticsIMPolicyResource       OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A resource associated to this policy identifier. 
+         It is in charger to the managing system to define the identification of a physical resource by allowed values of this field."
+    ::= { opticsIMPolicyEntry 2 }
+
+opticsimPolicyRowStatus     OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS      current
+    DESCRIPTION
+         "This object is used to create or remove the entry."
+    ::= { opticsIMPolicyEntry 3 }
+
+opticsIMPolicyMappingID       OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        " This object indicates the service the policy is applicable for.
+        "
+    ::= { opticsIMPolicyEntry 4 }
+
+opticsIMPolicyObjectID       OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This object indicates which object the policy is applicable on."
+    ::= { opticsIMPolicyEntry 5 }
+
+-- -------------------------------------------------------------
+-- Private Ring Management
+-- -------------------------------------------------------------
+
+opticsIMRingTopologyGateway OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object defines if in the ERP Topology, including the Ring section, there is 
+         a Node gateway for the services "
+    ::= { opticsIMPrivateERPMibObject     1 }
+
+opticsIMRingSectionTopologyNEIndexNext OBJECT-TYPE
+      SYNTAX        Unsigned32 (0..4294967295)
+      MAX-ACCESS    read-only
+      STATUS        current
+      DESCRIPTION
+          "This object contains an unused value for
+           opticsIMRingSectionNEIndex,	or a zero to indicate
+           that none exist. Negative values are not allowed,
+           as they do not correspond to valid values of
+           opticsIMRingSectionNEIndex"
+      ::= { opticsIMPrivateERPMibObject     2 }
+
+-- Ring Section Topology Table
+
+opticsIMRingSectionTopologyTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMRingSectionTopologyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table allows to define a list of information for each NE belonging to a Ring section (Node) or attached to a Node 
+         in a Ring section.
+	 A Ring section is defined as the list of NE in a Ring connected by ethernet links (fiber chain) and delimited by radio link.
+	"
+    ::= { opticsIMPrivateERPMibObject     3 }
+
+opticsIMRingSectionTopologyEntry OBJECT-TYPE
+    SYNTAX      OpticsIMRingSectionTopologyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each entry represents a NE."
+    INDEX   { opticsIMRingSectionNEIndex }
+    ::= { opticsIMRingSectionTopologyTable 1 }
+
+OpticsIMRingSectionTopologyEntry ::=
+    SEQUENCE {
+        opticsIMRingSectionNEIndex			Unsigned32,
+        opticsIMRingSectionNELabel			DisplayString,
+        opticsIMRingSectionNodeInRing			TruthValue,
+        opticsIMRingSectionNodeInRingPosition		Unsigned32,
+        opticsIMRingSectionEastWestPortType		INTEGER,	
+        opticsIMRingSectionNEMACAddress			MacAddress,
+        opticsIMRingSectionNodeConnectionTo		DisplayString,
+        opticsIMRingSectionServiceGateway		TruthValue,
+        opticsimRingSectionRowStatus      		RowStatus
+    }
+
+opticsIMRingSectionNEIndex	OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A unique value to identify this NE in the Ring section.
+         Managers should obtain new values for row creation in this table by 
+         reading opticsIMRingSectionTopologyNEIndexNext "
+    ::= { opticsIMRingSectionTopologyEntry 1 }
+
+opticsIMRingSectionNELabel	OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..20))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The label associate to the NE in the Ring section."
+    ::= { opticsIMRingSectionTopologyEntry 2 }
+
+opticsIMRingSectionNodeInRing	OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object defines if the NE identified by opticsIMRingSectionNEIndex	is a Node (belonging to)
+         of the Ring ('true' value) or is attached to a Node in the Ring ('false' value).
+         "
+    ::= { opticsIMRingSectionTopologyEntry 3 }
+
+opticsIMRingSectionNodeInRingPosition		OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-create
+    STATUS      current
+    DESCRIPTION
+         "This object defines the position of the Node in the Ring topology starting from East to West.
+	  This object is meaning only in case of the NE is a Node of the Ring (opticsIMRingSectionNodeInRing = 'true'.
+         "
+    ::= { opticsIMRingSectionTopologyEntry 4 }
+
+opticsIMRingSectionEastWestPortType	OBJECT-TYPE
+    SYNTAX      INTEGER {
+    		radioFiber (1),
+    		fiberFiber (2),
+		fiberRadio (3),
+		notApplicable (4)
+  }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        " This object defines the type of the ports involded on the ERP Topology listed from East to West on the NE 
+          identified by opticsIMRingSectionNEIndex.
+	  This object is meaning only in case of the NE is a Node of the Ring (opticsIMRingSectionNodeInRing = 'true').
+        "
+    ::= { opticsIMRingSectionTopologyEntry 5 }
+
+opticsIMRingSectionNEMACAddress			OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object contains the MAC Address of the NE."
+    ::= { opticsIMRingSectionTopologyEntry 6 }
+
+opticsIMRingSectionNodeConnectionTo		OBJECT-TYPE
+    SYNTAX     DisplayString (SIZE (0..20))
+    MAX-ACCESS read-create
+    STATUS      current
+    DESCRIPTION
+         "This object defines the Node of the Ring where the NE identified by this entry is attached to.
+          Only in case of NE not belonging to the Ring (opticsIMRingSectionNodeInRing = 'false')."
+    ::= { opticsIMRingSectionTopologyEntry 7 }
+
+opticsIMRingSectionServiceGateway		OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS      current
+    DESCRIPTION
+         "This object defines if the NE identified by opticsIMRingSectionNEIndex is a Node Gateway of the Services on the Ring.
+         "
+    ::= { opticsIMRingSectionTopologyEntry 8 }
+
+opticsimRingSectionRowStatus		OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS      current
+    DESCRIPTION
+         "This object is used to create or remove the entry."
+    ::= { opticsIMRingSectionTopologyEntry 9 }
+
+opticsIM1588PtpClockTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIM1588PtpClockEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table allows to configure parameters related to  1588 Clock not included on standard MIB.
+         "
+    ::= { opticsIMPrivate1588MibObject 1 }
+
+opticsIM1588PtpClockEntry OBJECT-TYPE
+    SYNTAX      OpticsIM1588PtpClockEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An entry related to a 1588 PTP Clock. Created by agent when 1588 PTP Clock on standard table is created following the same index value."
+    INDEX   { opticsIM1588PtpClockIndex }
+    ::= { opticsIM1588PtpClockTable 1 }
+
+OpticsIM1588PtpClockEntry ::=
+    SEQUENCE {
+        opticsIM1588PtpClockIndex               INTEGER,
+        opticsIM1588PtpClockLocalPriority       Unsigned32,
+        opticsIM1588PtpClockMulticastMACAddress INTEGER,
+        opticsIM1588PtpClockTimeRecoveryState   INTEGER,
+        opticsIM1588PtpClockNetworkPdv	           INTEGER,
+        opticsIM1588PtpClockTransportProtocol   INTEGER,
+        opticsIM1588PtpClockClearStatistics     INTEGER
+	    }
+
+opticsIM1588PtpClockIndex OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The unique value which identifies this 1588 PTP clock."
+    ::= { opticsIM1588PtpClockEntry 1 }
+
+opticsIM1588PtpClockLocalPriority OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The local priority value of the 1588 PTP clock in case of g8275dot1-2014 profile."
+    ::= { opticsIM1588PtpClockEntry 2 }
+
+opticsIM1588PtpClockMulticastMACAddress OBJECT-TYPE
+    SYNTAX     INTEGER {
+                    multiMac-01-80-C2-00-00-0E (1),
+                    multiMac-01-1B-19-00-00-00 (2)
+                }
+
+    MAX-ACCESS read-write
+    STATUS      current
+    DESCRIPTION
+         "The Multicast MAC Address to be used on the PTP messages for Master-slave communication.
+	It will only be applicable when (opticsIM1588PtpClockTransportProtocol == 'ethernet (1)').
+"
+    ::= { opticsIM1588PtpClockEntry 3 }
+
+opticsIM1588PtpClockTimeRecoveryState  OBJECT-TYPE
+    SYNTAX     INTEGER {
+                    	unknown (0),
+				freeRun (1),
+				acquiring (2),
+				tracking (3),
+				holdover (4),
+				locked (5)
+                }
+
+    MAX-ACCESS read-only
+    STATUS      current
+    DESCRIPTION
+         "The state of the Time Recovery."
+    ::= { opticsIM1588PtpClockEntry 4 }
+
+opticsIM1588PtpClockNetworkPdv  OBJECT-TYPE
+    SYNTAX     INTEGER {
+                    	low (1),
+				high (2)
+                }
+
+    MAX-ACCESS read-write
+    STATUS      current
+    DESCRIPTION
+         "The type of the Pdv to be considered for the PTP Clock."
+    ::= { opticsIM1588PtpClockEntry 5 }
+
+opticsIM1588PtpClockTransportProtocol OBJECT-TYPE
+    SYNTAX     INTEGER {
+                    	ethernet (1),
+				ipv4Udp (2),
+				ipv6Udp (3)
+                }
+
+    MAX-ACCESS read-write
+    STATUS      current
+    DESCRIPTION
+         "The Encapsulation type of the PTP clock protocol messages."
+    ::= { opticsIM1588PtpClockEntry 6 }
+
+opticsIM1588PtpClockClearStatistics OBJECT-TYPE
+    SYNTAX     INTEGER {
+                         idle(0),
+                         clearStats(1)
+                       }
+    MAX-ACCESS read-write
+    STATUS      current
+    DESCRIPTION
+         "Request to reset all the statistics values('clearStats' object value).
+	The 'idle' value is the value where the agent has to return when the reset has been completed."
+        DEFVAL  { idle }
+    ::= { opticsIM1588PtpClockEntry 7 }
+
+opticsIM1588PtpPortTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIM1588PtpPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+	"This table allows to configure parameters related to  1588 PTP port not included on standard MIB.
+         "
+    ::= { opticsIMPrivate1588MibObject 2 }
+
+opticsIM1588PtpPortEntry OBJECT-TYPE
+    SYNTAX      OpticsIM1588PtpPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An entry related to a 1588 PTP Port. Created by agent following the creation of the entry of a 1588 PTP port on standard table."
+    INDEX   { opticsIM1588PtpClockIndex , opticsIM1588PtpPortIndex }
+    ::= { opticsIM1588PtpPortTable 1 }
+
+OpticsIM1588PtpPortEntry ::=
+    SEQUENCE {
+        opticsIM1588PtpPortIndex INTEGER,
+        opticsIM1588PtpPortIpAddrType InetAddressType,
+	   opticsIM1588PtpPortIpAddr InetAddress,
+	   opticsIM1588PtpPortSubnetMask IpAddress, 
+	   opticsIM1588PtpPortIPv6PrefixLength Unsigned32,
+	   opticsIM1588PtpPortVlanTag Integer32,
+	   opticsIM1588PtpPortLocalPriority Unsigned32,
+	   opticsIM1588PtpPortIfIndex InterfaceIndexOrZero
+	   	    }
+
+opticsIM1588PtpPortIndex OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The unique value which identifies the PTP port of the 1588 PTP clock."
+    ::= { opticsIM1588PtpPortEntry 1 }
+
+opticsIM1588PtpPortIpAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of the object opticsIM1588PtpPortIpAddrType indicates
+         the type of opticsIM1588PtpPortIpAddr."
+    DEFVAL { unknown }
+    ::= { opticsIM1588PtpPortEntry 2 }
+
+opticsIM1588PtpPortIpAddr OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of opticsIM1588PtpPortIpAddr specifies the local IP address of the 1588 PTP port. This is strictky associated to opticsIM1588PtpPortIpAddrType."
+    ::= { opticsIM1588PtpPortEntry 3 }
+
+opticsIM1588PtpPortSubnetMask OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS read-write
+    STATUS      current
+    DESCRIPTION
+         "Ths is the Ip mask when opticsIM1588PtpPortIpAddrType is IPv4."
+    ::= { opticsIM1588PtpPortEntry 4 }
+
+opticsIM1588PtpPortIPv6PrefixLength OBJECT-TYPE
+    SYNTAX Unsigned32 (0..128)
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION 
+       "This is the length of local PTP port prefix when opticsIM1588PtpPortIpAddrType is IPv6."
+    ::= { opticsIM1588PtpPortEntry 5 }
+
+ opticsIM1588PtpPortVlanTag OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-write
+    STATUS      current
+    DESCRIPTION
+        "The Vlan tag of the tx/rx PTP messages."
+    ::= { opticsIM1588PtpPortEntry 6 }
+
+opticsIM1588PtpPortLocalPriority OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..255)
+    MAX-ACCESS read-write
+    STATUS      current
+    DESCRIPTION
+         "The local priority value of the 1588 PTP port in case of g8275dot1-2014 profile"
+    ::= { opticsIM1588PtpPortEntry 7 }
+
+opticsIM1588PtpPortIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndexOrZero
+    MAX-ACCESS read-write
+    STATUS      current
+    DESCRIPTION
+         "The physical port (identified by own ifIndex) associated to this 1588 PTP port."
+    ::= { opticsIM1588PtpPortEntry 8 }
+
+
+------------
+-- opticsIM1731BandwidthNotificationTable 
+------------
+
+opticsIM1731BandwidthNotificationTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIM1731BandwidthNotificationEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+	"This table allows to configure parameters related to the management of the Y.1731 Bandwidth Notification Message (BNM) reporting Radio Capacity current Value to a router.
+         "
+    ::= { opticsIMPrivate1731MibObject 1 }
+
+opticsIM1731BandwidthNotificationEntry OBJECT-TYPE
+    SYNTAX      OpticsIM1731BandwidthNotificationEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An entry related to the management of the Y.1731 BNM from a radio interface. Created by agent at start-up."
+    INDEX   { opticsIM1731BandwidthNotificationIndex }
+    ::= { opticsIM1731BandwidthNotificationTable 1 }
+
+OpticsIM1731BandwidthNotificationEntry ::=
+    SEQUENCE {
+        opticsIM1731BandwidthNotificationIndex 		INTEGER,
+        opticsIM1731BandwidthNotificationStatus     		RowStatus,
+        opticsIM1731BandwidthNotificationDestMacAddress      MacAddress,
+        opticsIM1731BandwidthNotificationVLANId     		Integer32,
+        opticsIM1731BandwidthNotificationPeriod     		INTEGER,
+        opticsIM1731BandwidthNotificationHoldTime   		INTEGER,        
+        opticsIM1731BandwidthNotificationPTBGain      	INTEGER,        
+        opticsIM1731BandwidthNotificationInterface   	Integer32
+   
+	   	}
+
+ opticsIM1731BandwidthNotificationIndex OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The unique value which identifies the entry for the Y.1731 Capacity Feedback management."
+    ::= { opticsIM1731BandwidthNotificationEntry 1 }
+
+opticsIM1731BandwidthNotificationStatus     OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object allow to enable or disable the feature for this entry."
+    ::= { opticsIM1731BandwidthNotificationEntry 2 }
+
+opticsIM1731BandwidthNotificationDestMacAddress       OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Destination MAC Address of Y.1731 packets."
+     ::= { opticsIM1731BandwidthNotificationEntry 3 }
+
+opticsIM1731BandwidthNotificationVLANId     OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The VLAN ID of Y.1731 packets ."
+      ::= { opticsIM1731BandwidthNotificationEntry 4 }
+
+opticsIM1731BandwidthNotificationPeriod     OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  periodInvalid     (0),
+                  period1s          (1),
+                  period10s         (2),
+                  period1min        (3)
+                        }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Period of capacity feedback ."
+    ::= { opticsIM1731BandwidthNotificationEntry 5 }
+
+opticsIM1731BandwidthNotificationHoldTime   OBJECT-TYPE
+    SYNTAX      INTEGER (0..1000)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This  attribute specifies consequent Actions Hold-Off values in 
+           step of 10  msec. Default Value is 0."
+    ::= { opticsIM1731BandwidthNotificationEntry 6 }
+
+opticsIM1731BandwidthNotificationPTBGain      OBJECT-TYPE
+    SYNTAX      INTEGER (0..100)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The Average PTB Gain in percentage"
+    ::= { opticsIM1731BandwidthNotificationEntry 7 }
+
+opticsIM1731BandwidthNotificationInterface   OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object reports the radio interface egressing the Y.1731 Capacity Feedback messages."
+     ::= { opticsIM1731BandwidthNotificationEntry 8 }
+
+--------------------
+--------------------
+
+------------
+-- opticsIM1731ClientBandwidthNotificationObject and
+-- opticsIM1731ClientBandwidthNotificationStatus     
+----------
+
+opticsIM1731ClientBandwidthNotificationObject 			OBJECT IDENTIFIER ::= { opticsIMPrivate1731MibObject 2 }
+
+opticsIM1731ClientBandwidthNotificationStatus     OBJECT-TYPE
+    SYNTAX       INTEGER {
+                enabled(1),
+                disabled(2)
+  	}
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object allow to report the status (enabled or disabled of the BNM client."
+    ::= { opticsIM1731ClientBandwidthNotificationObject 1 }
+
+
+--------------------
+--------------------
+
+opticsIMPrivateSupportMCConf       OBJECT IDENTIFIER ::= { opticsimRadioMC 80 }
+opticsIMPrivateSupportMCCompl    OBJECT IDENTIFIER ::= { opticsIMPrivateSupportMCConf 1 }
+opticsIMPrivateSupportMCGroup    OBJECT IDENTIFIER ::= { opticsIMPrivateSupportMCConf 2 }
+
+opticsIMPrivateSupportMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMRadioTrsCommonMib. "
+
+       MODULE -- opticsIMPrivateSupportMib 
+
+MANDATORY-GROUPS { opticsIMQosPolicyGroup }
+
+GROUP opticsIMERPGroup
+    DESCRIPTION
+     " This group describes the mandatory objects related to the management of the ERP section."
+
+::= { opticsIMPrivateSupportMCCompl  1 }
+
+opticsIMQosPolicyGroup OBJECT-GROUP
+      OBJECTS { opticsimPolicyRowStatus
+                         }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the mandatory objects related to the management of the Qos Policy." 
+::= { opticsIMPrivateSupportMCGroup 1 }
+
+opticsIMERPGroup OBJECT-GROUP
+      OBJECTS { opticsIMRingSectionNELabel,
+                opticsIMRingSectionNodeInRing,
+                opticsIMRingSectionNodeInRingPosition,
+                opticsIMRingSectionEastWestPortType,
+        	opticsIMRingSectionNEMACAddress	,
+        	opticsIMRingSectionNodeConnectionTo,
+        	opticsIMRingSectionServiceGateway,
+        	opticsimRingSectionRowStatus   
+                         }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the mandatory objects related to the management of the ERP section." 
+::= { opticsIMPrivateSupportMCGroup 2 }
+
+
+END

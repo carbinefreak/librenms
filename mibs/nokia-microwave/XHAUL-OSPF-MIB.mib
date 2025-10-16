@@ -1,0 +1,3841 @@
+XHAUL-OSPF-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    InterfaceIndex, InterfaceIndexOrZero
+                                                         FROM IF-MIB
+    InetAddress, InetAddressPrefixLength,
+    InetAddressType,
+    InetAutonomousSystemNumber
+                                                         FROM INET-ADDRESS-MIB
+ --   BigMetric, DesignatedRouterPriority,
+ --   HelloRange, Metric, Status
+ --                                                        FROM OSPF-MIB
+    MODULE-COMPLIANCE, NOTIFICATION-GROUP,
+    OBJECT-GROUP
+                                                         FROM SNMPv2-CONF
+    Counter32, Gauge32, Integer32,
+    MODULE-IDENTITY, NOTIFICATION-TYPE,
+    OBJECT-TYPE, Unsigned32
+                                                         FROM SNMPv2-SMI
+    DateAndTime, DisplayString, RowStatus,
+    StorageType, TEXTUAL-CONVENTION,
+    TimeInterval, TimeStamp, TruthValue
+                                                         FROM SNMPv2-TC
+ 
+    TNamedItemOrEmpty, 
+    XhaulAdminState, XhaulAdminState,
+    XhaulEnabledDisabled,
+    XhaulOperState,
+    XhaulOspfInstance, XhaulReferenceBandwidth
+                                                         FROM XHAUL-TC-MIB
+
+    xhaulim, xhaulBasicMib		FROM XHAUL-BASICREG-MIB
+
+    XhaulInetCidrNextHopOwner, vRtrID
+                                                         FROM XHAUL-VRTR-MIB
+    ;
+
+xhaulOspfMIBModule           MODULE-IDENTITY
+    LAST-UPDATED "201807190000Z"
+    ORGANIZATION "Nokia"
+        CONTACT-INFO
+            "Nokia Xhaul Support "
+    DESCRIPTION
+        "This document is the SNMP MIB module to manage and provision OSPF
+         protocol for the Nokia Xhaul devices."
+
+--
+--  Revision History        
+--
+
+    REVISION    "201807190000Z"
+    DESCRIPTION
+ 	"Rev 0.8               19 July 2018 00:00
+	 Added xhaulOspfNotifAreaLsdbAreaId notify objects.
+	"
+
+
+    REVISION    "201807180000Z"
+    DESCRIPTION
+ 	"Rev 0.7               18 July 2018 00:00
+	 Changed xhaulOspfRouterId reference under notiFy objects.
+	 Removed xhaulOspfSetTrap objects for notification.
+	 Added xhaulOspfNotifAsLsdbType, xhaulOspfNotifAsLsdbRouterId, xhaulOspfNotifAsLsdbLsid,
+          xhaulOspfNotifNbrRtrId, xhaulOspfNotifLinkLsdbIfAreaId, xhaulOspfNotifLinkLsdbType,
+          xhaulOspfNotifLinkLsdbRouterId and xhaulOspfNotifLinkLsdbLsid notify objects.
+	"
+
+    REVISION    "201807160000Z"
+    DESCRIPTION
+ 	"Rev 0.6                16 July 2018 00:00
+	  Removed xhaulOspfAreaRangeBlackhole  object.
+	  Remove a comma on xhaulOspfIfRxBadPacket notification.
+	"
+   
+    REVISION    "201807090000Z"
+    DESCRIPTION
+        "Rev 0.5                13 July 2018 00:00
+	  Removed xhaulOspfSrPfxSidActive object.
+	"
+
+
+    REVISION    "201807090000Z"
+    DESCRIPTION
+        "Rev 0.4                9 July 2018 00:00
+         Removed xhaulOspfAsbrDomainId, xhaulOspfIgnoreDNBit, xhaulOspfSuppressDNBit objects from xhaulOspfGeneralTable.
+	 Removed xhaulOspfAsScopeUnkLsaCount,  xhaulOspfAsScopeUnkLsaCksumSum, xhaulOspfDiscontinuityTime, 
+	  xhaulOspfLastOvrflwEnteredTime, xhaulOspfLastOverflowExitTime, xhaulOspfLastExtSpfRunTime, xhaulOspfLastFullSpfRunTime,
+	  xhaulOspfLastFullSpfInterval, xhaulOspfMaxSpfRunInterval, xhaulOspfMinSpfRunInterval, xhaulOspfAvgSpfRunInterval,
+	  xhaulOspfExtSpfRunInterval, xhaulOspfRoutesSubmitted objects from xhaulOspfStatusTable.
+ 	 Removed xhaulOspfAreaScopeUnkLsaCount, xhaulOspfAreaScopeUnkLsaCksumSum, xhaulOspfAreaLastSpfRunTime,
+	  xhaulOspfAreaNeighborCount, xhaulOspfAreaExtendedLsa objects from xhaulOspfAreaTable.
+ 	 Removed xhaulOspfFullSpfRuns, xhaulOspfExtSpfRuns, xhaulOspfSpfAttemptsFailed, xhaulOspfNumTimesInOverflow,
+          xhaulOspfRoutesAddsFailed, xhaulOspfRoutesDelsFailed, xhaulOspfRoutesModsFailed,  objects from xhaulOspfStatisticsTable.
+         Removed xhaulOspfExtendedLsa objects from xhaulOspfGeneralExTable.
+    	 Removed xhaulOspfIfDiscardPackets, xhaulOspfIfRetransmitOuts, xhaulOspfIfBadVersions, xhaulOspfIfBadNetworks,
+          xhaulOspfIfBadVirtualLinks, xhaulOspfIfBadAreas, xhaulOspfIfBadDstAddrs, xhaulOspfIfBadNeighbors, xhaulOspfIfBadPacketTypes,
+          xhaulOspfIfLastEventTime, xhaulOspfIfBadLengths, xhaulOspfIfBadHelloIntervals, xhaulOspfIfBadDeadIntervals, 
+          xhaulOspfIfBadOptions, xhaulOspfIfRxBadChecksums objects from xhaulOspfIfStatsTable.
+         Removed xhaulOspfNbrUpTime, xhaulOspfNbrLastEventTime, xhaulOspfNbrLastRestartTime, xhaulOspfNbrRestartReason, 
+          xhaulOspfNbrDrId, xhaulOspfNbrBdrId objects from xhaulOspfNbrTable.
+	 Removed  xhaulOspfNbrStatsTable.
+	 Removed xhaulOspfAreaLsdbImportFltrd, xhaulOspfAreaLsdbExportFltrd objects from xhaulOspfAreaLsdbTable.
+	 Added xhaulOspfIfAddressType e  xhaulOspfIfAddress object only for notifications.
+	"
+
+    REVISION    "201806200000Z"
+    DESCRIPTION
+        "Rev 0.3                6 June 2018 00:00
+         Added xhaulOspfRouterId scalar object only for notification."
+
+    REVISION    "201803130000Z"
+    DESCRIPTION
+        "Rev 0.2                13 Mar 2018 00:00
+         Updated xhaulOspfSrLfaStatsTable and included references to OSPF standard MIB."
+
+    REVISION    "201803080000Z"
+    DESCRIPTION
+        "Rev 0.1                8 Mar 2018 00:00
+         Initial version of the XHAUL-OSPF-MIB."
+
+   ::= { xhaulBasicMib 11 }
+
+
+BigMetric ::= TEXTUAL-CONVENTION 
+         STATUS       current 
+         DESCRIPTION 
+            "The OSPF External Metric." 
+         SYNTAX       Integer32 (0..'FFFFFF'h)
+
+DesignatedRouterPriority ::= TEXTUAL-CONVENTION 
+         STATUS       current 
+         DESCRIPTION   
+            "The range of values defined for the priority of a system 
+            for becoming the designated router." 
+         SYNTAX       Integer32 (0..'FF'h) 
+
+  HelloRange ::= TEXTUAL-CONVENTION 
+         STATUS       current 
+         DESCRIPTION 
+            "The range of intervals in seconds on which hello messages 
+            are exchanged." 
+         SYNTAX       Integer32 (1..'FFFF'h)
+
+  Metric ::= TEXTUAL-CONVENTION 
+         STATUS       current 
+         DESCRIPTION 
+            "The OSPF Internal Metric. 
+             Note the OSPF Metric is defined as an unsigned value 
+             in the range." 
+         SYNTAX       Integer32 (0..'FFFF'h) 
+ 
+  Status ::= TEXTUAL-CONVENTION 
+         STATUS       current 
+         DESCRIPTION 
+            "An indication of the operability of an OSPF 
+            function or feature. For example, The status 
+            of an interface: 'enabled' indicates that 
+            it is willing to communicate with other OSPF Routers, 
+            while 'disabled' indicates that it is not." 
+         SYNTAX       INTEGER { enabled (1), disabled (2) } 
+
+XhaulOspfUpToRefreshIntervalTc    ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulOspfUpToRefreshIntervalTc provides values one might
+         be able to configure for variables bounded by the Refresh Interval."
+    SYNTAX      Integer32 (0..1800)
+
+XhaulOspfDeadIntRangeTc           ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulOspfDeadIntRangeTc provides the range, in seconds, of
+         the dead interval value."
+    SYNTAX      Integer32 (1..65535)
+
+XhaulOspfRouterIdTc               ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulOspfRouterIdTc provides a 32-bit, unsigned integer
+         uniquely identifying the router in the Autonomous System. To ensure
+         uniqueness, this may default to the value of one of the router's IPv4
+         host addresses if IPv4 is configured on the router."
+    SYNTAX      Unsigned32 (0..4294967295)
+
+XhaulOspfAreaIdTc                 ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulOspfAreaIdTc provides an OSPF Area Identifier."
+    SYNTAX      Unsigned32 (0..4294967295)
+
+XhaulOspfIfInstIdTc               ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulOspfIfInstIdTc provides an OSPF interface instance
+         ID."
+    SYNTAX      Integer32 (0..255)
+
+XhaulOspfPreference               ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulOspfPreference provides a route preference value.
+         This value will be used during the route selection algorithm."
+    SYNTAX      Integer32 (1..255)
+
+XhaulOspfAuthenticationType       ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The value XhaulOspfAuthenticationType provides the authentication
+         type.  This type of authentication is only applied to interfaces with
+         xhaulOspfVersion equal to 'version2'."
+    SYNTAX      INTEGER {
+        none           (0),
+        simplePassword (1),
+        md5            (2)
+    }
+
+XhaulOspfIfMD5KeyId               ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulOspfIfMD5KeyId provides a unique identifier for a key
+         to be used for authentication on a specific OSPFv2 IP address. The
+         value of 0 means that no keys are configured."
+    SYNTAX      Integer32 (0..255)
+
+XhaulOspfRestartReasonTc          ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulOspfRestartReasonTc data type is an enumerated integer that
+         describes the values used to identify OSPF graceful restart reason."
+    SYNTAX      INTEGER {
+        unknown   (0),
+        swRestart (1),
+        swReload  (2),
+        switchRed (3)
+    }
+
+XhaulOspfIfTypeTc                 ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulOspfIfTypeTc data type is an enumerated integer that describes
+         the OSPF interface type."
+    SYNTAX      INTEGER {
+        unspecified       (0),
+        broadcast         (1),
+        nbma              (2),
+        pointToPoint      (3),
+        pointToMultipoint (5),
+        secondary         (6)
+    }
+
+XhaulOspfShamIfMetricTc           ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulOspfShamIfMetricTc data type provides a metric value for
+         sham-link"
+    SYNTAX      Integer32 (1..65535)
+
+XhaulOspfLsaFilterOutTc           ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulOspfLsaFilterOutTc data type is an enumerated integer that
+         describes the OSPF LSA Flooding Reduction type."
+    SYNTAX      INTEGER {
+        none                       (0),
+        all                        (1),
+        exceptOwnRtrLsa            (2),
+        exceptOwnRtrLsaAndDefaults (3)
+    }
+
+XhaulSegmentRoutingId             ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulSegmentRoutingId provides a Segment Routing
+         Identifier."
+    SYNTAX      Unsigned32 (0..4294967295)
+
+XhaulOspfSegmentRoutingRouteType  ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulOspfSegmentRoutingRouteType data type is an enumerated integer
+         that describes the segment routing route type."
+    SYNTAX      INTEGER {
+        unspecified  (0),
+        intraArea    (1),
+        interArea    (3),
+        external     (5),
+        nssaExternal (7)
+    }
+
+xhaulOspfMib                    OBJECT IDENTIFIER ::= { xhaulim 7 }
+
+xhaulOspfObjects                  OBJECT IDENTIFIER ::= { xhaulOspfMib 1}
+
+xhaulOspfScalars                  OBJECT IDENTIFIER ::= { xhaulOspfObjects 1 }
+
+xhaulOspfGeneralEntries           OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfGeneralEntries indicates the number of row
+         entries in the xhaulOspfGeneralTable.  This is the number of
+         OSPF instances currently configured."
+    ::= { xhaulOspfScalars 1 }
+
+--
+-- xhaulOspfGeneralTable
+--
+
+xhaulOspfGeneralTable             OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfGeneralEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfGeneralTable contains information describing the
+         configured parameters and cumulative statistics of an OSPF instance's
+         attached areas."
+    ::= { xhaulOspfObjects 2 }
+
+xhaulOspfGeneralEntry             OBJECT-TYPE
+    SYNTAX      XhaulOspfGeneralEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfGeneralEntry contains information describing the
+         configured parameters and cumulative statistics of one of an
+         OSPF instance's attached areas.  An OSPF row entry is created
+         or deleted in this table by setting the xhaulOspfRowStatus object."
+    INDEX       {
+        vRtrID,
+        xhaulOspfVersion,
+        xhaulOspfInstance
+    }
+    ::= { xhaulOspfGeneralTable 1 }
+
+XhaulOspfGeneralEntry             ::= SEQUENCE
+{
+    xhaulOspfVersion                  INTEGER,
+    xhaulOspfInstance                 XhaulOspfInstance,
+    xhaulOspfGeneralLastChanged       TimeStamp,
+    xhaulOspfAdminState               Status,
+    xhaulOspfASBdrRtrStatus           TruthValue,
+    xhaulOspfRFC1583Compatibility     TruthValue,
+    xhaulOspfExtLsdbLimit             Integer32,
+    xhaulOspfExitOverflowInterval     Unsigned32,
+    xhaulOspfDemandExtensions         TruthValue,
+    xhaulOspfReferenceBandwidth       XhaulReferenceBandwidth,
+    xhaulOspfRestartHelperSupport     INTEGER,
+    xhaulOspfRestartHelperStrictLsaChecking TruthValue,
+    xhaulOspfRestartSupport           INTEGER,
+    xhaulOspfRestartInterval          XhaulOspfUpToRefreshIntervalTc,
+    xhaulOspfPreference               XhaulOspfPreference,
+    xhaulOspfExternalPreference       XhaulOspfPreference,
+    xhaulOspfSpfMaxWait               Unsigned32,
+    xhaulOspfSpfInitialWait           Unsigned32,
+    xhaulOspfSpfSecondWait            Unsigned32,
+    xhaulOspfLsaGenMaxWait            Unsigned32,
+    xhaulOspfLsaGenInitialWait        Unsigned32,
+    xhaulOspfLsaGenSecondWait         Unsigned32,
+    xhaulOspfLsaArrivalWait           Unsigned32,
+    xhaulOspfTESupport                TruthValue,
+    xhaulOspfUnicastImport            TruthValue,
+    xhaulOspfGREnable                 TruthValue,
+    xhaulOspfGRHelperMode             TruthValue,
+    xhaulOspfRowStatus                RowStatus,
+    xhaulOspfLoopfreeAlternate        TruthValue
+}
+
+xhaulOspfVersion                  OBJECT-TYPE
+    SYNTAX      INTEGER {
+        version2 (2),
+        version3 (3)
+    }
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfVersion specifies the version number of OSPF
+         supported by this OSPF instance.  The version number of OSPF for
+         IPv6 is 3."
+    ::= { xhaulOspfGeneralEntry 1 }
+
+xhaulOspfInstance                 OBJECT-TYPE
+    SYNTAX      XhaulOspfInstance
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfInstance is a unique integer that identifies a
+         specific instance of a version of the OSPF protocol running in the
+         router instance specified by the vRtrID index."
+    ::= { xhaulOspfGeneralEntry 2 }
+
+xhaulOspfGeneralLastChanged       OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfGeneralLastChanged indicates the sysUpTime when a
+         configurable object in this row was last modified."
+    ::= { xhaulOspfGeneralEntry 4 }
+
+xhaulOspfAdminState               OBJECT-TYPE
+    SYNTAX      Status
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAdminState specifies the desired administrative
+         status of this instance of OSPF in the router. The value 'enabled'
+         activates this instance of the OSPF protocol. The value' disabled'
+         stops it."
+    ::= { xhaulOspfGeneralEntry 6 }
+
+xhaulOspfASBdrRtrStatus           OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfASBdrRtrStatus specifies whether this router is
+         configured as an Autonomous System border router."
+    REFERENCE
+        "OSPF Version 2, Section 3.3 Classification of routers"
+    ::= { xhaulOspfGeneralEntry 7 }
+
+xhaulOspfRFC1583Compatibility     OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfRFC1583Compatibility indicates the metrics used
+         to choose among multiple AS-external-LSAs. When
+         xhaulOspfRFC1583Compatibility is set to 'true', only cost will be used
+         when choosing among multiple AS-external-LSAs advertising the same
+         destination. When xhaulOspfRFC1583Compatibility is set to 'false',
+         preference will be driven first by the type of path using cost only to
+         break ties.
+
+         This object is valid only when xhaulOspfVersion is 'version2'."
+    REFERENCE
+        "OSPF Version 2, Section 16.4.1 External path preferences"
+    ::= { xhaulOspfGeneralEntry 8 }
+
+xhaulOspfExtLsdbLimit             OBJECT-TYPE
+    SYNTAX      Integer32 (-1..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfExtLsdbLimit specifies the maximum number of
+         non-default AS-external-LSAs entries that can be stored in the
+         link-state database. If the value is -1, then there is no limit.
+
+         When the number of non-default AS-external-LSAs in a router's
+         link-state database reaches xhaulOspfExtLsdbLimit, the
+         router enters Overflow state. The router never holds more than
+         xhaulOspfExtLsdbLimit non-default AS-external-LSAs in its
+         database.  xhaulOspfExtLsdbLimit MUST be set identically in
+         all routers attached to the OSPF backbone and/or any regular
+         OSPF area. (i.e., OSPF stub areas and NSSAs are excluded)."
+    ::= { xhaulOspfGeneralEntry 9 }
+
+
+xhaulOspfExitOverflowInterval     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfExitOverflowInterval specifies the number of
+         seconds that, after entering Overflow State, a router will attempt
+         to leave Overflow State. This allows the router to again originate
+         non-default  AS-external-LSAs. When set to 0, the router will not
+         leave Overflow state until restarted."
+    DEFVAL      { 0 }
+    ::= { xhaulOspfGeneralEntry 11 }
+
+xhaulOspfDemandExtensions         OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfDemandExtensions specifies the router's support
+         for demand routing."
+    REFERENCE
+        "OSPF Version 2, Appendix on Demand Routing"
+    ::= { xhaulOspfGeneralEntry 12 }
+
+xhaulOspfReferenceBandwidth       OBJECT-TYPE
+    SYNTAX      XhaulReferenceBandwidth (1..4000000000)
+    UNITS       "1000 bits per second"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfReferenceBandwidth specifies default
+         metrics to any OSPF interface.  The cost metric is calculated
+         by dividing the value of xhaulOspfReferenceBandwidth by the bandwidth
+         of the interface.  The default value of 100,000,000 Kbps or
+         100 Gps provides a 10-Mbs link with a cost of 10000, a 100-Mbs
+         link with a cost of 1000, a 1-Gbs link with a cost of 100 and
+         10-Gbs link with a cost of 10.  To override this default cost
+         on a particular interface, set xhaulOspfIfCfgMetric for that
+         interface.
+         The maximum value of 4,000,000,000 Kbps amounts to
+         4 Terabit per second."
+    DEFVAL      { 100000000 }
+    ::= { xhaulOspfGeneralEntry 13 }
+   
+xhaulOspfRestartHelperSupport           OBJECT-TYPE
+    SYNTAX      INTEGER {
+        none                (1),
+        plannedOnly         (2),
+        plannedAndUnplanned (3)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The value of xhaulOspfRestartHelperSupport specifies the router's support
+        for acting as an OSPF restart helper.  Options include: no restart support,
+        only planned restarts or both planned and unplanned restarts."
+    ::= { xhaulOspfGeneralEntry 66 }
+
+xhaulOspfRestartHelperStrictLsaChecking           OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfStrictLsaChecking specifies whether or not to
+         perform strict LSA checking during OSPF graceful restart."
+    DEFVAL      { true }
+    ::= { xhaulOspfGeneralEntry 14 }
+
+xhaulOspfRestartSupport           OBJECT-TYPE
+    SYNTAX      INTEGER {
+        none                (1),
+        plannedOnly         (2),
+        plannedAndUnplanned (3)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfRestartSupport specifies the router's support
+         for OSPF graceful restart.  Options include: no restart support,
+         only planned restarts or both planned and unplanned restarts."
+    ::= { xhaulOspfGeneralEntry 15 }
+
+xhaulOspfRestartInterval          OBJECT-TYPE
+    SYNTAX      XhaulOspfUpToRefreshIntervalTc
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfRestartInterval specifies the configured OSPF
+         graceful restart timeout interval."
+    ::= { xhaulOspfGeneralEntry 16 }
+
+xhaulOspfPreference               OBJECT-TYPE
+    SYNTAX      XhaulOspfPreference
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfPreference specifies the route preference for
+         OSPF internal routes."
+    DEFVAL      { 10 }
+    ::= { xhaulOspfGeneralEntry 17 }
+
+xhaulOspfExternalPreference       OBJECT-TYPE
+    SYNTAX      XhaulOspfPreference
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfExternalPreference specifies the route preference
+         for OSPF external routes."
+    DEFVAL      { 150 }
+    ::= { xhaulOspfGeneralEntry 18 }
+
+xhaulOspfSpfMaxWait               OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..120000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfSpfMaxWait defines the maximum interval between
+         two consecutive full SPF calculations."
+    DEFVAL      { 10000 }
+    ::= { xhaulOspfGeneralEntry 30 }
+
+xhaulOspfSpfInitialWait           OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..100000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfSpfInitialWait defines the hold down time before
+         a full SPF calculation delay after a topology change."
+    DEFVAL      { 1000 }
+    ::= { xhaulOspfGeneralEntry 31 }
+
+xhaulOspfSpfSecondWait            OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..100000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfSpfSecondWait defines the hold time between the
+         first and second SPF calculation. Subsequent SPF runs will occur at
+         exponentially increasing intervals of the xhaulOspfSpfSecondWait value
+         i.e., if xhaulOspfSpfSecondWait is 1000, then the next SPF triggered by
+         an event during this interval will run after 2000 msec, and the
+         subsequent one at 4000 msec, etc. until it is capped off at
+         xhaulOspfSpfMaxWait value. If this is configured as zero, there will be
+         no exponential backoff.
+
+         The SPF interval will stay at xhaulOspfSpfMaxWait value until there are
+         no more SPF runs scheduled in that interval. After a full interval
+         without any SPF runs, the SPF interval will drop back to
+         xhaulOspfSpfInitialWait."
+    DEFVAL      { 1000 }
+    ::= { xhaulOspfGeneralEntry 32 }
+
+xhaulOspfLsaGenMaxWait            OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..600000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLsaGenMaxWait defines the maximum interval
+         between two consecutive updates of a self generated LSA due to any
+         event. This is a way to manipulate the 'MinLSInterval'."
+    DEFVAL      { 5000 }
+    ::= { xhaulOspfGeneralEntry 33 }
+
+xhaulOspfLsaGenInitialWait        OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..600000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLsaGenInitialWait defines the initial LSA
+         generation delay after an event that causes the LSA generation or
+         update."
+    DEFVAL      { 5000 }
+    ::= { xhaulOspfGeneralEntry 34 }
+
+xhaulOspfLsaGenSecondWait         OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..600000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLsaGenSecondWait defines the hold time between
+         the first and second LSA generation.
+
+         Subsequent updates of that LSA will occur at exponentially increasing
+         intervals of xhaulOspfLsaGenSecondWait value i.e., if
+         xhaulOspfLsaGenSecondWait is 1000, then the next LS update triggered
+         during this interval will be processed after 2000 msec, and the
+         subsequent one at 4000 msec, etc. until it is capped off at
+         xhaulOspfLsaGenMaxWait. If this is configured as zero, there will be no
+         exponential backoff.
+
+         The LSA generate interval will stay at xhaulOspfLsaGenMaxWait value
+         until there are no more updates of that LSA triggered in that
+         interval. After a full interval without any updates of that LSA, the
+         LSA generate interval will be reset back to xhaulOspfLsaGenInitialWait."
+    DEFVAL      { 5000 }
+    ::= { xhaulOspfGeneralEntry 35 }
+
+xhaulOspfLsaArrivalWait           OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..600000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLsaArrivalWait defines the minimum interval
+         between two consecutive updates of an LSA received from any neighbor.
+         Any LSA update received before that is discarded. This is a way to
+         manipulate the 'MinLSArrival'."
+    DEFVAL      { 1000 }
+    ::= { xhaulOspfGeneralEntry 36 }
+
+xhaulOspfTESupport                OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfTESupport specifies whether or not TEs
+         are supported by this instance of OSPF.  When it has a value
+         of 'true', TEs are supported."
+    DEFVAL      { false }
+    ::= { xhaulOspfGeneralEntry 37 }
+
+xhaulOspfUnicastImport            OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfUnicastImport specifies whether OSPF protocol
+         will submit routes into the unicast Route Table Manage(RTM).
+
+         When xhaulOspfUnicastImport has a value of 'true', the OSPF protocol
+         submits routes into the unicast RTM, and when it has a value of
+         'false', it does not."
+    DEFVAL      { true }
+    ::= { xhaulOspfGeneralEntry 38 }
+
+
+xhaulOspfGREnable                 OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfGREnable specifies whether the graceful restart
+         is enabled or disabled for this instance of OSPF on the router.
+
+         When xhaulOspfGREnable has a value of 'true' graceful
+         restart capabilities are enabled.  When it has a value
+         of 'false' the graceful restart is disabled."
+    DEFVAL      { false }
+    ::= { xhaulOspfGeneralEntry 40 }
+
+xhaulOspfGRHelperMode             OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfGRHelperMode specifies whether the graceful
+         restart helper mode is enabled or disabled for this instance of OSPF
+         on the router. xhaulOspfGRHelperMode is valid only if the value of
+         xhaulOspfGREnable is 'true'.
+
+         When xhaulOspfGRHelperMode has a value of 'true' graceful
+         restart helper capabilities are enabled.  When it has a value
+         of 'false' the graceful restart helper capabilities are disabled."
+    DEFVAL      { true }
+    ::= { xhaulOspfGeneralEntry 41 }
+
+xhaulOspfRowStatus                OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfRowStatus variable is used for creation and deletion of
+         xhaulOspfGeneralTable row entries."
+    ::= { xhaulOspfGeneralEntry 42 }
+
+xhaulOspfLoopfreeAlternate        OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLoopfreeAlternate specifies whether to enable or
+         disable IP fast re-route capability for OSPF.
+
+         When the value of xhaulOspfLoopfreeAlternate is set to 'true' IP fast
+         re-route capability for OSPF is enabled and when
+         xhaulOspfLoopfreeAlternate is set to 'false' IP fast re-route
+         capability for OSPF is disabled."
+    DEFVAL      { false }
+    ::= { xhaulOspfGeneralEntry 61 }
+
+--
+-- xhaulOspfStatusTable              
+--
+
+xhaulOspfStatusTable              OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfStatusTable provides an extension of the
+         xhaulOspfGeneralTable for OSPF process statuses."
+    ::= { xhaulOspfObjects 3 }
+
+xhaulOspfStatusEntry              OBJECT-TYPE
+    SYNTAX      XhaulOspfStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry in the xhaulOspfStatusTable represents additional
+         columns for status objects for an OSPF instance."
+    AUGMENTS    { xhaulOspfGeneralEntry }
+    ::= { xhaulOspfStatusTable 1 }
+
+XhaulOspfStatusEntry              ::= SEQUENCE
+{
+    xhaulOspfAreaBdrRtrStatus         TruthValue,
+    xhaulOspfBackBoneRouter           TruthValue,
+    xhaulOspfStubRouterSupport        TruthValue,
+    xhaulOspfAsScopeLsaCount          Gauge32,
+    xhaulOspfAsScopeLsaCksumSum       Integer32,
+    xhaulOspfExternLsaCount           Gauge32,
+    xhaulOspfExternLsaCksumSum        Integer32,
+    xhaulOspfOpaqueLsaSupport         TruthValue,
+    xhaulOspfRestartStatus            INTEGER,
+    xhaulOspfRestartAge               XhaulOspfUpToRefreshIntervalTc,
+    xhaulOspfRestartExitRc            INTEGER,
+    xhaulOspfLastEnabledTime          TimeStamp,
+    xhaulOspfInOverflowState          TruthValue,    
+    xhaulOspfOperRouterId             XhaulOspfRouterIdTc,
+    xhaulOspfLastLfaSpfRunTime        TimeStamp,
+    xhaulOspfOperState                XhaulEnabledDisabled
+}
+
+xhaulOspfAreaBdrRtrStatus         OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaBdrRtrStatus indicates whether this router is
+         an area border router."
+    REFERENCE
+        "OSPF Version 2, Section 3 Splitting the AS into Areas"
+    ::= { xhaulOspfStatusEntry 1 }
+
+xhaulOspfBackBoneRouter           OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfBackBoneRouter indicates whether or not this
+         router is configured as an OSPF back bone router."
+    ::= { xhaulOspfStatusEntry 2 }
+
+xhaulOspfStubRouterSupport        OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfStubRouterSupport indicates the router's support
+         for stub router functionality."
+    REFERENCE
+        "OSPF Stub Router Advertisement"
+    ::= { xhaulOspfStatusEntry 3 }
+
+xhaulOspfAsScopeLsaCount          OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsScopeLsaCount indicates the number of AS-Scope
+         (e.g. AS-External) link state advertisements in the link-state
+         database."
+    ::= { xhaulOspfStatusEntry 4 }
+
+xhaulOspfAsScopeLsaCksumSum       OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsScopeLsaCksumSum indicates the 32-bit
+         unsigned sum of the LS checksums of the AS-scoped link-state
+         advertisements contained in the link-state database.  This sum
+         can be used to determine if there has been a change in a router's
+         link-state database, and to compare the link-state database of two
+         routers."
+    ::= { xhaulOspfStatusEntry 5 }
+
+xhaulOspfExternLsaCount           OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfExternLsaCount indicates the number of External
+         LSAs (LS type 0x4005) in the link-state database"
+    ::= { xhaulOspfStatusEntry 8 }
+
+xhaulOspfExternLsaCksumSum        OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfExternLsaCksumSum indicates the 32-bit
+         unsigned sum of the LS checksums of the external link-state
+         advertisements contained in the link-state database. This sum
+         can be used to determine if there has been a change in a router's
+         link state  database, and to compare the link-state database of
+         two routers."
+    ::= { xhaulOspfStatusEntry 9 }
+
+xhaulOspfOpaqueLsaSupport         OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfOpaqueLsaSupport indicates the router's support
+         for Opaque LSA types.
+
+         This object is valid only when xhaulOspfVersion is 'version2'."
+    REFERENCE
+        "The OSPF Opaque LSA Option"
+    ::= { xhaulOspfStatusEntry 10 }
+
+xhaulOspfRestartStatus            OBJECT-TYPE
+    SYNTAX      INTEGER {
+        notRestarting    (1),
+        plannedRestart   (2),
+        unplannedRestart (3)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfRestartStatus indicates the current status of
+         OSPF graceful restart capability."
+    ::= { xhaulOspfStatusEntry 11 }
+
+xhaulOspfRestartAge               OBJECT-TYPE
+    SYNTAX      XhaulOspfUpToRefreshIntervalTc
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfRestartAge indicates the remaining time in the
+         current OSPF graceful restart interval."
+    ::= { xhaulOspfStatusEntry 12 }
+
+xhaulOspfRestartExitRc            OBJECT-TYPE
+    SYNTAX      INTEGER {
+        none            (1),
+        inProgress      (2),
+        completed       (3),
+        timedOut        (4),
+        topologyChanged (5)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfRestartExitRc indicates the outcome of the last
+         attempt at a Graceful restart.
+
+              none (1)              no restart has yet been attempted.
+              inProgress (2)        a restart attempt is currently underway.
+              completed (3)         the last restart completed successfully.
+              timedOut (4)          the last restart timed out.
+              topologyChanged (5)   the last restart was aborted due to
+                                    a topology change."
+    ::= { xhaulOspfStatusEntry 13 }
+
+xhaulOspfLastEnabledTime          OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLastEnabledTime indicates the value of sysUpTime
+         when xhaulOspfAdminState was last set to 'enabled'. When
+         xhaulOspfAdminState is set to 'disabled', the OSPF counters are
+         stopped; when xhaulOspfAdminState is reset to 'enabled', the counters
+         are reset to zero."
+    ::= { xhaulOspfStatusEntry 15 }
+
+xhaulOspfInOverflowState          OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfInOverflowState indicates the current overflow
+         state (true/False). This overflow state occurs when the number of
+         non-default AS-external-LSAs entries exceed the link-state database
+         capability."
+    ::= { xhaulOspfStatusEntry 18 }
+
+xhaulOspfOperRouterId             OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfOperRouterId indicates the 32-bit integer
+         used to uniquely identify the router in the Autonomous System.
+         The default OSPF instance will use the value specified by
+         xhaulOspfRouterId or the one derived from the IP layer.  For
+         the non-default instances of OSPF, this is the same value as
+         xhaulOspfRouterId, which must be specified before the OSPF
+         instance can become operational."
+    ::= { xhaulOspfStatusEntry 33 }
+
+xhaulOspfLastLfaSpfRunTime        OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLastLfaSpfRunTime indicates the time at which the
+         system last performed a Dijkstra (LFA SPF) run."
+    ::= { xhaulOspfStatusEntry 35 }
+
+xhaulOspfOperState                OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabled
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfOperState indicates the current operating state
+         of this instance of OSPF in this router."
+    ::= { xhaulOspfStatusEntry 41 }
+
+
+--
+-- xhaulOspfStatisticsTable          
+--
+
+xhaulOspfStatisticsTable          OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfStatisticsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfStatisticsTable provides an extension of the
+         xhaulOspfGeneralTable for statistics for an OSPF instance."
+    ::= { xhaulOspfObjects 4 }
+
+xhaulOspfStatisticsEntry          OBJECT-TYPE
+    SYNTAX      XhaulOspfStatisticsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry in the xhaulOspfStatisticsTable represents additional
+         columns for statistics for an OSPF instance."
+    AUGMENTS    { xhaulOspfGeneralEntry }
+    ::= { xhaulOspfStatisticsTable 1 }
+
+XhaulOspfStatisticsEntry          ::= SEQUENCE
+{
+    xhaulOspfOriginateNewLsas         Counter32,
+    xhaulOspfRxNewLsas                Counter32,
+    xhaulOspfAreaEntries              Gauge32,
+    xhaulOspfAsLsdbEntries            Gauge32,
+    xhaulOspfAreaLsdbEntries          Gauge32,
+    xhaulOspfLinkLsdbEntries          Gauge32,
+    xhaulOspfIfEntries                Gauge32,
+    xhaulOspfNbrEntries               Gauge32,
+    xhaulOspfLfaSpfRuns               Counter32,
+    xhaulOspfStatsRlfaRuns            Counter32,
+    xhaulOspfStatsSidLabelRangeErrs   Counter32,
+    xhaulOspfStatsSidDupErrs          Counter32
+}
+
+xhaulOspfOriginateNewLsas         OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfOriginateNewLsas indicates the number of new
+         link-state advertisements that have been originated. This number is
+         incremented each time the router originates a new LSA."
+    ::= { xhaulOspfStatisticsEntry 2 }
+
+xhaulOspfRxNewLsas                OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfRxNewLsas indicates the number of link-state
+         advertisements received determined to be new instantiations. This
+         number does not include newer instantiations of self-originated
+         link-state advertisements."
+    ::= { xhaulOspfStatisticsEntry 3 }
+
+xhaulOspfAreaEntries              OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaEntries indicates the number of row entries
+         in the xhaulOspfAreaTable."
+    ::= { xhaulOspfStatisticsEntry 15 }
+
+xhaulOspfAsLsdbEntries            OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsLsdbEntries indicates the number of row entries
+         in the xhaulOspfAsLsdbTable."
+    ::= { xhaulOspfStatisticsEntry 17 }
+
+xhaulOspfAreaLsdbEntries          OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbEntries indicates the number of row
+         entries in the xhaulOspfAreaLsdbTable."
+    ::= { xhaulOspfStatisticsEntry 18 }
+
+xhaulOspfLinkLsdbEntries          OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbEntries indicates the number of row
+         entries in the xhaulOspfNgLinkLsdbTable."
+    ::= { xhaulOspfStatisticsEntry 19 }
+
+xhaulOspfIfEntries                OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfEntries indicates the number of row entries in
+         the xhaulOspfIfTable."
+    ::= { xhaulOspfStatisticsEntry 21 }
+
+xhaulOspfNbrEntries               OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrEntries indicates the number of row entries in
+         the xhaulOspfNgNbrTable."
+    ::= { xhaulOspfStatisticsEntry 23 }
+
+xhaulOspfLfaSpfRuns               OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLfaSpfRuns indicates the total number of times
+         that complete LFA SPF has been run on the router since OSPF was last
+         enabled."
+    ::= { xhaulOspfStatisticsEntry 36 }
+
+xhaulOspfStatsRlfaRuns            OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfStatsRlfaRuns indicates the number of
+         times remote-loopfree-alternate calculations have been made."
+    ::= { xhaulOspfStatisticsEntry 37 }
+
+xhaulOspfStatsSidLabelRangeErrs   OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfStatsSidLabelRangeErrs gives the total number of
+         errors for SIDs that are not within the label-range of the router."
+    ::= { xhaulOspfStatisticsEntry 38 }
+
+xhaulOspfStatsSidDupErrs          OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfStatsSidDupErrs gives the total number of errors
+         for SIDs which are already assigned to another prefix."
+    ::= { xhaulOspfStatisticsEntry 39 }
+
+--
+-- xhaulOspfChangedTable  
+--
+
+xhaulOspfChangedTable             OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfChangedEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfChangedTable provides an extension of the
+         xhaulOspfGeneralTable for last changed timestamps for an OSPF instance."
+    ::= { xhaulOspfObjects 5 }
+
+xhaulOspfChangedEntry             OBJECT-TYPE
+    SYNTAX      XhaulOspfChangedEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry in the xhaulOspfChangedTable represents additional
+         columns for last changed timestamps for an OSPF instance."
+    AUGMENTS    { xhaulOspfGeneralEntry }
+    ::= { xhaulOspfChangedTable 1 }
+
+XhaulOspfChangedEntry             ::= SEQUENCE
+{
+    xhaulOspfAreaTableChanged         TimeStamp,
+    xhaulOspfIfTableChanged           TimeStamp,
+    xhaulOspfNbrTableChanged          TimeStamp
+}
+
+xhaulOspfAreaTableChanged         OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaTableChanged indicates the sysUpTime
+         when a configurable object in the xhaulOspfAreaTable was last
+         modified for this OSPF instance.  If no modifications have been
+         made since this instance of OSPF was created,
+         xhaulOspfAreaTableChanged will have a 0 value."
+    ::= { xhaulOspfChangedEntry 1 }
+
+xhaulOspfIfTableChanged           OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTableChanged indicates the sysUpTime
+         when a configurable object in the xhaulOspfIfTable was last
+         modified for this OSPF instance.  If no modifications have been
+         made since this instance of OSPF was created, xhaulOspfIfTableChanged
+         will have a 0 value."
+    ::= { xhaulOspfChangedEntry 3 }
+
+xhaulOspfNbrTableChanged          OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrTableChanged indicates the sysUpTime
+         when a configurable object in the xhaulOspfNgNbrTable was last
+         modified for this OSPF instance.  If no modifications have been
+         made since this instance of OSPF was created,
+         xhaulOspfNbrTableChanged will have a 0 value."
+    ::= { xhaulOspfChangedEntry 5 }
+
+--
+-- xhaulOspfAreaTable
+--
+
+xhaulOspfAreaTable                OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfAreaEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfAreaTable contains information describing the configured
+         parameters and cumulative statistics of the router's attached areas."
+    REFERENCE
+        "OSPF Version 2, Section 6 The Area Data Structure"
+    ::= { xhaulOspfObjects 6 }
+
+xhaulOspfAreaEntry                OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfAreaEntry contains information describing the configured
+         parameters and cumulative statistics of one of the router's attached
+         areas."
+    INDEX       {
+        vRtrID,
+        xhaulOspfVersion,
+        xhaulOspfInstance,
+        xhaulOspfAreaId
+    }
+    ::= { xhaulOspfAreaTable 1 }
+
+XhaulOspfAreaEntry                ::= SEQUENCE
+{
+    xhaulOspfAreaId                   XhaulOspfAreaIdTc,
+    xhaulOspfAreaStatus               RowStatus,
+    xhaulOspfAreaLastChanged          TimeStamp,
+    xhaulOspfImportAsExtern           INTEGER,
+    xhaulOspfAreaSummary              INTEGER,
+    xhaulOspfStubMetric               BigMetric,
+    xhaulOspfAreaStubMetricType       INTEGER,
+    xhaulOspfAreaBdrRtrCount          Gauge32,
+    xhaulOspfAreaAsBdrRtrCount        Gauge32,
+    xhaulOspfAreaScopeLsaCount        Gauge32,
+    xhaulOspfAreaScopeLsaCksumSum     Integer32,
+
+    xhaulOspfAreaActiveInterfaces     Unsigned32,
+    xhaulOspfAreaInterfaceCount       Unsigned32,
+  
+    xhaulOspfAreaSpfRuns              Counter32,
+ 
+    xhaulOspfAreaLoopfreeAltExclude   TruthValue,
+    xhaulOspfAreaAdvRtrCapability     TruthValue
+
+}
+
+xhaulOspfAreaId                   OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaId specifies a 32-bit integer uniquely
+         identifying an area.  Area ID 0 is used for the OSPF backbone."
+    REFERENCE
+        "OSPF Version 2, Appendix C.2 Area parameters"
+    ::= { xhaulOspfAreaEntry 1 }
+
+xhaulOspfAreaStatus               OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfAreaStatus variable is used for creation and deletion of
+         xhaulOspfAreaTable row entries."
+    ::= { xhaulOspfAreaEntry 2 }
+
+xhaulOspfAreaLastChanged          OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLastChanged indicates the sysUpTime when a
+         configurable object in this row was last modified."
+    ::= { xhaulOspfAreaEntry 3 }
+
+xhaulOspfImportAsExtern           OBJECT-TYPE
+    SYNTAX      INTEGER {
+        importExternal   (1),
+        importNoExternal (2),
+        importNssa       (3)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfImportAsExtern specifies whether an area is a
+         Stub area, NSSA, or standard area. AS-scope LSAs are not imported into
+         Stub Areas or NSSAs. NSSAs import AS-External data as NSSA LSAs which
+         have Area-scope"
+    REFERENCE
+        "OSPF Version 2, Appendix C.2 Area parameters"
+    DEFVAL      { importExternal }
+    ::= { xhaulOspfAreaEntry 4 }
+
+xhaulOspfAreaSummary              OBJECT-TYPE
+    SYNTAX      INTEGER {
+        noAreaSummary   (1),
+        sendAreaSummary (2)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaSummary specifies how the Inter-Area LSAs are
+         imported into stub areas. It has no effect on other areas.
+
+         If it is 'noAreaSummary (1)', the router will neither originate nor
+         propagate Inter-Area LSAs into the stub area. It will rely entirely on
+         its default route.
+
+         If it is 'sendAreaSummary (2)', the router will both summarize and
+         propagate Inter-Area LSAs."
+    DEFVAL      { sendAreaSummary }
+    ::= { xhaulOspfAreaEntry 5 }
+
+xhaulOspfStubMetric               OBJECT-TYPE
+    SYNTAX      BigMetric
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfStubMetric specifies the metric value advertised
+         for the default route into Stub and NSSA areas."
+    ::= { xhaulOspfAreaEntry 7 }
+
+xhaulOspfAreaStubMetricType       OBJECT-TYPE
+    SYNTAX      INTEGER {
+        ospfMetric     (1),
+        comparableCost (2),
+        nonComparable  (3)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaStubMetricType specifies the type of metric
+         advertised as a default route."
+    DEFVAL      { ospfMetric }
+    ::= { xhaulOspfAreaEntry 8 }
+
+xhaulOspfAreaBdrRtrCount          OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaBdrRtrCount indicates the total number of
+         area border routers reachable within this area. This is initially
+         zero, and is calculated in each SPF pass."
+    ::= { xhaulOspfAreaEntry 13 }
+
+xhaulOspfAreaAsBdrRtrCount        OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaAsBdrRtrCount indicates the total number of
+         Autonomous System border routers reachable within this area. This is
+         initially zero, and is calculated in each SPF pass."
+    ::= { xhaulOspfAreaEntry 14 }
+
+xhaulOspfAreaScopeLsaCount        OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaScopeLsaCount indicates the total number of
+         Area-Scope link state advertisements in this area's link-state
+         database."
+    ::= { xhaulOspfAreaEntry 15 }
+
+xhaulOspfAreaScopeLsaCksumSum     OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaScopeLsaCksumSum indicates the 32-bit
+         unsigned sum of the Area-Scope link state advertisements' LS checksums
+         contained in this area's link-state database. The sum can be used to
+         determine if there has been a change in a router's link-state
+         database, and to compare the link-state database of two routers."
+    ::= { xhaulOspfAreaEntry 16 }
+
+xhaulOspfAreaActiveInterfaces     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaActiveInterfaces indicates the total number
+         of currently active interfaces in this area."
+    ::= { xhaulOspfAreaEntry 20 }
+
+xhaulOspfAreaInterfaceCount       OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaInterfaceCount indicates total number of
+         interfaces configured in this area."
+    ::= { xhaulOspfAreaEntry 21 }
+
+xhaulOspfAreaSpfRuns              OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaSpfRuns indicates the number of times that
+         the intra-area route table has been calculated using this area's
+         link-state database. This is typically done using Dijkstra's
+         algorithm."
+    ::= { xhaulOspfAreaEntry 24 }
+
+xhaulOspfAreaLoopfreeAltExclude   OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLoopfreeAltExclude specifies whether or not
+         the OSPF area should be excluded during LFA calculations. If the value
+         is 'true', the OSPF area is excluded from LFA calculations. If the
+         value is 'false', the OSPF area is included in LFA calculations.
+
+         The value of xhaulOspfAreaLoopfreeAltExclude is only valid when
+         xhaulOspfLoopfreeAlternate has a value of 'true'."
+    DEFVAL      { false }
+    ::= { xhaulOspfAreaEntry 29 }
+
+xhaulOspfAreaAdvRtrCapability     OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaAdvRtrCapability specifies whether or not
+         advertise-router-capabilities are enabled at area level."
+    DEFVAL      { true }
+    ::= { xhaulOspfAreaEntry 31 }
+
+
+--
+-- xhaulOspfAsLsdbTable
+--
+
+xhaulOspfAsLsdbTable              OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfAsLsdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The OSPF Process's AS-Scope Link State Database."
+    ::= { xhaulOspfObjects 8 }
+
+xhaulOspfAsLsdbEntry              OBJECT-TYPE
+    SYNTAX      XhaulOspfAsLsdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A single AS-Scope Link State Advertisement."
+    INDEX       {
+        vRtrID,
+        xhaulOspfVersion,
+        xhaulOspfInstance,
+        xhaulOspfAsLsdbType,
+        xhaulOspfAsLsdbRouterId,
+        xhaulOspfAsLsdbLsid
+    }
+    ::= { xhaulOspfAsLsdbTable 1 }
+
+XhaulOspfAsLsdbEntry              ::= SEQUENCE
+{
+    xhaulOspfAsLsdbType               Unsigned32,
+    xhaulOspfAsLsdbRouterId           XhaulOspfRouterIdTc,
+    xhaulOspfAsLsdbLsid               Unsigned32,
+    xhaulOspfAsLsdbSequence           Integer32,
+    xhaulOspfAsLsdbAge                Integer32,
+    xhaulOspfAsLsdbChecksum           Integer32,
+    xhaulOspfAsLsdbAdvertisement      OCTET STRING,
+    xhaulOspfAsLsdbTypeKnown          TruthValue
+}
+
+xhaulOspfAsLsdbType               OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsLsdbType specifies the type of the link-state
+         advertisement.  Each link-state type has a separate advertisement
+         format.  AS-Scope LSAs not recognized by the router may be stored
+         in the database."
+    ::= { xhaulOspfAsLsdbEntry 1 }
+
+xhaulOspfAsLsdbRouterId           OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsLsdbRouterId specifies the 32-bit number that
+         uniquely identifies the originating router in the Autonomous System."
+    REFERENCE
+        "OSPF Version 2, Appendix C.1 Global parameters"
+    ::= { xhaulOspfAsLsdbEntry 2 }
+
+xhaulOspfAsLsdbLsid               OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsLsdbLsid specifies the Link State ID that
+         is an LS Type Specific field containing a unique identifier;
+         it identifies the piece of the routing domain that is being
+         described by the advertisement.  In OSPFv3, the LSID has no
+         addressing semantics."
+    ::= { xhaulOspfAsLsdbEntry 3 }
+
+xhaulOspfAsLsdbSequence           OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsLsdbSequence indicates the signed 32-bit
+         integer sequence number field. It is used to detect old and duplicate
+         link-state advertisements. The space of sequence numbers is linearly
+         ordered. The larger the sequence number the more recent the
+         advertisement."
+    REFERENCE
+        "OSPF Version  2,  Section  12.1.6  LS  sequence number"
+    ::= { xhaulOspfAsLsdbEntry 4 }
+
+xhaulOspfAsLsdbAge                OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsLsdbAge indicates the age of the link-state
+         advertisement in seconds."
+    REFERENCE
+        "OSPF Version 2, Section 12.1.1 LS age"
+    ::= { xhaulOspfAsLsdbEntry 5 }
+
+xhaulOspfAsLsdbChecksum           OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsLsdbChecksum indicates the checksum of the
+         complete contents of the advertisement, excepting the age field. The
+         age field is excepted so that an advertisement's age can be
+         incremented without updating the checksum. The checksum used is the
+         same that is used for ISO connectionless datagrams; it is commonly
+         referred to as the Fletcher checksum."
+    REFERENCE
+        "OSPF Version 2, Section 12.1.7 LS checksum"
+    ::= { xhaulOspfAsLsdbEntry 6 }
+
+xhaulOspfAsLsdbAdvertisement      OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (1..65535))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsLsdbAdvertisement indicates the entire Link
+         State Advertisement, including its header."
+    ::= { xhaulOspfAsLsdbEntry 7 }
+
+xhaulOspfAsLsdbTypeKnown          OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAsLsdbTypeKnown indicates whether the LSA type is
+         recognized by this Router."
+    ::= { xhaulOspfAsLsdbEntry 8 }
+
+--
+-- xhaulOspfAreaLsdbTable
+--
+
+xhaulOspfAreaLsdbTable            OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfAreaLsdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfAreaLsdbTable contains the OSPF Process's Area-Scope Link
+         State Database."
+    ::= { xhaulOspfObjects 9 }
+
+xhaulOspfAreaLsdbEntry            OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaLsdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfAreaLsdbEntry contains information about a single
+         Area-Scope Link State Advertisement."
+    INDEX       {
+        vRtrID,
+        xhaulOspfVersion,
+        xhaulOspfInstance,
+        xhaulOspfAreaLsdbAreaId,
+        xhaulOspfAreaLsdbType,
+        xhaulOspfAreaLsdbRouterId,
+        xhaulOspfAreaLsdbLsid
+    }
+    ::= { xhaulOspfAreaLsdbTable 1 }
+
+XhaulOspfAreaLsdbEntry            ::= SEQUENCE
+{
+    xhaulOspfAreaLsdbAreaId           XhaulOspfAreaIdTc,
+    xhaulOspfAreaLsdbType             Unsigned32,
+    xhaulOspfAreaLsdbRouterId         XhaulOspfRouterIdTc,
+    xhaulOspfAreaLsdbLsid             Unsigned32,
+    xhaulOspfAreaLsdbSequence         Integer32,
+    xhaulOspfAreaLsdbAge              Integer32,
+    xhaulOspfAreaLsdbChecksum         Integer32,
+    xhaulOspfAreaLsdbAdvertisement    OCTET STRING,
+    xhaulOspfAreaLsdbTypeKnown        TruthValue
+}
+
+xhaulOspfAreaLsdbAreaId           OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbAreaId specifies the 32-bit identifier of
+         the Area from which the LSA was received."
+    REFERENCE
+        "OSPF Version 2, Appendix C.2 Area parameters"
+    ::= { xhaulOspfAreaLsdbEntry 1 }
+
+xhaulOspfAreaLsdbType             OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbType specifies the type of the
+         link state advertisement.  Each link state type has a separate
+         advertisement format. Area-Scope LSAs unrecognized by the router
+         are also stored in this database."
+    ::= { xhaulOspfAreaLsdbEntry 2 }
+
+xhaulOspfAreaLsdbRouterId         OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbRouterId specifies the 32-bit number that
+         uniquely identifies the originating router in the Autonomous System."
+    REFERENCE
+        "OSPF Version 2, Appendix C.1 Global parameters"
+    ::= { xhaulOspfAreaLsdbEntry 3 }
+
+xhaulOspfAreaLsdbLsid             OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbLsid specifies the Link State ID that
+         is an LS Type Specific field containing a unique identifier;
+         it identifies the piece of the routing domain that is being
+         described by the advertisement.  In OSPFv3, the LSID has no
+         addressing semantics."
+    ::= { xhaulOspfAreaLsdbEntry 4 }
+
+xhaulOspfAreaLsdbSequence         OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbSequence indicates the signed
+         32-bit integer that is the sequence number field.  It is used
+         to detect old and duplicate link-state advertisements.  The
+         space of sequence numbers is linearly ordered.  The larger
+         the sequence number the more recent the advertisement."
+    REFERENCE
+        "OSPF Version  2,  Section  12.1.6  LS  sequence
+         number"
+    ::= { xhaulOspfAreaLsdbEntry 5 }
+
+xhaulOspfAreaLsdbAge              OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbAge indicates the age of the link-state
+         advertisement in seconds."
+    REFERENCE
+        "OSPF Version 2, Section 12.1.1 LS age"
+    ::= { xhaulOspfAreaLsdbEntry 6 }
+
+xhaulOspfAreaLsdbChecksum         OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbChecksum indicates the checksum of the
+         complete contents of the advertisement, excepting the age field. The
+         age field is excepted so that an advertisement's age can be
+         incremented without updating the checksum. The checksum used is the
+         same that is used for ISO connectionless datagrams; it is commonly
+         referred to as the Fletcher checksum."
+    REFERENCE
+        "OSPF Version 2, Section 12.1.7 LS checksum"
+    ::= { xhaulOspfAreaLsdbEntry 7 }
+
+xhaulOspfAreaLsdbAdvertisement    OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (1..65535))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbAdvertisement indicates the entire Link
+         State Advertisement, including its header."
+    ::= { xhaulOspfAreaLsdbEntry 8 }
+
+xhaulOspfAreaLsdbTypeKnown        OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAreaLsdbTypeKnown indicates whether the LSA type
+         is recognized by this Router."
+    ::= { xhaulOspfAreaLsdbEntry 9 }
+
+
+--
+--
+
+xhaulOspfNotifyObjs               OBJECT IDENTIFIER ::= { xhaulOspfMib 2 }
+
+xhaulOspfConfigErrorType          OBJECT-TYPE
+    SYNTAX      INTEGER {
+        badVersion            (1),
+        areaMismatch          (2),
+        unknownNbmaNbr        (3),
+        unknownVirtualNbr     (4),
+        authTypeMismatch      (5),
+        authFailure           (6),
+        netMaskMismatch       (7),
+        helloIntervalMismatch (8),
+        deadIntervalMismatch  (9),
+        optionMismatch        (10),
+        mtuMismatch           (11),
+        duplicateRouterId     (12),
+        noError               (13),
+        instanceMismatch      (14),
+        ifTypeMismatch        (1001),
+        nullRouterId          (1002),
+        ifAdminDown           (1003),
+        ifPassive             (1004)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfConfigErrorType indicates the potential types
+         of configuration conflicts.  Used  by the xhaulOspfIfConfigError and
+         xhaulOspfVirtIfConfigError notifications.  When the last value of a
+         notification using this object is needed, but no notifications of
+         that type have been sent, the value pertaining to this object
+         should be returned as 'noError'."
+    ::= { xhaulOspfNotifyObjs 2 }
+
+xhaulOspfPacketType               OBJECT-TYPE
+    SYNTAX      INTEGER {
+        hello      (1),
+        dbDescript (2),
+        lsReq      (3),
+        lsUpdate   (4),
+        lsAck      (5),
+        nullPacket (6)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfPacketType indicates the OSPF packet type. When
+         the last value of a notification using this object is needed, but no
+         notifications of that type have been sent, this value pertaining to
+         this object should be returned as 'nullPacket'."
+    ::= { xhaulOspfNotifyObjs 3 }
+
+xhaulOspfPacketSrcAddressType     OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The IP address type of xhaulOspfPacketSrcAddress."
+    ::= { xhaulOspfNotifyObjs 4 }
+
+xhaulOspfPacketSrcAddress         OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (4|16|20))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfPacketSrcAddress indicates the IP address of an
+         inbound packet that cannot be identified by a neighbor instance. When
+         the last value of a notification using this object is needed, but no
+         notifications of that type have been sent, this value pertaining to
+         this object should be returned as 0.0.0.0"
+    ::= { xhaulOspfNotifyObjs 5 }
+
+xhaulOspfIfAddressType        OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfAddressType specifies the IP address type of the IP
+         interface on which OSPF (that has experienced a state change) is configured.  
+	 It is used by the xhaulOspfIfStateChange notification."
+    ::= { xhaulOspfNotifyObjs 6 }
+
+xhaulOspfIfAddress 	OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (0|4|16|20))
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfAddress specifies the IP address of the IP
+         interface on which OSPF (that has experienced a state change) is configured.  
+	 It is used by the xhaulOspfIfStateChange notification."
+    ::= { xhaulOspfNotifyObjs 7 }
+
+xhaulOspfNotifPfxSidRangeStartLbl OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifPfxSidRangeStartLbl indicates the start
+         label of the first segment of a Segment Routing Global Block."
+    ::= { xhaulOspfNotifyObjs 10 }
+
+xhaulOspfNotifPfxSidRangeMaxIdx   OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifPfxSidRangeMaxIdx indicates the maximum SID
+         index of the first segment of a Segment Routing Global Block."
+    ::= { xhaulOspfNotifyObjs 11 }
+
+xhaulOspfNotifPfxNhAdvRtr         OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfNotifPfxNhAdvRtr indicates the
+         system-id of the IS through which this prefix-sid is reachable."
+    ::= { xhaulOspfNotifyObjs 12 }
+
+xhaulOspfNotifSrgbAreaId          OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaIdTc
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfNotifSrgbAreaId indicates the OSPF
+         Area at which the SRGB was learned."
+    ::= { xhaulOspfNotifyObjs 13 }
+
+xhaulOspfRouterId		OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+       "The value of xhaulOspfRouterId specifies a 32-bit integer uniquely
+         identifying the router in the Autonomous System.  By convention
+         to ensure uniqueness, this may default to the value of one of the
+         router's IPv4 host addresses, represented as a 32-bit unsigned
+         integer, if IPv4 is configured on the router."
+    ::= { xhaulOspfNotifyObjs 14 }
+
+xhaulOspfNotifAreaLsdbAreaId           OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaIdTc
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifAreaLsdbAreaId specifies the 32-bit identifier of
+         the Area from which the LSA was received."
+    ::= { xhaulOspfNotifyObjs 15 }
+
+xhaulOspfNotifAreaLsdbType	OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifAreaLsdbType	specifies the type of the
+         link state advertisement.  Each link state type has a separate
+         advertisement format. Area-Scope LSAs unrecognized by the router
+         are also stored in this database."
+    ::= { xhaulOspfNotifyObjs 16 }
+
+xhaulOspfNotifAreaLsdbLsid             OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifAreaLsdbLsid  specifies the Link State ID that
+         is an LS Type Specific field containing a unique identifier;
+         it identifies the piece of the routing domain that is being
+         described by the advertisement.  In OSPFv3, the LSID has no
+         addressing semantics."
+    ::= { xhaulOspfNotifyObjs 17 }
+
+xhaulOspfNotifAreaLsdbRouterId         OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifAreaLsdbRouterId specifies the 32-bit number that
+         uniquely identifies the originating router in the Autonomous System."
+    ::= { xhaulOspfNotifyObjs 18 }
+
+xhaulOspfNotifAsLsdbType               OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifAsLsdbType specifies the type of the link-state
+         advertisement.  Each link-state type has a separate advertisement
+         format.  AS-Scope LSAs not recognized by the router may be stored
+         in the database."
+    ::= { xhaulOspfNotifyObjs 19 }
+
+xhaulOspfNotifAsLsdbRouterId           OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifAsLsdbRouterId specifies the 32-bit number that
+         uniquely identifies the originating router in the Autonomous System."
+    ::= { xhaulOspfNotifyObjs 20 }
+
+xhaulOspfNotifAsLsdbLsid               OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifAsLsdbLsid specifies the Link State ID that
+         is an LS Type Specific field containing a unique identifier;
+         it identifies the piece of the routing domain that is being
+         described by the advertisement.  In OSPFv3, the LSID has no
+         addressing semantics."
+    ::= { xhaulOspfNotifyObjs 21 }
+
+xhaulOspfNotifNbrRtrId               OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifNbrRtrId specifies a 32-bit integer uniquely
+         identifying the neighboring router in the Autonomous System."
+    ::= { xhaulOspfNotifyObjs 22 }
+
+xhaulOspfNotifLinkLsdbIfAreaId       OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaIdTc
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifLinkLsdbIfAreaId specifies specifies the OSPF
+         Area Identifier."
+    ::= { xhaulOspfNotifyObjs 23 }
+
+xhaulOspfNotifLinkLsdbType           OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifLinkLsdbType specifies the type of the
+         link state advertisement.  Each link state type has a separate
+         advertisement format. Link-Scope LSAs unrecognized by the router
+         are also stored in this database."
+    ::= { xhaulOspfNotifyObjs 24 }
+
+xhaulOspfNotifLinkLsdbRouterId       OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifLinkLsdbRouterId specifies the 32-bit number
+         that uniquely identifies the originating router in the Autonomous
+         System."
+    REFERENCE
+        "OSPF Version 2, Appendix C.1 Global parameters"
+    ::= { xhaulOspfNotifyObjs 25 }
+
+xhaulOspfNotifLinkLsdbLsid           OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNotifLinkLsdbLsid specifies the Link State ID that
+         is an LS Type Specific field containing a unique identifier; it
+         identifies the piece of the routing domain that is being described by
+         the advertisement. In OSPFv3, the LSID has no addressing semantics."
+    ::= { xhaulOspfNotifyObjs 26 }
+
+--
+-- xhaulOspfLinkLsdbTable
+--
+
+xhaulOspfLinkLsdbTable          OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfLinkLsdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfLinkLsdbTable contains the OSPF Process's Link-Scope
+         Link State Database."
+    ::= { xhaulOspfObjects 30 }
+
+xhaulOspfLinkLsdbEntry          OBJECT-TYPE
+    SYNTAX      XhaulOspfLinkLsdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfLinkLsdbEntry contains information for a single
+         Link-Scope Link State Advertisement."
+    INDEX       {
+        vRtrID,
+        xhaulOspfVersion,
+        xhaulOspfInstance,
+        xhaulOspfLinkLsdbIfIndex,
+        xhaulOspfLinkLsdbIfInstId,
+        xhaulOspfLinkLsdbIfAreaId,
+        xhaulOspfLinkLsdbType,
+        xhaulOspfLinkLsdbRouterId,
+        xhaulOspfLinkLsdbLsid
+    }
+    ::= { xhaulOspfLinkLsdbTable 1 }
+
+XhaulOspfLinkLsdbEntry          ::= SEQUENCE
+{
+    xhaulOspfLinkLsdbIfIndex        InterfaceIndex,
+    xhaulOspfLinkLsdbIfInstId       XhaulOspfIfInstIdTc,
+    xhaulOspfLinkLsdbIfAreaId       XhaulOspfAreaIdTc,
+    xhaulOspfLinkLsdbType           Unsigned32,
+    xhaulOspfLinkLsdbRouterId       XhaulOspfRouterIdTc,
+    xhaulOspfLinkLsdbLsid           Unsigned32,
+    xhaulOspfLinkLsdbSequence       Integer32,
+    xhaulOspfLinkLsdbAge            Integer32,
+    xhaulOspfLinkLsdbChecksum       Integer32,
+    xhaulOspfLinkLsdbAdvertisement  OCTET STRING,
+    xhaulOspfLinkLsdbTypeKnown      TruthValue
+}
+
+xhaulOspfLinkLsdbIfIndex        OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbIfIndex specifies the identifier of the
+         link from which the LSA was received."
+    ::= { xhaulOspfLinkLsdbEntry 1 }
+
+xhaulOspfLinkLsdbIfInstId       OBJECT-TYPE
+    SYNTAX      XhaulOspfIfInstIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbIfInstId specifies the identifier of
+         the interface instance from which the LSA was received."
+    ::= { xhaulOspfLinkLsdbEntry 2 }
+
+xhaulOspfLinkLsdbIfAreaId       OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbIfAreaId specifies specifies the OSPF
+         Area Identifier."
+    ::= { xhaulOspfLinkLsdbEntry 3 }
+
+xhaulOspfLinkLsdbType           OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbType specifies the type of the
+         link state advertisement.  Each link state type has a separate
+         advertisement format. Link-Scope LSAs unrecognized by the router
+         are also stored in this database."
+    ::= { xhaulOspfLinkLsdbEntry 4 }
+
+xhaulOspfLinkLsdbRouterId       OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbRouterId specifies the 32-bit number
+         that uniquely identifies the originating router in the Autonomous
+         System."
+    REFERENCE
+        "OSPF Version 2, Appendix C.1 Global parameters"
+    ::= { xhaulOspfLinkLsdbEntry 5 }
+
+xhaulOspfLinkLsdbLsid           OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbLsid specifies the Link State ID that
+         is an LS Type Specific field containing a unique identifier; it
+         identifies the piece of the routing domain that is being described by
+         the advertisement. In OSPFv3, the LSID has no addressing semantics."
+    ::= { xhaulOspfLinkLsdbEntry 6 }
+
+xhaulOspfLinkLsdbSequence       OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbSequence indicates the signed 32-bit
+         integer sequence number field. It is used to detect old and duplicate
+         link-state advertisements. The space of sequence numbers is linearly
+         ordered. The larger the sequence number the more recent the
+         advertisement."
+    REFERENCE
+        "OSPF Version  2,  Section  12.1.6  LS  sequence
+         number"
+    ::= { xhaulOspfLinkLsdbEntry 7 }
+
+xhaulOspfLinkLsdbAge            OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbAge indicates the age of the link-state
+         advertisement in seconds."
+    REFERENCE
+        "OSPF Version 2, Section 12.1.1 LS age"
+    ::= { xhaulOspfLinkLsdbEntry 8 }
+
+xhaulOspfLinkLsdbChecksum       OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbChecksum indicates the checksum
+         of the complete contents of the advertisement, excepting the
+         age field. The age field is excepted so that an advertisement's
+         age can be incremented without updating the checksum.  The
+         checksum used is the same that is used for ISO connectionless
+         datagrams; it is commonly referred to as the Fletcher checksum."
+    REFERENCE
+        "OSPF Version 2, Section 12.1.7 LS checksum"
+    ::= { xhaulOspfLinkLsdbEntry 9 }
+
+xhaulOspfLinkLsdbAdvertisement  OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (1..65535))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbAdvertisement indicates the entire Link
+         State Advertisement, including its header."
+    ::= { xhaulOspfLinkLsdbEntry 10 }
+
+xhaulOspfLinkLsdbTypeKnown      OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfLinkLsdbTypeKnown indicates whether the LSA
+         type is recognized by this Router."
+    ::= { xhaulOspfLinkLsdbEntry 11 }
+
+--
+-- xhaulOspfIfTable
+--
+
+xhaulOspfIfTable                OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfIfTable contains information about the interfaces
+         associated with OSPF."
+    REFERENCE
+        "OSPF Version 2, Appendix C.3 Router interface parameters"
+    ::= { xhaulOspfObjects 31 }
+
+xhaulOspfIfEntry                OBJECT-TYPE
+    SYNTAX      XhaulOspfIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfIfEntry contains information about one interface
+         associated with OSPF."
+    INDEX       {
+        vRtrID,
+        xhaulOspfVersion,
+        xhaulOspfInstance,
+        xhaulOspfIfIndex,
+        xhaulOspfIfInstId,
+        xhaulOspfIfAreaId
+    }
+    ::= { xhaulOspfIfTable 1 }
+
+XhaulOspfIfEntry                ::= SEQUENCE
+{
+    xhaulOspfIfIndex                InterfaceIndex,
+    xhaulOspfIfInstId               XhaulOspfIfInstIdTc,
+    xhaulOspfIfAreaId               XhaulOspfAreaIdTc,
+    xhaulOspfIfStatus               RowStatus,
+    xhaulOspfIfLastChanged          TimeStamp,
+    xhaulOspfIfCfgType              XhaulOspfIfTypeTc,
+    xhaulOspfIfAdminState           Status,
+    xhaulOspfIfRtrPriority          DesignatedRouterPriority,
+    xhaulOspfIfTransitDelay         XhaulOspfUpToRefreshIntervalTc,
+    xhaulOspfIfRetransInterval      XhaulOspfUpToRefreshIntervalTc,
+    xhaulOspfIfHelloInterval        HelloRange,
+    xhaulOspfIfRtrDeadInterval      XhaulOspfDeadIntRangeTc,
+    xhaulOspfIfCfgMetric            Metric,
+    xhaulOspfIfPassive              TruthValue,
+    xhaulOspfIfAdvtSubnet           TruthValue,
+    xhaulOspfIfAuthType             XhaulOspfAuthenticationType,
+    xhaulOspfIfEnableBfd            TruthValue,
+    xhaulOspfIfRemainDownOnFail     TruthValue,
+    xhaulOspfIfLoopfreeAltExclude   TruthValue,
+    xhaulOspfIfLsaFilterOut         XhaulOspfLsaFilterOutTc,
+    xhaulOspfIfAdvRtrCapability     TruthValue,
+    xhaulOspfIfSidType              INTEGER,
+    xhaulOspfIfSidValue             Unsigned32,
+    xhaulOspfIfSidClearNFlag        TruthValue
+}
+
+xhaulOspfIfIndex                OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfIndex specifies the interface index of
+         this OSPF interface.  It corresponds to the interface index of the
+         IP interface on which OSPF is configured."
+    ::= { xhaulOspfIfEntry 1 }
+
+xhaulOspfIfInstId               OBJECT-TYPE
+    SYNTAX      XhaulOspfIfInstIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfInstId specifies the OSPF instance.  It
+         enables multiple interface instances of OSPF to be run over a
+         single link. Each protocol instance would be assigned a separate
+         ID. This ID has local link significance only."
+    ::= { xhaulOspfIfEntry 2 }
+
+xhaulOspfIfAreaId               OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfAreaId specifies a 32-bit integer uniquely
+         identifying the area to which the interface connects. Area ID 0 is
+         used for the OSPF backbone."
+    ::= { xhaulOspfIfEntry 3 }
+
+xhaulOspfIfStatus               OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfStatus controls creation and deletion of a
+         row entry in this table."
+    ::= { xhaulOspfIfEntry 4 }
+
+xhaulOspfIfLastChanged          OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfLastChanged indicates the sysUpTime when a
+         configurable object in this row was last modified."
+    ::= { xhaulOspfIfEntry 5 }
+
+xhaulOspfIfCfgType              OBJECT-TYPE
+    SYNTAX      XhaulOspfIfTypeTc
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfCfgType specifies the OSPF interface type.
+
+         The value of 'unspecified' sets the interface type to its default
+         value based on the underlying physical interface type."
+    ::= { xhaulOspfIfEntry 6 }
+
+xhaulOspfIfAdminState           OBJECT-TYPE
+    SYNTAX      Status
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfAdminState specifies the OSPF interface's
+         administrative status.  The value formed on the interface, and the
+         interface will be advertised as an internal route to some area.
+         The value 'disabled' denotes that the interface is external to OSPF."
+    DEFVAL      { enabled }
+    ::= { xhaulOspfIfEntry 7 }
+
+xhaulOspfIfRtrPriority          OBJECT-TYPE
+    SYNTAX      DesignatedRouterPriority
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRtrPriority specifies the priority of
+         this interface.  Used in multi-access networks, this field is
+         used in the designated router election algorithm. The value 0
+         signifies that the router is not eligible to become the designated
+         router on this particular network. In the event of a tie in
+         this value, routers will use their Router ID as a tie breaker."
+    DEFVAL      { 1 }
+    ::= { xhaulOspfIfEntry 8 }
+
+xhaulOspfIfTransitDelay         OBJECT-TYPE
+    SYNTAX      XhaulOspfUpToRefreshIntervalTc (1..1800)
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTransitDelay specifies the estimated number
+         of seconds it takes to transmit a link state update packet over this
+         interface."
+    DEFVAL      { 1 }
+    ::= { xhaulOspfIfEntry 9 }
+
+xhaulOspfIfRetransInterval      OBJECT-TYPE
+    SYNTAX      XhaulOspfUpToRefreshIntervalTc (1..1800)
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRetransInterval specifies the number of
+         seconds between link state advertisement retransmissions, for
+         adjacencies belonging to this interface. This value is also used when
+         retransmitting database description and link state request packets."
+    DEFVAL      { 5 }
+    ::= { xhaulOspfIfEntry 10 }
+
+xhaulOspfIfHelloInterval        OBJECT-TYPE
+    SYNTAX      HelloRange
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfHelloInterval specifies the length of time,
+         in seconds, between the Hello packets that the router sends on the
+         interface.  This value MUST be the same for all routers attached to
+         a common network."
+    DEFVAL      { 10 }
+    ::= { xhaulOspfIfEntry 11 }
+
+xhaulOspfIfRtrDeadInterval      OBJECT-TYPE
+    SYNTAX      XhaulOspfDeadIntRangeTc
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRtrDeadInterval specifies the number of
+         seconds that a router's Hello packets have not been seen before
+         its neighbors declare the router down on the interface.  This
+         should be some multiple of the Hello interval."
+    DEFVAL      { 40 }
+    ::= { xhaulOspfIfEntry 12 }
+
+xhaulOspfIfCfgMetric            OBJECT-TYPE
+    SYNTAX      Metric
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfCfgMetric specifies the desired
+         metric value assigned to this interface.  The default value
+         '0' causes the value of the Metric to be calculated as
+         (Reference Bandwidth / ifSpeed).  The value of the reference
+         bandwidth is configured by the xhaulOspfReferenceBandwidth object."
+    DEFVAL      { 0 }
+    ::= { xhaulOspfIfEntry 15 }
+
+xhaulOspfIfPassive              OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfPassive specifies whether or or not HELLOs
+         are to be sent out on this interface and whether or not the router
+         advertises it as STUB network/link in its router LSAs.  If true, no
+         HELLOs will be sent, and the interface is advertised as a STUB link."
+    DEFVAL      { false }
+    ::= { xhaulOspfIfEntry 16 }
+
+xhaulOspfIfAdvtSubnet           OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfAdvtSubnet specifies the advertisement
+         method.  When xhaulOspfIfAdvtSubnet is set to 'true', OSPF will
+         advertise the network number and netmask instead of the
+         individual host-routes of an active point-to-point interface."
+    REFERENCE
+        "RFC2328 OSPF Version 2, s12.4.1.1 pg130"
+    DEFVAL      { true }
+    ::= { xhaulOspfIfEntry 17 }
+
+xhaulOspfIfAuthType             OBJECT-TYPE
+    SYNTAX      XhaulOspfAuthenticationType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfAuthType specifies the authentication type to
+         use for an interface.
+
+         Note that this object can be used to engage in significant attacks
+         against an OSPF router."
+    REFERENCE
+        "OSPF Version 2, Appendix D Authentication"
+    DEFVAL      { none }
+    ::= { xhaulOspfIfEntry 18 }
+
+
+xhaulOspfIfEnableBfd            OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfEnableBfd specifies whether Bi-directional
+         Forwarding Detection is enabled for Ipv4 in this OSPF interface.
+
+         When the value is 'true', this interface can establish BFD sessions
+         and use BFD as a signalling mechanism. When it is 'false', it cannot
+         use BFD for Ipv4."
+    DEFVAL      { false }
+    ::= { xhaulOspfIfEntry 20 }
+
+xhaulOspfIfRemainDownOnFail     OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRemainDownOnFail specifies whether an OSPF
+         adjacency should go down when the BFD session to the peer goes down."
+    DEFVAL      { false }
+    ::= { xhaulOspfIfEntry 21 }
+
+xhaulOspfIfLoopfreeAltExclude   OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfLoopfreeAltExclude specifies whether or not
+         the OSPF interface should be excluded during LFA calculations. If the
+         value is 'true', the OSPF interface is excluded from LFA calculations.
+         If the value is 'false', the OSPF interface is included in LFA
+         calculations.
+
+         The value of xhaulOspfIfLoopfreeAltExclude is only valid when
+         xhaulOspfLoopfreeAlternate has a value of 'true'."
+    DEFVAL      { false }
+    ::= { xhaulOspfIfEntry 24 }
+
+xhaulOspfIfLsaFilterOut         OBJECT-TYPE
+    SYNTAX      XhaulOspfLsaFilterOutTc
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfLsaFilterOut specifies whether or not flooded
+         LSA's should be sent to any adjacent neighbor on the OSPF interface.
+
+         If the value is 'none', then flooded LSA's are sent out on the OSPF
+         interface.
+
+         If the value is 'all', then flooded LSA's are not sent out on the OSPF
+         interface.
+
+         If the value is 'exceptOwnRtrLsa', then no LSA's other than own router
+         LSA's are sent out on the OSPF interface.
+
+         If the value is 'exceptOwnRtrLsaAndDefaults', then no LSA's other than
+         type-3-default, type-5-default, type-7-default and own router LSA's
+         are sent out on the OSPF interface."
+    DEFVAL      { none }
+    ::= { xhaulOspfIfEntry 25 }
+
+xhaulOspfIfAdvRtrCapability     OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfAdvRtrCapability specifies whether or not
+         advertise-router-capabilities are enabled at interface level."
+    DEFVAL      { true }
+    ::= { xhaulOspfIfEntry 26 }
+
+xhaulOspfIfSidType              OBJECT-TYPE
+    SYNTAX      INTEGER {
+        none  (0),
+        index (1),
+        label (2)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfIfSidType specifies whether the
+         object xhaulOspfIfSidValue is not valid, an index value or an
+         absolute label value."
+    DEFVAL      { none }
+    ::= { xhaulOspfIfEntry 30 }
+
+xhaulOspfIfSidValue             OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfIfSidValue together with
+         xhaulOspfIfSidType specifies the SID value or index for this
+         interface. "
+    DEFVAL      { 0 }
+    ::= { xhaulOspfIfEntry 31 }
+
+xhaulOspfIfSidClearNFlag        OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfSidClearNFlag specifies whether the node-sid
+         flag (N-flag) should be cleared in a prefix SID sub-TLV.
+
+         When the value of xhaulOspfIfSidClearNFlag is false, the prefix SID
+         sub-TLV for the prefix of a loopback interface is tagged as a node SID
+         meaning that it belongs to this node only.
+
+         When the value of xhaulOspfIfSidClearNFlag is true, the same prefix
+         SID sub-TLV may be advertised by multiple nodes."
+    DEFVAL      { false }
+    ::= { xhaulOspfIfEntry 33 }
+
+--
+-- xhaulOspfIfOperTable 
+--
+
+xhaulOspfIfOperTable            OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfIfOperEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfIfOperTable provides an extension of the
+         xhaulOspfIfTable for operational states of an OSPF interface."
+    ::= { xhaulOspfObjects 32 }
+
+xhaulOspfIfOperEntry            OBJECT-TYPE
+    SYNTAX      XhaulOspfIfOperEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry in the xhaulOspfIfOperTable represents additional
+         columns for statistics for an OSPF interface."
+    AUGMENTS    { xhaulOspfIfEntry }
+    ::= { xhaulOspfIfOperTable 1 }
+
+XhaulOspfIfOperEntry            ::= SEQUENCE
+{
+    xhaulOspfIfState                INTEGER,
+    xhaulOspfIfLastEnabledTime      TimeStamp,
+    xhaulOspfIfOperMTU              Integer32,
+    xhaulOspfIfMetricValue          Metric,
+    xhaulOspfIfDRId                 XhaulOspfRouterIdTc,
+    xhaulOspfIfDRIpAddrType         InetAddressType,
+    xhaulOspfIfDRIpAddr             InetAddress,
+    xhaulOspfIfBDRId                XhaulOspfRouterIdTc,
+    xhaulOspfIfBDRIpAddrType        InetAddressType,
+    xhaulOspfIfBDRIpAddr            InetAddress,
+    xhaulOspfIfLinkLsaCount         Gauge32,
+    xhaulOspfIfLinkLsaCksumSum      Integer32,
+    xhaulOspfIfLocalIpAddressType   InetAddressType,
+    xhaulOspfIfLocalIpAddress       InetAddress,
+    xhaulOspfIfType                 XhaulOspfIfTypeTc,
+    xhaulOspfIfTeMetric             Unsigned32,
+    xhaulOspfIfTeState              XhaulOperState
+}
+
+xhaulOspfIfState                OBJECT-TYPE
+    SYNTAX      INTEGER {
+        down                   (1),
+        loopback               (2),
+        waiting                (3),
+        pointToPoint           (4),
+        designatedRouter       (5),
+        backupDesignatedRouter (6),
+        otherDesignatedRouter  (7)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The OSPF Interface State."
+    ::= { xhaulOspfIfOperEntry 1 }
+
+xhaulOspfIfLastEnabledTime      OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfLastEnabledTime indicates the sysUpTime value
+         when ospfIfAdminStat was last set to enabled (1) to run the ospf on
+         this interface."
+    ::= { xhaulOspfIfOperEntry 2 }
+
+xhaulOspfIfOperMTU              OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfOperMTU indicates the operational size of the
+         largest packet which can be sent/received on this OSPF interface,
+         specified in octets. This size DOES include the underlying IP header
+         length, but not the underlying layer headers/trailers."
+    ::= { xhaulOspfIfOperEntry 3 }
+
+xhaulOspfIfMetricValue          OBJECT-TYPE
+    SYNTAX      Metric
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfMetricValue indicates the metric value
+         this interface is using.  The default value of the Metric is
+         (Reference Bandwidth / ifSpeed).  The value of the reference
+         bandwidth is configured by the xhaulOspfReferenceBandwidth object."
+    ::= { xhaulOspfIfOperEntry 4 }
+
+xhaulOspfIfDRId                 OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfDRId indicates the Router ID of the
+         Designated Router."
+    ::= { xhaulOspfIfOperEntry 5 }
+
+xhaulOspfIfDRIpAddrType         OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfDRIpAddrType type indicates the IP address
+         type of xhaulOspfIfDRIpAddr."
+    ::= { xhaulOspfIfOperEntry 6 }
+
+xhaulOspfIfDRIpAddr             OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (0|4|16|20))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfDRIpAddr indicates the IP address of the
+         Designated Router."
+    ::= { xhaulOspfIfOperEntry 7 }
+
+xhaulOspfIfBDRId                OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfBDRId indicates the Router ID of the Backup
+         Designated Router."
+    ::= { xhaulOspfIfOperEntry 8 }
+
+xhaulOspfIfBDRIpAddrType        OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfBDRIpAddrType indicates the IP address type
+         of the Backup Designated Router."
+    ::= { xhaulOspfIfOperEntry 9 }
+
+xhaulOspfIfBDRIpAddr            OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (0|4|16|20))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfBDRIpAddr indicates the IP address of the
+         Backup Designated Router."
+    ::= { xhaulOspfIfOperEntry 10 }
+
+xhaulOspfIfLinkLsaCount         OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfLinkLsaCount indicates the total number of
+         Link-Scope link-state advertisements in this link's link-state
+         database."
+    ::= { xhaulOspfIfOperEntry 11 }
+
+xhaulOspfIfLinkLsaCksumSum      OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfLinkLsaCksumSum indicates the 32-bit
+         unsigned sum of the Link-Scope link-state advertisements' LS
+         checksums contained in this link's link-state database.  The
+         sum can be used to determine if there has been a change in a
+         router's link-state database, and to compare the link state
+         database of two routers."
+    ::= { xhaulOspfIfOperEntry 12 }
+
+xhaulOspfIfLocalIpAddressType   OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfLocalIpAddressType indicates the IP address
+         type of xhaulOspfIfLocalIpAddress."
+    ::= { xhaulOspfIfOperEntry 14 }
+
+xhaulOspfIfLocalIpAddress       OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (0|4|16|20))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfLocalIpAddress indicates the IP address of
+         this OSPF local link interface."
+    ::= { xhaulOspfIfOperEntry 15 }
+
+xhaulOspfIfType                 OBJECT-TYPE
+    SYNTAX      XhaulOspfIfTypeTc
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfType indicates the operational OSPF interface
+         type."
+    ::= { xhaulOspfIfOperEntry 17 }
+
+xhaulOspfIfTeMetric             OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..16777215)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTeMetric indicates the MPLS TE metric
+         configured for this interface. This metric is flooded out in the TE
+         metric sub-tlv in the OSPF TE LSAs. Depending on the configuration,
+         either the TE metric value or the native OSPF metric value is used in
+         CSPF computations."
+    ::= { xhaulOspfIfOperEntry 18 }
+
+xhaulOspfIfTeState              OBJECT-TYPE
+    SYNTAX      XhaulOperState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTeState indicates the MPLS interface TE
+         status from OSPF standpoint."
+    ::= { xhaulOspfIfOperEntry 19 }
+
+--
+-- xhaulOspfIfStatsTable
+--
+
+xhaulOspfIfStatsTable           OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfIfStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfIfStatsTable provides an extension of the
+         xhaulOspfIfTable for statistics for an OSPF interface."
+    ::= { xhaulOspfObjects 33 }
+
+xhaulOspfIfStatsEntry           OBJECT-TYPE
+    SYNTAX      XhaulOspfIfStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry in the xhaulOspfIfStatsTable represents additional
+         columns for statistics for an OSPF interface."
+    AUGMENTS    { xhaulOspfIfEntry }
+    ::= { xhaulOspfIfStatsTable 1 }
+
+XhaulOspfIfStatsEntry           ::= SEQUENCE
+{
+    xhaulOspfIfEvents               Counter32,
+    xhaulOspfIfTxPackets            Counter32,
+    xhaulOspfIfTxHellos             Counter32,
+    xhaulOspfIfTxDBDs               Counter32,
+    xhaulOspfIfTxLSRs               Counter32,
+    xhaulOspfIfTxLSUs               Counter32,
+    xhaulOspfIfTxLSAcks             Counter32,
+    xhaulOspfIfRxPackets            Counter32,
+    xhaulOspfIfRxHellos             Counter32,
+    xhaulOspfIfRxDBDs               Counter32,
+    xhaulOspfIfRxLSRs               Counter32,
+    xhaulOspfIfRxLSUs               Counter32,
+    xhaulOspfIfRxLSAcks             Counter32,
+    xhaulOspfIfNeighborCount        Integer32
+}
+
+xhaulOspfIfEvents               OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfEvents indicates the number of times this
+         OSPF interface has changed its state, or an error has occurred."
+    ::= { xhaulOspfIfStatsEntry 1 }
+
+xhaulOspfIfTxPackets            OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTxPackets indicates the total number of OSPF
+         packets transmitted on this interface since xhaulOspfAdminState was
+         last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 2 }
+
+xhaulOspfIfTxHellos             OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTxHellos indicates the total number of OSPF
+         Hello packets transmitted on this interface since xhaulOspfAdminState
+         was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 3 }
+
+xhaulOspfIfTxDBDs               OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTxDBDs indicates the total number of OSPF
+         Database Description packets transmitted on this interface since
+         xhaulOspfAdminState was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 4 }
+
+xhaulOspfIfTxLSRs               OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTxLSRs indicates the total number of OSPF
+         Link State Requests (LSRs)transmitted on this interface since
+         xhaulOspfAdminState was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 5 }
+
+xhaulOspfIfTxLSUs               OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTxLSUs indicates the total number of OSPF
+         Link State Updates (LSUs) transmitted on this interface since
+         xhaulOspfAdminState was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 6 }
+
+xhaulOspfIfTxLSAcks             OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfTxLSAcks indicates the total number of OSPF
+         Link State Acknowledgements transmitted on this interface since
+         xhaulOspfAdminState was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 7 }
+
+xhaulOspfIfRxPackets            OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRxPackets indicates the total number of OSPF
+         packets received on this interface since xhaulOspfAdminState was last
+         set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 8 }
+
+xhaulOspfIfRxHellos             OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRxHellos indicates the total number of OSPF
+         Hello packets received on this interface since xhaulOspfAdminState was
+         last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 9 }
+
+xhaulOspfIfRxDBDs               OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRxDBDs indicates the total number of
+         OSPF Database Description packets  received on this interface since
+         xhaulOspfAdminState was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 10 }
+
+xhaulOspfIfRxLSRs               OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRxLSRs indicates the total number of Link
+         State Requests (LSRs) received on this interface since
+         xhaulOspfAdminState was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 11 }
+
+xhaulOspfIfRxLSUs               OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRxLSUs indicates the total number of Link
+         State Updates (LSUs) received on this interface since
+         xhaulOspfAdminState was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 12 }
+
+xhaulOspfIfRxLSAcks             OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfRxLSAcks indicates the total number of Link
+         State Acknowledgements received on this interface since
+         xhaulOspfAdminState was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 13 }
+
+xhaulOspfIfNeighborCount        OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfIfNeighborCount indicates the total number of
+         OSPF neighbors adjacent on this interface, in a state of INIT or
+         greater, since xhaulOspfAdminState was last set to 'enabled'."
+    ::= { xhaulOspfIfStatsEntry 23 }
+
+
+--
+-- xhaulOspfNbrTable
+--
+
+xhaulOspfNbrTable               OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfNbrEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfNbrTable contains information about non-virtual
+         neighbors."
+    REFERENCE
+        "OSPF Version 2, Section 10 The Neighbor Data
+         Structure"
+    ::= { xhaulOspfObjects 34 }
+
+xhaulOspfNbrEntry               OBJECT-TYPE
+    SYNTAX      XhaulOspfNbrEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfNbrEntry contains information regarding a single
+         non-virtual neighbor."
+    REFERENCE
+        "OSPF Version 2, Section 10 The Neighbor Data
+         Structure"
+    INDEX       {
+        vRtrID,
+        xhaulOspfVersion,
+        xhaulOspfInstance,
+        xhaulOspfNbrIfIndex,
+        xhaulOspfNbrIfInstId,
+        xhaulOspfNbrIfAreaId,
+        xhaulOspfNbrRtrId
+    }
+    ::= { xhaulOspfNbrTable 1 }
+
+XhaulOspfNbrEntry               ::= SEQUENCE
+{
+    xhaulOspfNbrIfIndex             InterfaceIndex,
+    xhaulOspfNbrIfInstId            XhaulOspfIfInstIdTc,
+    xhaulOspfNbrIfAreaId            XhaulOspfAreaIdTc,
+    xhaulOspfNbrRtrId               XhaulOspfRouterIdTc,
+    xhaulOspfNbrAddressType         InetAddressType,
+    xhaulOspfNbrAddress             InetAddress,
+    xhaulOspfNbrOptions             Integer32,
+    xhaulOspfNbrPriority            DesignatedRouterPriority,
+    xhaulOspfNbrState               INTEGER,
+    xhaulOspfNbrIfId                InterfaceIndexOrZero,
+    xhaulOspfNbrRestartHelperStatus INTEGER,
+    xhaulOspfNbrRestartHelperAge    XhaulOspfUpToRefreshIntervalTc,
+    xhaulOspfNbrRestartHelperExitRc INTEGER,
+    xhaulOspfNbrDeadTimeOutstanding Unsigned32,
+    xhaulOspfNbrBfdTracking         TruthValue,
+    xhaulOspfNbrSidType             INTEGER,
+    xhaulOspfNbrSidValue            Unsigned32
+}
+
+xhaulOspfNbrIfIndex             OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrIfIndex specifies the local link ID of the
+         link over which the neighbor can be reached."
+    ::= { xhaulOspfNbrEntry 1 }
+
+xhaulOspfNbrIfInstId            OBJECT-TYPE
+    SYNTAX      XhaulOspfIfInstIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrIfInstId specifies the interface instance
+         over which the neighbor can be reached.  This ID has local link
+         significance only."
+    ::= { xhaulOspfNbrEntry 2 }
+
+xhaulOspfNbrIfAreaId            OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrIfAreaId specifies the OSPF Area Identifier."
+    ::= { xhaulOspfNbrEntry 3 }
+
+xhaulOspfNbrRtrId               OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrRtrId specifies a 32-bit integer uniquely
+         identifying the neighboring router in the Autonomous System."
+    ::= { xhaulOspfNbrEntry 4 }
+
+xhaulOspfNbrAddressType         OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrAddressType indicates the address type of
+         xhaulOspfNgNbrAddress. For addresses of IPv6 type only addresses with
+         zone index are expected."
+    ::= { xhaulOspfNbrEntry 5 }
+
+xhaulOspfNbrAddress             OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (4|20))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrAddress indicates the IP address of the
+         neighbor associated with the local link."
+    ::= { xhaulOspfNbrEntry 6 }
+
+xhaulOspfNbrOptions             OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrOptions indicates a Bit Mask corresponding
+         to the neighbor's options field."
+    REFERENCE
+        "OSPF Version 3, Appendix A.2 the Options field"
+    ::= { xhaulOspfNbrEntry 7 }
+
+xhaulOspfNbrPriority            OBJECT-TYPE
+    SYNTAX      DesignatedRouterPriority
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrPriority indicates the priority of this
+         neighbor in the designated router election algorithm.  The value
+         0 signifies that the neighbor is not eligible to become the
+         designated router on this particular network."
+    ::= { xhaulOspfNbrEntry 8 }
+
+xhaulOspfNbrState               OBJECT-TYPE
+    SYNTAX      INTEGER {
+        down          (1),
+        attempt       (2),
+        init          (3),
+        twoWay        (4),
+        exchangeStart (5),
+        exchange      (6),
+        loading       (7),
+        full          (8)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNgNbrState indicates the State of the
+         relationship with this Neighbor."
+    REFERENCE
+        "OSPF Version 2, Section 10.1 Neighbor States"
+    ::= { xhaulOspfNbrEntry 9 }
+
+xhaulOspfNbrIfId                OBJECT-TYPE
+    SYNTAX      InterfaceIndexOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrIfId indicates the interface ID that the
+         neighbor advertises in its Hello Packets on this link, that is, the
+         neighbor's local interface index."
+    ::= { xhaulOspfNbrEntry 11 }
+
+xhaulOspfNbrRestartHelperStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+        notHelping (1),
+        helping    (2)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrRestartHelperStatus indicates whether the
+         router is acting as a Graceful restart helper for the neighbor."
+    ::= { xhaulOspfNbrEntry 12 }
+
+xhaulOspfNbrRestartHelperAge    OBJECT-TYPE
+    SYNTAX      XhaulOspfUpToRefreshIntervalTc
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrRestartHelperAge indicates the remaining
+         time in the current OSPF Graceful restart interval, if the router is
+         acting as a restart helper for the neighbor."
+    ::= { xhaulOspfNbrEntry 13 }
+
+xhaulOspfNbrRestartHelperExitRc OBJECT-TYPE
+    SYNTAX      INTEGER {
+        none            (1),
+        inProgress      (2),
+        completed       (3),
+        timedOut        (4),
+        topologyChanged (5)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrRestartHelperExitRc indicates the outcome of
+         the last attempt at acting as a Graceful restart helper for the
+         neighbor.
+
+              none             No restart has yet been attempted.
+              inProgress       A restart attempt is currently underway.
+              completed        The last restart completed successfully.
+              timedOut         The last restart timed out.
+              topologyChanged  The last restart was aborted due to
+                               a topology change."
+    ::= { xhaulOspfNbrEntry 14 }
+
+xhaulOspfNbrDeadTimeOutstanding OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..2147483647)
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrDeadTimeOutstanding indicates the amount
+         of time in seconds until the  dead-router interval expires. Normally,
+         this value should not be significantly smaller than the configured
+         dead router interval minus one hello interval."
+    ::= { xhaulOspfNbrEntry 17 }
+
+xhaulOspfNbrBfdTracking         OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrBfdTracking indicates whether a BFD session
+         is being maintained to track the forwarding path to this neighbor or
+         not."
+    ::= { xhaulOspfNbrEntry 20 }
+
+xhaulOspfNbrSidType             OBJECT-TYPE
+    SYNTAX      INTEGER {
+        none      (0),
+        index     (1),
+        mplsLabel (2)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfNbrSidType indicates how the value of
+         xhaulOspfNbrSidValue shall be interpreted."
+    DEFVAL      { none }
+    ::= { xhaulOspfNbrEntry 23 }
+
+xhaulOspfNbrSidValue            OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfNbrSidValue indicates the IPv4 SID
+         label or index for this adjacency."
+    DEFVAL      { 0 }
+    ::= { xhaulOspfNbrEntry 24 }
+
+--
+-- xhaulOspfGeneralExTable
+--
+
+xhaulOspfGeneralExTable           OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfGeneralExEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfGeneralExTable provides an extension of the
+         xhaulOspfGeneralTable."
+    ::= { xhaulOspfObjects 39 }
+
+xhaulOspfGeneralExEntry           OBJECT-TYPE
+    SYNTAX      XhaulOspfGeneralExEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry in the xhaulOspfGeneralExTable represents additional
+         columns for an OSPF instance."
+    AUGMENTS    { xhaulOspfGeneralEntry }
+    ::= { xhaulOspfGeneralExTable 1 }
+
+XhaulOspfGeneralExEntry           ::= SEQUENCE
+{
+    xhaulOspfGeneralExLastChanged     TimeStamp,
+    xhaulOspfAdvRtrCapability         INTEGER,
+    xhaulOspfPrefixSidRangeType       INTEGER,
+    xhaulOspfPrefixSidRangeStartLabel Unsigned32,
+    xhaulOspfPrefixSidRangeMaxIdx     Unsigned32,
+    xhaulOspfSrAdminState             XhaulAdminState,
+    xhaulOspfRemoteLFA 		      TruthValue,
+    xhaulOspfMaxPqCost                Unsigned32,
+    xhaulOspfTunnelMtu                Unsigned32,
+    xhaulOspfDatabaseExport           XhaulEnabledDisabled,
+    xhaulOspfMaxSrFrrLabels           Unsigned32
+}
+
+xhaulOspfGeneralExLastChanged     OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfGeneralExLastChanged indicates the sysUpTime when
+         a configurable object in this row was last modified."
+    ::= { xhaulOspfGeneralExEntry 1 }
+
+xhaulOspfAdvRtrCapability         OBJECT-TYPE
+    SYNTAX      INTEGER {
+        disable (0)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfAdvRtrCapability specifies the OSPF advertise
+         router capabilities."
+    DEFVAL      { disable }
+    ::= { xhaulOspfGeneralExEntry 2 }
+
+xhaulOspfPrefixSidRangeType       OBJECT-TYPE
+    SYNTAX      INTEGER {
+        none   (0),
+        global (1),
+        local  (2)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfPrefixSidRangeType specifies whether global
+         or  operation mode is selected. If local mode is used,
+         xhaulOspfPrefixSidRangeStartLabel and xhaulOspfPrefixSidRangeMaxIdx
+         describe the range. If global mode is selected those fields are
+         not used. "
+    DEFVAL      { none }
+    ::= { xhaulOspfGeneralExEntry 9 }
+
+xhaulOspfPrefixSidRangeStartLabel OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..524287)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfPrefixSidRangeStartLabel specifies the local
+         label starting offset value."
+    DEFVAL      { 0 }
+    ::= { xhaulOspfGeneralExEntry 10 }
+
+xhaulOspfPrefixSidRangeMaxIdx     OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..524287)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfPrefixSidRangeMaxIdx specifies the maximum local
+         SID index that can be used."
+    DEFVAL      { 1 }
+    ::= { xhaulOspfGeneralExEntry 11 }
+
+xhaulOspfSrAdminState             OBJECT-TYPE
+    SYNTAX      XhaulAdminState
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfSrAdminState specifies the desired
+         administrative state of Segment Routing for this OSPF instance."
+    DEFVAL      { outOfService }
+    ::= { xhaulOspfGeneralExEntry 12 }
+
+xhaulOspfRemoteLFA                OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfRemoteLFA specifies whether remote-LFA
+         is enabled or not."
+    DEFVAL      { false }
+    ::= { xhaulOspfGeneralExEntry 14 }
+
+xhaulOspfMaxPqCost                OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfMaxPqCost specifies the maximum cost of a
+         destination node during reverse SPF calculation."
+    DEFVAL      { 65535 }
+    ::= { xhaulOspfGeneralExEntry 15 }
+
+xhaulOspfTunnelMtu                OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 512..9198)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfTunnelMtu specifies the tunnel MTU size used for
+         segment routing.
+
+         A value of 0 results in using the MTU of the nexthop, a value in the
+         range of 512..9198 will override this."
+    DEFVAL      { 0 }
+    ::= { xhaulOspfGeneralExEntry 16 }
+
+xhaulOspfDatabaseExport           OBJECT-TYPE
+    SYNTAX      XhaulEnabledDisabled
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfDatabaseExport specifies whether
+         database export has been enabled or disabled for this OSPF instance.
+
+         When the value of xhaulOspfDatabaseExport is 'enabled', OSPF will
+         redistribute LSDB via segment routing TE-DB into NLRI format."
+    DEFVAL      { disabled }
+    ::= { xhaulOspfGeneralExEntry 22 }
+
+xhaulOspfMaxSrFrrLabels           OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..3)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfMaxSrFrrLabels specifies the maximum number of
+         Segment Routing Fast-Reroute labels.
+
+         The value of xhaulOspfMaxSrFrrLabels is only valid when the objects
+         xhaulOspfLoopfreeAlternate and xhaulOspfTiLfa both have the value
+         'true'."
+    DEFVAL      { 2 }
+    ::= { xhaulOspfGeneralExEntry 36 }
+
+--
+-- xhaulOspfSrPfxTable
+--
+
+xhaulOspfSrPfxTable               OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfSrPfxEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfSrPfxTable contains prefixes which are mapped to segment
+         identifiers."
+    ::= { xhaulOspfObjects 40 }
+
+xhaulOspfSrPfxEntry               OBJECT-TYPE
+    SYNTAX      XhaulOspfSrPfxEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The XhaulOspfSrPfxEntry defines how a prefix is mapped to a segment
+         identifier within a certain OSPF instance"
+    INDEX       {
+        vRtrID,
+        xhaulOspfVersion,
+        xhaulOspfInstance,
+        xhaulOspfSrPfxType,
+        xhaulOspfSrPfx,
+        xhaulOspfSrPfxLen,
+        xhaulOspfSrPfxAreaId,
+        xhaulOspfSrPfxSidRtType,
+        xhaulOspfSrPfxSid,
+        xhaulOspfSrPfxAdvtRtrId
+    }
+    ::= { xhaulOspfSrPfxTable 1 }
+
+XhaulOspfSrPfxEntry               ::= SEQUENCE
+{
+    xhaulOspfSrPfxType                InetAddressType,
+    xhaulOspfSrPfx                    InetAddress,
+    xhaulOspfSrPfxLen                 InetAddressPrefixLength,
+    xhaulOspfSrPfxAreaId              XhaulOspfAreaIdTc,
+    xhaulOspfSrPfxSidRtType           XhaulOspfSegmentRoutingRouteType,
+    xhaulOspfSrPfxSid                 XhaulSegmentRoutingId,
+    xhaulOspfSrPfxAdvtRtrId           XhaulOspfRouterIdTc,
+    xhaulOspfSrPfxSidFlags            BITS
+}
+
+xhaulOspfSrPfxType                OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfSrPfxType specifies the IP address
+         type for xhaulOspfSrPfx."
+    ::= { xhaulOspfSrPfxEntry 1 }
+
+xhaulOspfSrPfx                    OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfSrPfx specifies the IP Address of the
+         prefix.  This MUST be a Global address."
+    ::= { xhaulOspfSrPfxEntry 2 }
+
+xhaulOspfSrPfxLen                 OBJECT-TYPE
+    SYNTAX      InetAddressPrefixLength
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Indicates the number of leading one bits that form the mask to be
+         logical-ANDed with xhaulOspfSrPfx."
+    ::= { xhaulOspfSrPfxEntry 3 }
+
+xhaulOspfSrPfxAreaId              OBJECT-TYPE
+    SYNTAX      XhaulOspfAreaIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfSrPfxAreaId specifies the area in which this
+         segment routing sid is defined."
+    ::= { xhaulOspfSrPfxEntry 4 }
+
+xhaulOspfSrPfxSidRtType           OBJECT-TYPE
+    SYNTAX      XhaulOspfSegmentRoutingRouteType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfSrPfxSidRtType specifies the OSPF segment routing
+         SID route type."
+    ::= { xhaulOspfSrPfxEntry 5 }
+
+xhaulOspfSrPfxSid                 OBJECT-TYPE
+    SYNTAX      XhaulSegmentRoutingId
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfSrPfxSid specifies a 32-bit integer uniquely
+         identifying a Segment Routing Identifier."
+    ::= { xhaulOspfSrPfxEntry 6 }
+
+xhaulOspfSrPfxAdvtRtrId           OBJECT-TYPE
+    SYNTAX      XhaulOspfRouterIdTc
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOspfSrPfxAdvtRtrId specifies a 32-bit integer
+         uniquely  the router in the Autonomous System which advertised this
+         prefix SID."
+    ::= { xhaulOspfSrPfxEntry 7 }
+
+xhaulOspfSrPfxSidFlags            OBJECT-TYPE
+    SYNTAX      BITS {
+        bitN  (0),
+        bitP  (1),
+        bitM  (2),
+        bitE  (3),
+        bitV  (4),
+        bitL  (5),
+        bitIA (6),
+        bitAT (7),
+        bitB  (8)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfSrPfxSidFlags indicates the flags of a
+         Prefix-SID advertised extended prefix TLV.
+
+         bitN   (0)  - Node-SID flag. The N-Flag is set on Prefix-SIDs
+           attached to a router loopback address.
+         bitP   (1)  - no-PHP flag. If set, then the penultimate hop MUST NOT
+           pop the Prefix-SID before delivering the packet to the node
+           that advertised the Prefix-SID.
+         bitM   (2)  - Mapping Server flag. If set, the SID is advertised
+           from the Segment Routing Mapping Server functionality
+         bitE   (3)  - Explicit-Null Flag.  If set, any upstream neighbor
+           of the Prefix-SID originator MUST replace the Prefix-SID with
+           a Prefix-SID having an Explicit-NULL value (0 for IPv4) before
+           forwarding the packet.
+         bitV   (4)  - Value flag. If set, then the Prefix-SID carries a
+           value (instead of an index).
+         bitL   (5)  - Local Flag.  If set, then the value/index carried by
+           the Prefix-SID has local significance.
+         bitIA  (6)  - Inter Area flag.
+         bitAT  (7)  - Attached flag.
+         bitB   (8)  - Backup SID (Seamless MPLS)"
+    ::= { xhaulOspfSrPfxEntry 8 }
+
+
+--
+-- xhaulOspfSrLfaStatsTable
+--
+
+xhaulOspfSrLfaStatsTable          OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOspfSrLfaStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The xhaulOspfSrLfaStatsTable maintains information on Segment Routing
+         (SR) loopfree-alternate (LFA) coverage for each instance of OSPF
+         protocol."
+    ::= { xhaulOspfObjects 41 }
+
+xhaulOspfSrLfaStatsEntry          OBJECT-TYPE
+    SYNTAX      XhaulOspfSrLfaStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry in the xhaulOspfSrLfaStatsTable represents information
+         on SR LFA coverage for a given OSPF area"
+    INDEX       {
+        vRtrID,
+        xhaulOspfVersion,
+        xhaulOspfInstance,
+        xhaulOspfAreaId,
+        xhaulOspfSrLfaStatsSidType
+    }
+    ::= { xhaulOspfSrLfaStatsTable 1 }
+
+XhaulOspfSrLfaStatsEntry          ::= SEQUENCE
+{
+    xhaulOspfSrLfaStatsSidType        INTEGER,
+    xhaulOspfSrLfaStatsTotalSid       Gauge32,
+    xhaulOspfSrLfaStatsLfaCovered     Gauge32,
+    xhaulOspfSrLfaStatsRLfaCovered    Gauge32
+}
+
+xhaulOspfSrLfaStatsSidType        OBJECT-TYPE
+    SYNTAX      INTEGER {
+        nodeSid    (0),
+        adjSid     (1),
+        globAdjSid (2)
+    }
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfSrLfaStatsSidType specifies the SID
+         type for which SR LFA coverage has been computed."
+    ::= { xhaulOspfSrLfaStatsEntry 1 }
+
+xhaulOspfSrLfaStatsTotalSid       OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfSrLfaStatsTotalSid indicates the
+         number of SIDs eligible for SR LFA calculation"
+    ::= { xhaulOspfSrLfaStatsEntry 2 }
+
+xhaulOspfSrLfaStatsLfaCovered     OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfSrLfaStatsLfaCovered indicates the
+         number of SIDs for which an LFA is found."
+    ::= { xhaulOspfSrLfaStatsEntry 3 }
+
+xhaulOspfSrLfaStatsRLfaCovered    OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object xhaulOspfSrLfaStatsRLfaCovered indicates the
+         number of SIDs for which an Remote LFA is found."
+    ::= { xhaulOspfSrLfaStatsEntry 4 }
+
+
+--
+--
+
+xhaulOspfConformance              OBJECT IDENTIFIER ::= { xhaulOspfMib 36 }
+
+xhaulOspfCompliances              OBJECT IDENTIFIER ::= { xhaulOspfConformance 1 }
+
+--
+--
+
+xhaulOspfNotifications            OBJECT IDENTIFIER ::= { xhaulOspfMib 3 }
+
+xhaulOspfAreaOriginateLsa         NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfNotifAreaLsdbAreaId,
+        xhaulOspfNotifAreaLsdbType,
+        xhaulOspfNotifAreaLsdbLsid,
+        xhaulOspfNotifAreaLsdbRouterId
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfAreaOriginateLsa notification is generated when a new
+         LSA has been originated by this router.  This notification should
+         not be invoked for simple refreshes of LSAs (which happens every
+         30 minutes), but instead will only be invoked when an LSA is
+         (re)originated due to a topology change.  Additionally, this
+         notification does not include LSAs that are  being flushed because
+         they have reached 'MaxAge'."
+    ::= { xhaulOspfNotifications 12 }
+
+xhaulOspfAreaMaxAgeLsa            NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfNotifAreaLsdbAreaId,
+        xhaulOspfNotifAreaLsdbType,
+        xhaulOspfNotifAreaLsdbLsid,
+        xhaulOspfNotifAreaLsdbRouterId
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfAreaMaxAgeLsa notification is generated when one of the area
+         scope LSAs in the router's link-state database has aged  to 'MaxAge'."
+    ::= { xhaulOspfNotifications 13 }
+
+xhaulOspfRestartStatusChange      NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfRestartStatus,
+        xhaulOspfRestartInterval,
+        xhaulOspfRestartExitRc
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfRestartStatusChange notification is generated when
+         there has been a change in the graceful restart state for the
+         router.  This notification should be generated when the router
+         restart status changes."
+    ::= { xhaulOspfNotifications 18 }
+
+xhaulOspfAsOriginateLsa           NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfNotifAsLsdbType,
+        xhaulOspfNotifAsLsdbLsid,
+        xhaulOspfNotifAsLsdbRouterId
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfAsOriginateLsa notification is generated when a new
+         LSA has been originated by this router.  This notification should
+         not be invoked for simple refreshes of LSAs (which happens every
+         30 minutes), but instead will only be invoked when an LSA is
+         (re)originated due to a topology change.  Additionally, this
+         notification does not include LSAs that are  being flushed because
+         they have reached 'MaxAge'."
+    ::= { xhaulOspfNotifications 25 }
+
+xhaulOspfAsMaxAgeLsa              NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfNotifAsLsdbType,
+        xhaulOspfNotifAsLsdbLsid,
+        xhaulOspfNotifAsLsdbRouterId
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfAsMaxAgeLsa notification is generated when one of the
+         autonomous system scope LSAs in the router's link-state database has
+         aged to 'MaxAge'."
+    ::= { xhaulOspfNotifications 26 }
+
+xhaulOspfNbrStateChange         NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfNbrState,
+        xhaulOspfNbrAddressType,
+        xhaulOspfNbrAddress,
+        xhaulOspfNotifNbrRtrId
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfNbrStateChange notification is generated when there has
+         been a change in the state of a non-virtual OSPF neighbor. This
+         notification should be generated when the neighbor state regresses
+         (e.g., goes from Attempt or Full to 1-Way or Down) or progresses
+         to a terminal state (e.g., 2-Way or Full). When a neighbor
+         transitions from or to Full on non-broadcast multi-access and
+         broadcast networks, the notification should be generated by the
+         designated router.  A designated router transitioning to Down will
+         be noted by the xhaulOspfIfStateChange notification."
+    ::= { xhaulOspfNotifications 42 }
+
+xhaulOspfIfConfigError          NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+    	xhaulOspfIfAddressType,
+        xhaulOspfIfAddress,
+        xhaulOspfPacketSrcAddressType,
+        xhaulOspfPacketSrcAddress,
+ 	xhaulOspfConfigErrorType,
+        xhaulOspfPacketType,
+        xhaulOspfIfRxPackets
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfIfConfigError notification is generated when a packet has
+         been received on a non-virtual interface from a router whose
+         configuration parameters conflict with this router's configuration
+         parameters.  Note that the event 'optionMismatch' should cause a
+         notification only if it prevents an adjacency from forming."
+    ::= { xhaulOspfNotifications 43 }
+
+xhaulOspfIfRxBadPacket          NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfIfAddressType,
+        xhaulOspfIfAddress,
+        xhaulOspfPacketSrcAddressType,
+        xhaulOspfPacketSrcAddress,
+        xhaulOspfPacketType
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfIfRxBadPacket notification is generated when an OSPF
+         packet that cannot be parsed has been received on a non-virtual
+         interface."
+    ::= { xhaulOspfNotifications 45 }
+
+xhaulOspfIfTxRetransmit         NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfIfAddressType,
+        xhaulOspfIfAddress,
+        xhaulOspfNotifNbrRtrId,
+        xhaulOspfPacketType
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfIfTxRetransmit notification is generated when an OSPF
+         packet has been retransmitted on a non-virtual interface."
+    ::= { xhaulOspfNotifications 46 }
+
+xhaulOspfIfStateChange          NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfIfState,
+    	xhaulOspfIfAddressType,
+    	xhaulOspfIfAddress
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfIfStateChange notification is generated when there
+         has been a change in the state of a non-virtual OSPF interface.
+         This notification should be generated when the interface state
+         regresses (e.g., goes from Dr to Down) or progresses to a terminal
+         state  (i.e., Point-to-Point, DR Other, Dr, or Backup)."
+    ::= { xhaulOspfNotifications 47 }
+
+xhaulOspfNbrRestartHlprStsChg   NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfNotifNbrRtrId,
+        xhaulOspfNbrRestartHelperStatus,
+        xhaulOspfNbrRestartHelperAge,
+        xhaulOspfNbrRestartHelperExitRc
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfNbrRestartHlprStsChg notification is generated
+         when there has been a change in the graceful restart helper state
+         for the neighbor.  This notification should be generated when the
+         neighbor restart helper status transitions for a neighbor."
+    ::= { xhaulOspfNotifications 48 }
+
+xhaulOspfLinkOriginateLsa       NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+        xhaulOspfNotifLinkLsdbIfAreaId,
+        xhaulOspfNotifLinkLsdbType,
+        xhaulOspfNotifLinkLsdbLsid,
+        xhaulOspfNotifLinkLsdbRouterId
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfNgLinkOriginateLsa notification is generated when a new
+         LSA has been originated by this router.  This notification should
+         not be invoked for simple refreshes of LSAs (which happens every
+         30 minutes), but instead will only be invoked when an LSA is
+         (re)originated due to a topology change.  Additionally, this
+         notification does not include LSAs that are  being flushed because
+         they have reached 'MaxAge'."
+    ::= { xhaulOspfNotifications 49 }
+
+xhaulOspfLinkMaxAgeLsa          NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfRouterId,
+       xhaulOspfNotifLinkLsdbIfAreaId,
+        xhaulOspfNotifLinkLsdbType,
+        xhaulOspfNotifLinkLsdbLsid,
+        xhaulOspfNotifLinkLsdbRouterId
+    }
+    STATUS      current
+    DESCRIPTION
+        "A xhaulOspfNgLinkMaxAgeLsa notification is generated when one of the
+         LSAs in the router's link-state database has aged to 'MaxAge'."
+    ::= { xhaulOspfNotifications 50 }
+
+xhaulOspfSrSidNotInLabelRange     NOTIFICATION-TYPE
+    OBJECTS     {
+        xhaulOspfSrPfxSidFlags,
+        xhaulOspfNotifPfxSidRangeStartLbl,
+        xhaulOspfNotifPfxSidRangeMaxIdx,
+        xhaulOspfNotifPfxNhAdvRtr 
+    }
+    STATUS      current
+    DESCRIPTION
+        "[CAUSE] This notification is generated when OSPF receives a SID which
+         is not within the label range of the nhop router.
+
+         [EFFECT] The Segment Routing tunnel corresponding to this SID will not
+         be programmed.
+
+         [RECOVERY] Increase the label range or change the SID index to be
+         within the current label range."
+    ::= { xhaulOspfNotifications 54 }
+
+
+END

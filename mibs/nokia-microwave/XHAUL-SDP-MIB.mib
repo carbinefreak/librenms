@@ -1,0 +1,906 @@
+XHAUL-SDP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    NOTIFICATION-TYPE, Gauge32,
+    Integer32, Unsigned32, IpAddress,
+    Counter64, Counter32                        FROM SNMPv2-SMI
+
+    OBJECT-GROUP, NOTIFICATION-GROUP, MODULE-COMPLIANCE
+                                                FROM SNMPv2-CONF
+
+    RowStatus, MacAddress, TimeStamp, DisplayString,
+    TruthValue FROM SNMPv2-TC
+
+    InterfaceIndexOrZero                        FROM IF-MIB
+
+    InetAddressType, InetAddress                FROM INET-ADDRESS-MIB
+
+    ServiceAdminStatus, XhaulActionType, XhaulAdminState,
+    XhaulServId, XhaulCustId, TNamedItem, SdpBindId, TNamedItemOrEmpty,
+    XhaulVRtrMplsLspID, XhaulOperState, XhaulIgmpVersion,
+    XhaulEnabledDisabled, TItemDescription, TPolicyStatementNameOrEmpty,
+    TCpmProtPolicyID, XhaulVPNRouteDistinguisher,
+    XhaulPwGlobalId, XhaulSpokeSdpId, XhaulPwGlobalIdOrZero,
+    XhaulBsxTransitIpPolicyIdOrZero, XhaulBsxTransPrefPolicyIdOrZero,
+    XhaulBsxAarpIdOrZero, XhaulBsxAarpServiceRefType, XhaulPortID, XhaulVcId,
+    TSdpIngressPolicyID, TSdpEgressPolicyID, TQosQGrpInstanceIDorZero,
+    XhaulMplsTpGlobalID, XhaulMplsTpNodeID, XhaulVcIdOrNone,
+    XhaulSpokeSdpIdOrZero, XhaulBfdEncap,
+    XhaulCreateOrigin, XhaulISID, XhaulIsidMFibStatus
+                                                FROM XHAUL-TC-MIB
+
+    xhaulim, xhaulBasicMib		FROM XHAUL-BASICREG-MIB
+
+    xhaulServObjs, xhaulServConformance, xhaulServNotifications,     xhaulSvcObjs,
+    svcId, ServObjName, ServObjDesc,
+    SdpId, SdpBindVcType,
+    LspIdList, SdpBindBandwidth,
+    L2ptProtocols, ConfigStatus
+                                                FROM XHAUL-SERV-MIB
+
+--    timetraSRMIBModules                         FROM TIMETRA-GLOBAL-MIB
+
+--    TFilterID                                   FROM TIMETRA-FILTER-MIB
+--    XhaulChassisIndex, XhaulCardSlotNum,
+
+     ;
+
+xhaulServicesSdpMIBModule   MODULE-IDENTITY
+        LAST-UPDATED "201807130000Z"
+        ORGANIZATION "Nokia"
+        CONTACT-INFO
+            "Nokia Xhaul Support "
+   DESCRIPTION
+        "This document is the SNMP MIB module to manage and provision
+        the various services of the NOKIA X-HAUL system."
+
+--
+--  Revision History
+--
+    REVISION        "201807130000Z"
+    DESCRIPTION     "                13 July 2018 00:00
+                     Removed sdpSegRouteOspfv3, sdpSegRouteOspfv3OperInstId and 
+		     sdpSegRouteOspfv3LspId from sdpSegRouteTable.
+		     Added sdpSegRouteTableLastChgd scalar object."
+
+    REVISION        "201707200000Z"
+    DESCRIPTION     "                20 Jul 2017 00:00
+                     Changed sdpFarEndIpAddress DEFVAL { 0 }."
+
+    REVISION        "201705200000Z"
+    DESCRIPTION     "Rev 1.0                20 May 2017 00:00
+                     1.0 release of the XHAUL-SDP-MIB from XHAUL-SERV-MIB."
+
+    ::= { xhaulBasicMib 6 }
+
+-- --------------------------------------------------------------------
+--      XHAUL-SERV-MIB organisation
+-- --------------------------------------------------------------------
+xhaulSdpObjs             OBJECT IDENTIFIER ::= { xhaulServObjs 3 }
+  xhaulSdpNotifyObjs       OBJECT IDENTIFIER ::= { xhaulSdpObjs 100 }
+ 
+xhaulSdpConformance      OBJECT IDENTIFIER ::= { xhaulServConformance 4 }
+
+sdpTraps          OBJECT IDENTIFIER ::= { xhaulServNotifications 4 }
+
+-- --------------------------------------------------------------------
+-- xhaulSdpObjs group
+-- --------------------------------------------------------------------
+sdpNumEntries OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The current number of SDPs configured in this
+                     device."
+    ::= { xhaulSdpObjs 1 }
+
+sdpNextFreeId OBJECT-TYPE
+    SYNTAX          SdpId
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The next available value for sdpId."
+    ::= { xhaulSdpObjs 2 }
+
+-- ----------------------------
+-- SDP Table
+-- ----------------------------
+sdpInfoTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF SdpInfoEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "A table that contains SDP information."
+    ::= { xhaulSdpObjs 3 }
+
+sdpInfoEntry OBJECT-TYPE
+    SYNTAX          SdpInfoEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "Information about a specific SDP."
+    INDEX           { sdpId }
+    ::= { sdpInfoTable 1 }
+
+SdpInfoEntry ::=
+    SEQUENCE {
+        sdpId                                    SdpId,
+        sdpRowStatus                             RowStatus,
+        sdpDelivery                              INTEGER,
+        sdpFarEndIpAddress                       InetAddress,
+        sdpLspList                               LspIdList,
+        sdpDescription                           ServObjDesc,
+        sdpLabelSignaling                        INTEGER,
+        sdpAdminStatus                           ServiceAdminStatus,
+        sdpOperStatus                            INTEGER,
+        sdpLastMgmtChange                        TimeStamp,
+        sdpOperFlags                             BITS,
+        sdpLastStatusChange                      TimeStamp,
+	sdpFarEndIpAddressType 			 InetAddressType 
+    }
+
+sdpId OBJECT-TYPE
+    SYNTAX          SdpId
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "SDP identifier."
+    ::= { sdpInfoEntry 1 }
+
+sdpRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "This object indicates the status of this row. The
+                     only values supported during a set operation are
+                     'createAndGo' and 'destroy'. To delete an entry
+                     from this table, the corresponding SDP must be
+                     administratively down, not bound to any service,
+                     and not in use as a mirror destination."
+    ::= { sdpInfoEntry 2 }
+
+sdpDelivery OBJECT-TYPE
+    SYNTAX          INTEGER {
+                        gre    (1),
+                        mpls   (2),
+                        l2tpv3 (4)
+                    }
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "This object specifies the type of delivery used
+                     by this SDP. The value of this
+                     object must be specified when the row is created
+                     and cannot be changed while the row status is
+                     'active'."
+    ::= { sdpInfoEntry 3 }
+
+sdpFarEndIpAddress OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "This object specifies the IP address of the remote
+                     end of the GRE or MPLS tunnel defined by this SDP.
+                     
+                     The value of this object must be set to a non-default value
+                     when the sdpDelivery is set to 'gre' or 'mpls' for the
+                     row to become 'active', and can only be changed while the
+                     admin status of the SDP is 'down'."
+    DEFVAL { "0" }
+    ::= { sdpInfoEntry 4 }
+
+sdpLspList OBJECT-TYPE
+    SYNTAX          LspIdList
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "When the SDP delivery specified by sdpDelivery
+                     is 'mpls', this object specifies the list of
+                     LSPs used to reach the far-end ESR device.
+
+                     All the LSPs in this list must terminate at the
+                     IP address specified by sdpFarEndIpAddress
+                     or sdpFarEndNodeId (for sdpDelivery of 'mpls').
+                     This object is otherwise insignificant and should
+                     contain a value of 0.
+
+                     When this list has more than one element, the
+                     Alcatel-Lucent SROS router will use all of the LSPs for
+                     load balancing purposes. Each LSP ID in the list
+                     corresponds to the vRtrMplsLspIndex of the given
+                     MPLS LSP."
+    ::= { sdpInfoEntry 5 }
+
+sdpDescription OBJECT-TYPE
+    SYNTAX          ServObjDesc
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "Generic information about this SDP."
+    DEFVAL          { "" }
+    ::= { sdpInfoEntry 6 }
+
+sdpLabelSignaling OBJECT-TYPE
+    SYNTAX          INTEGER {
+                        none (1),
+                        tldp (2),
+                        bgp  (3)
+                    }
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "This object specifies the signaling protocol
+                     used to obtain the ingress and egress labels
+                     used in frames transmitted and received on
+                     this SDP. When the value of this object is
+                     'none' then the labels are manually assigned
+                     at the time the SDP is bound to a service. The
+                     value of this object can only be changed while
+                     the admin status of the SDP is 'down'.
+                     
+                     An 'inconsistentValue' error is returned if this object
+                     is not set to 'none' when sdpDelivery is set to 'mpls'.
+
+                     An 'inconsistentValue' error is returned if this object
+                     is not set to 'none' when sdpDelivery is set to 'l2tpv3'.
+
+                     Default value of this object is set to 'none' when
+                     sdpDelivery is set to 'mpls' or 'l2tpv3' otherwise default
+                     value for this object is set to 'tldp'."
+    ::= { sdpInfoEntry 7 }
+
+sdpAdminStatus OBJECT-TYPE
+    SYNTAX          ServiceAdminStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The desired state of this SDP."
+    DEFVAL          { down }
+    ::= { sdpInfoEntry 8 }
+
+sdpOperStatus OBJECT-TYPE
+    SYNTAX          INTEGER {
+                        up                     (1),
+                        notAlive               (2),
+                        notReady               (3),
+                        invalidEgressInterface (4),
+                        transportTunnelDown    (5),
+                        down                   (6)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The operating state of this SDP. The value
+                     'notAlive' is valid only when keep-alive is
+                     enabled, and it means that the keep-alive
+                     operating status is not alive. The value
+                     'notReady' is valid only when this SDP uses a
+                     label signaling protocol (e.g. TLDP) and it means
+                     that the signaling session with the far-end peer
+                     has not been established. The value
+                     'invalidEgressInterface' indicates that the
+                     IOM's have detected that the egress interface
+                     towards the far-end device is not a network
+                     port."
+    ::= { sdpInfoEntry 9 }
+
+
+sdpLastMgmtChange OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of sysUpTime at the time of the
+                     most recent management-initiated change to
+                     this SDP."
+    ::= { sdpInfoEntry 17 }
+
+
+sdpOperFlags OBJECT-TYPE
+    SYNTAX          BITS {
+                        sdpAdminDown            (0),
+                        signalingSessionDown    (1),
+                        transportTunnelDown     (2),
+                        keepaliveFailure        (3),
+                        invalidEgressInterface  (4),
+                        noSystemIpAddress       (5),
+                        transportTunnelUnstable (6),
+                        notOnBindingPort        (7)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "This object specifies all the conditions that
+                     affect the operating status of this SDP."
+    ::= { sdpInfoEntry 26 }
+
+sdpLastStatusChange OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of sysUpTime at the time of the
+                     most recent operating status change to this
+                     SDP."
+    ::= { sdpInfoEntry 27 }
+
+sdpFarEndIpAddressType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "This object specifies the type of the
+         sdpFarEndIpAddress address."
+    DEFVAL { 0 }
+    ::= { sdpInfoEntry 67 }
+
+-- -------------------------
+-- SDP Bind Table
+-- -------------------------
+sdpBindTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF SdpBindEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "A table that contains SDP binding information."
+    ::= { xhaulSdpObjs 4 }
+
+sdpBindEntry OBJECT-TYPE
+    SYNTAX          SdpBindEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "Information about a specific SDP binding."
+    INDEX           { svcId, sdpBindId }
+    ::= { sdpBindTable 1 }
+
+SdpBindEntry ::=
+    SEQUENCE {
+        sdpBindId                           SdpBindId,
+        sdpBindRowStatus                    RowStatus,
+        sdpBindAdminIngressLabel            Unsigned32,
+        sdpBindAdminEgressLabel             Unsigned32,
+        sdpBindOperIngressLabel             Unsigned32,
+        sdpBindOperEgressLabel              Unsigned32,
+        sdpBindAdminStatus                  ServiceAdminStatus,
+        sdpBindOperStatus                   INTEGER,
+        sdpBindLastMgmtChange               TimeStamp,
+        sdpBindType                         INTEGER,
+        sdpBindOperFlags                    BITS,
+        sdpBindLastStatusChange             TimeStamp
+    }
+
+sdpBindId OBJECT-TYPE
+    SYNTAX          SdpBindId
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "SDP Binding identifier."
+    ::= { sdpBindEntry 1 }
+
+sdpBindRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "This object indicates the status of this row. The
+                     only values supported during a set operation are
+                     'createAndGo' and 'destroy'."
+    ::= { sdpBindEntry 2 }
+
+sdpBindAdminIngressLabel OBJECT-TYPE
+    SYNTAX          Unsigned32 (0 | 1..1048575)
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The static MPLS VC label used by the far-end device
+                     to send packets to this device in this service via
+                     this SDP.
+
+                     Normal range of (2048..18431) is used unless changed
+                     by the user."
+    DEFVAL          { 0 }
+    ::= { sdpBindEntry 3 }
+
+sdpBindAdminEgressLabel OBJECT-TYPE
+    SYNTAX          Unsigned32 (0 | 16..1048575)
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The static MPLS VC label used by this device to send
+                     packets to the far-end device in this service via
+                     this SDP."
+    DEFVAL          { 0 }
+    ::= { sdpBindEntry 4 }
+
+sdpBindOperIngressLabel OBJECT-TYPE
+    SYNTAX          Unsigned32 (0 | 1..1048575)
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The MPLS label used by the far-end device to send
+                     packets to this device in this service via this SDP.
+                     This label is either sdpBindAdminIngressLabel, if
+                     not null, or the one obtained via the SDP's signaling
+                     protocol."
+    DEFVAL          { 0 }
+    ::= { sdpBindEntry 5 }
+
+sdpBindOperEgressLabel OBJECT-TYPE
+    SYNTAX          Unsigned32 (0 | 1..1048575)
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The MPLS label used by this device to send packets
+                     to the far-end device in this service via this SDP.
+                     This label is either sdpBindAdminEgressLabel, if
+                     not null, or the one obtained via the SDP's signaling
+                     protocol."
+    DEFVAL          { 0 }
+    ::= { sdpBindEntry 6 }
+
+sdpBindAdminStatus OBJECT-TYPE
+    SYNTAX          ServiceAdminStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The desired state of this Service-SDP binding."
+    DEFVAL          { up }
+    ::= { sdpBindEntry 7 }
+
+sdpBindOperStatus OBJECT-TYPE
+    SYNTAX          INTEGER {
+                        up                 (1),
+                        noEgressLabel      (2),
+                        noIngressLabel     (3),
+                        noLabels           (4),
+                        down               (5),
+                        svcMtuMismatch     (6),
+                        sdpPathMtuTooSmall (7),
+                        sdpNotReady        (8),
+                        sdpDown            (9),
+                        sapDown            (10)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of sdpBindOperStatus indicates the operating status of
+         this Service-SDP binding.
+            'up'               The Service-SDP binding is operational.
+
+            'noEgressLabel'    The ingress label is available but the
+                               egress one is missing.
+
+            'noIngressLabel'   The egress label is available but the
+                               ingress one is not.
+
+            'noLabels'         Both the ingress and the egress labels
+                               are missing.
+
+            'down'             The binding is administratively down.
+
+            'svcMtuMismatch'   Both labels are available, but a service
+                               MTU mismatch was detected between the local
+                               and the far-end devices.
+
+            'sdpPathMtuTooSmall' The operating path MTU of the corresponding
+                                 SDP minus the size of the SDP Bind control
+                                 word (if applicable) is smaller than the
+                                 service MTU.
+
+            'sdpNotReady'      The SDP's signaling session is down.
+
+            'sdpDown'          The SDP is not operationally up.
+
+            'sapDown'          The SAP associated with the service is down."
+    ::= { sdpBindEntry 8 }
+
+sdpBindLastMgmtChange OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of sysUpTime at the time of the
+                     most recent management-initiated change to
+                     this Service-SDP binding."
+    ::= { sdpBindEntry 9 }
+
+sdpBindType OBJECT-TYPE
+    SYNTAX          INTEGER {
+                        spoke (1),
+                        mesh  (2)
+                    }
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "This object indicates whether this Service SDP
+                     binding is a spoke or a mesh.  The value of this
+                     object must be specified when the row is created
+                     and cannot be changed while the row status is
+                     'active'."
+    DEFVAL          { mesh }
+    ::= { sdpBindEntry 10 }
+
+sdpBindOperFlags OBJECT-TYPE
+    SYNTAX          BITS {
+                        sdpBindAdminDown       (0), -- SDP Bind is admin down
+                        svcAdminDown           (1), -- Service is admin down
+                        sapOperDown            (2), -- SAP is oper down 
+                                                    -- (VLL's only)
+                        sdpOperDown            (3), -- SDP is oper down
+                        sdpPathMtuTooSmall     (4), -- SDP's path MTU minus SDP
+                                                    -- Bind control word size is
+                                                    -- less than Service MTU
+                        noIngressVcLabel       (5), -- No ingress VC label
+                        noEgressVcLabel        (6), -- No egress VC label
+                        svcMtuMismatch         (7), -- Service MTU mismatch with
+                                                    -- the remote PE
+                        vcTypeMismatch         (8), -- VC type mismatch with the
+                                                    -- remote PE
+                        relearnLimitExceeded   (9), -- MAC relearn limit was
+                                                    -- exceeded (TLS only)
+                        iesIfAdminDown         (10),-- IP interface is admin
+                                                    -- down (IES and VPRN only)
+                        releasedIngressVcLabel (11),-- Peer released our ingress
+                                                    -- VC label
+                        labelsExhausted        (12),-- Label Manager has ran out
+                                                    -- of labels
+                        svcParamMismatch       (13),-- Service-specific
+                                                    -- parameter mismatch
+                        insufficientBandwidth  (14),-- Insufficient bandwidth to
+                                                    -- allocate to SDP binding
+                        pwPeerFaultStatusBits  (15),-- Received PW fault status
+                                                    -- bits from peer      
+                        meshSdpDown            (16),-- Mesh SDP Down
+                        notManagedByMcRing     (17),-- Not managed by mc-ring
+                        outOfResource          (18),-- Such as memory
+                        mhStandby              (19),-- Standby due to BGP
+                                                    -- multi-home protocol
+                        oamDownMepFault        (20),-- ETH-CFM down MEP fault
+                                                    -- detected. 
+                        oamUpMepFault          (21),-- ETH-CFM up MEP fault
+                                                    -- detected. 
+                        standbySigSlaveTxDown  (22),-- Transmit is down for
+                                                    -- standby-sig-spoke.
+                        operGrpDown            (23),-- Operational group is down
+                        withdrawnIngressVcLabel(24),-- Ingress label withdrawn
+                                                    -- due to incompatibility.
+                        vplsPmsiDown           (25),-- provider-tunnel down
+                        recProtSrcMac          (26),-- Received a packet with a 
+                                                    -- protected source MAC 
+                        peerFaultStatusTxDown  (27),-- Transmit is down because 
+                                                    -- block-on-peer-fault is
+                                                    -- enabled and received PW
+                                                    -- faults status from peer
+                        evpnRouteConflict      (28)-- EVPN has route to sdpFarEnd
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "This object specifies all the conditions that affect the
+                     operating status of this SDP Bind.
+                     
+                     The bit values are as follows:
+
+             sdpBindAdminDown        (0) - SDP Bind is admin down.
+             svcAdminDown            (1) - Service is admin down.
+             sapOperDown             (2) - SAP is oper down (VLL's only).
+             sdpOperDown             (3) - SDP is oper down.
+             sdpPathMtuTooSmall      (4) - SDP's path MTU minus SDP Bind control
+                                           word size is less than Service MTU.
+             noIngressVcLabel        (5) - No ingress VC label.
+             noEgressVcLabel         (6) - No egress VC label.
+             svcMtuMismatch          (7) - Service MTU mismatch with the
+                                           remote PE.
+             vcTypeMismatch          (8) - VC type mismatch with the remote PE.
+             relearnLimitExceeded    (9) - MAC relearn limit was exceeded
+                                           (TLS only).
+             iesIfAdminDown         (10) - IP interface is admin down
+                                           (IES and VPRN only).
+             releasedIngressVcLabel (11) - Peer released our ingress VC label.
+             labelsExhausted        (12) - Label Manager has ran out of labels.
+             svcParamMismatch       (13) - Service-specific parameter mismatch.
+             insufficientBandwidth  (14) - Insufficient bandwidth to allocate
+                                           to SDP binding.
+             pwPeerFaultStatusBits  (15) - Received PW fault status bits from
+                                           peer.      
+             meshSdpDown            (16) - Mesh SDP Down.
+             notManagedByMcRing     (17) - Not managed by mc-ring.
+             outOfResource          (18) - Such as memory.
+             mhStandby              (19) - Standby due to BGP.
+                                         - multi-home protocol.
+             oamDownMepFault        (20) - ETH-CFM down MEP fault detected.
+             oamUpMepFault          (21) - ETH-CFM up MEP fault detected.
+             standbySigSlaveTxDown  (22) - Transmit is down for 
+                                         - standby-sig-spoke.
+             operGrpDown            (23) - Operational group is down.
+             withdrawnIngressVcLabel(24) - Withdrawn due to Incompatiblity.
+             vplsPmsiDown           (25),- provider-tunnel down.
+             recProtSrcMac          (26) - Received a packet with a 
+                                         - protected source MAC.
+             peerFaultStatusTxDown  (27) - Transmit is down because 
+                                         - block-on-peer-fault is
+                                         - enabled and received PW
+                                         - faults status from peer
+             evpnRouteConflict      (28) - EVPN has route to sdpFarEnd
+             "
+    ::= { sdpBindEntry 20 }
+
+sdpBindLastStatusChange OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of the object sdpBindLastStatusChange specifies
+                     the value of sysUpTime at the time of the most recent
+                     operating status change to this SDP Bind."
+    ::= { sdpBindEntry 21 }
+
+
+-- ----------------------------------
+-- Base SDP Binding Statistics Table
+-- ----------------------------------
+sdpBindBaseStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF SdpBindBaseStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "A table that contains basic SDP Binding
+                     statistics."
+    ::= { xhaulSdpObjs 5 }
+
+sdpBindBaseStatsEntry OBJECT-TYPE
+    SYNTAX          SdpBindBaseStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "Basic statistics about a specific SDP
+                     Binding."
+    INDEX           { svcId, sdpBindId }
+    ::= { sdpBindBaseStatsTable 1 }
+
+SdpBindBaseStatsEntry ::=
+    SEQUENCE {
+       sdpBindBaseStatsIngressForwardedPackets  Counter64,
+       sdpBindBaseStatsIngressDroppedPackets    Counter64,
+       sdpBindBaseStatsEgressForwardedPackets   Counter64,
+       sdpBindBaseStatsEgressForwardedOctets    Counter64,
+       sdpBindBaseStatsIngressForwardedOctets   Counter64,
+       sdpBindBaseStatsIngressDroppedOctets     Counter64
+    }
+
+sdpBindBaseStatsIngressForwardedPackets OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     ""
+    ::= { sdpBindBaseStatsEntry 1 }
+
+sdpBindBaseStatsIngressDroppedPackets OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     ""
+    ::= { sdpBindBaseStatsEntry 2 }
+
+sdpBindBaseStatsEgressForwardedPackets OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     ""
+    ::= { sdpBindBaseStatsEntry 3 }
+
+sdpBindBaseStatsEgressForwardedOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     ""
+    ::= { sdpBindBaseStatsEntry 4 }
+
+sdpBindBaseStatsIngressForwardedOctets       OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     ""
+    ::= { sdpBindBaseStatsEntry 6 }
+
+sdpBindBaseStatsIngressDroppedOctets  OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     ""
+    ::= { sdpBindBaseStatsEntry 7 }
+
+
+-- ----------------------------
+-- SDP Segment Routing Table
+-- ----------------------------
+sdpSegRouteTableLastChgd  OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of sdpSegRouteTableLastChgd indicates the
+         sysUpTime at the time of the last modification
+         of sdpSegRouteTable.
+
+         If no changes were made to the entry since the last
+         re-initialization of the local network management subsystem,
+         then this object contains a zero value."
+    ::= { xhaulSdpObjs 65 }
+
+sdpSegRouteTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF SdpSegRouteEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "A table that contains SDP segment routing information."
+    ::= { xhaulSdpObjs 66 }
+
+sdpSegRouteEntry OBJECT-TYPE
+    SYNTAX          SdpSegRouteEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "Information about a specific SDP segment routing."
+    INDEX           { sdpId }
+    ::= { sdpSegRouteTable 1 }
+
+SdpSegRouteEntry ::=
+    SEQUENCE {
+        sdpSegRouteOspf                XhaulEnabledDisabled,
+        sdpSegRouteOspfOperInstId      Integer32,
+        sdpSegRouteOspfLspId           Unsigned32
+     }
+
+sdpSegRouteOspf OBJECT-TYPE
+    SYNTAX          XhaulEnabledDisabled
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The value of the sdpSegRouteOspf specifies whether
+         Segment Routing is enabled for OSPF on this SDP."
+    DEFVAL { disabled }
+    ::= { sdpSegRouteEntry 10 }
+
+sdpSegRouteOspfOperInstId OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of the sdpSegRouteOspfOperInstId indicates the OSPF
+         instance identifier in use for this SDP.
+
+         Value of '-1' indicates no valid value for the instance identifier."
+    ::= { sdpSegRouteEntry 12 }
+
+sdpSegRouteOspfLspId     OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of sdpSegRouteOspfLspId indicates the Id for the segment
+         routed OSPF LSP if sdpSegRouteOspf is set to 'enabled' and there is a
+         valid route to the sdpFarEndIpAddress."
+    ::= { sdpSegRouteEntry 13 }
+
+-- ----------------------------
+-- SDP Segment Routing Te Lsp Table
+-- ----------------------------
+sdpSegRouteTeLspTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF SdpSegRouteTeLspEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A table that contains SDP segment routing traffic-engineering (SR-TE)
+         LSPs used to reach the far-end ESR device.
+
+         All the LSPs in this list must terminate at the
+         IP address specified by sdpFarEndIpAddress
+         or sdpFarEndNodeId (for sdpDelivery of 'mpls').
+         This object is otherwise insignificant and should
+         contain a value of 0.
+
+         When this list has more than one element, the
+         Nokia device will use ALL of the LSPs for
+         load balancing purposes. Each LSP ID in the list
+         corresponds to the vRtrMplsLspIndex of the given
+         MPLS LSP."
+    ::= { xhaulSdpObjs 71 }
+
+sdpSegRouteTeLspEntry OBJECT-TYPE
+    SYNTAX          SdpSegRouteTeLspEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Information about a specific SDP segment routing traffic-engineering
+         (SR-TE) LSP."
+    INDEX  { sdpId, sdpSegRouteTeLspId }
+    ::= { sdpSegRouteTeLspTable 1 }
+
+SdpSegRouteTeLspEntry ::=
+    SEQUENCE {
+        sdpSegRouteTeLspId          XhaulVRtrMplsLspID,
+        sdpSegRouteTeLspRowStatus   RowStatus,
+        sdpSegRouteTeLspLastChanged TimeStamp
+    }
+
+sdpSegRouteTeLspId OBJECT-TYPE
+    SYNTAX          XhaulVRtrMplsLspID
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The value of the sdpSegRouteTeLspId specifies LSP identifier associated
+         with the 'Segment Routing Traffic Engineering' SDP which is
+         used to reach the far-end ESR device.
+
+         This LSP must terminate at the IP address specified by
+         sdpFarEndIpAddress or sdpFarEndNodeId (for sdpDelivery of 'mpls')."
+    ::= { sdpSegRouteTeLspEntry 1 }
+
+sdpSegRouteTeLspRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The value of the sdpSegRouteTeLspRowStatus specifies
+         the row status of the entry."
+    ::= { sdpSegRouteTeLspEntry 2 }
+
+sdpSegRouteTeLspLastChanged OBJECT-TYPE
+    SYNTAX         TimeStamp
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "The value of sysUpTime at the time of the most recent change to
+         this entry."
+    ::= { sdpSegRouteTeLspEntry 3 }
+
+-- --------------------------------------
+-- SDP Notification Objects
+-- --------------------------------------
+
+sdpNotifySdpId      OBJECT-TYPE
+    SYNTAX          SdpId
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION     "The ID of the SDP where SDP Bindings are associated.
+                     This object is used by the sdpBindSdpStateChangeProcessed
+                     notification to indicate the SDP that changed
+                     state and that resulted in having the associated
+                     sdpBindStatusChanged events suppressed for all SDP
+                     Bindings on that SDP."
+    ::= { xhaulSdpNotifyObjs 1 }
+
+-- --------------------------------------------
+-- SDP traps
+-- --------------------------------------------
+
+sdpStatusChanged NOTIFICATION-TYPE
+    OBJECTS {sdpId,
+        sdpAdminStatus,
+        sdpOperStatus
+    }
+    STATUS          current
+    DESCRIPTION     "The sdpStatusChanged notification is generated
+                     when there is a change in the administrative or
+                     operating status of an SDP."
+    ::= { sdpTraps 3 }
+
+
+sdpBindStatusChanged NOTIFICATION-TYPE
+    OBJECTS { svcId,
+        sdpBindId,
+        sdpBindAdminStatus,
+        sdpBindOperStatus,
+        sdpBindOperFlags
+    }
+    STATUS          current
+    DESCRIPTION     "The sdpBindStatusChanged notification is generated
+                     when there is a change in the administrative or
+                     operating status of an SDP Binding.
+
+                     Notice that this trap is not generated whenever
+                     the SDP Binding operating status change is caused by
+                     an operating status change on the associated SDP."
+    ::= { sdpTraps 6 }
+
+
+sdpBindSdpStateChangeProcessed NOTIFICATION-TYPE
+    OBJECTS {
+        sdpNotifySdpId
+    }
+    STATUS          current
+    DESCRIPTION     "The sdpBindSdpStateChangeProcessed notification 
+                     indicates that the agent has finished processing an 
+                     SDP state change event, and that the operating status
+                     of all the affected SDP Bindings has been updated 
+                     accordingly. The value of the sdpNotifySdpId object
+                     indicates the SDP that experienced the state change."
+    ::= { sdpTraps 20 }
+
+
+
+-- ----------------------------------------------------------------------------
+-- Conformance Information
+-- ----------------------------------------------------------------------------
+xhaulSdpCompliances  OBJECT IDENTIFIER ::= { xhaulSdpConformance 1 }
+xhaulSdpGroups       OBJECT IDENTIFIER ::= { xhaulSdpConformance 2 }
+
+-- ----------------------------------------------
+-- Compliance Statements
+-- ----------------------------------------------
+
+
+
+END

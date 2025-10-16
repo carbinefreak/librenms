@@ -1,0 +1,735 @@
+XHAUL-SAP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    NOTIFICATION-TYPE, Gauge32,
+    Integer32, Unsigned32, IpAddress,
+    Counter64, Counter32                        FROM SNMPv2-SMI
+
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP                          FROM SNMPv2-CONF
+
+    TEXTUAL-CONVENTION,
+    DisplayString,
+    RowStatus, MacAddress, TimeStamp,
+    TruthValue                                  FROM SNMPv2-TC
+
+    InterfaceIndexOrZero                        FROM IF-MIB
+
+    InetAddressPrefixLength,
+    InetAddressType, InetAddress                FROM INET-ADDRESS-MIB
+
+    -- AtmTrafficDescrParamIndex,
+    -- AtmVpIdentifier,
+    -- AtmVcIdentifier                          FROM ATM-TC-MIB
+
+    TIngPolicerId, TEgrPolicerId,
+    XhaulIngPolicerStatMode, XhaulEgrPolicerStatMode,
+    ServiceAdminStatus, 
+    XhaulPortID, XhaulEncapVal, XhaulServId, XhaulCustId, TNamedItem,
+    TIngressQueueId, TEgressQueueId, TNamedItemOrEmpty, TPortSchedulerPIR,
+    XhaulActionType, XhaulOperState, XhaulIgmpVersion,
+    TCpmProtPolicyID, TCIRRate, TPIRRate, XhaulEnabledDisabled, TItemDescription,
+    TPolicyStatementNameOrEmpty, TSapIngressPolicyID, TSapEgressPolicyID,
+    TIngressHsmdaQueueId, TEgressHsmdaQueueId,
+    THsmdaPIRKRateOverride, THsmdaCIRKRateOverride,
+    TIngHsmdaPerPacketOffsetOvr, TEgrHsmdaPerPacketOffsetOvr,
+    TIngressHsmdaCounterId, TEgressHsmdaCounterId,
+    XhaulManagedRouteStatus, XhaulAdminState,
+    TBurstSize, TBurstPercentOrDefault,
+    TAdaptationRule, XhaulVRtrID, 
+    XhaulDefSubIdSource, XhaulAncpStringOrZero,
+    THPolCIRRateOverride, THPolPIRRateOverride,
+    TBurstSizeBytes, TBurstSizeBytesOverride, TPlcrBurstSizeBytesOverride,
+    XhaulDefInterDestIdSource, TPerPacketOffsetOvr,
+    XhaulIngPolicerStatModeOverride, TWeight,
+    XhaulEgrPolicerStatModeOverride, QTag,
+    TCpmProtPolicyIDOrDefault, TDSCPNameOrEmpty,
+    XhaulBsxTransitIpPolicyIdOrZero,
+    XhaulBsxTransPrefPolicyIdOrZero,
+    TTmplPolicyID, ServiceOperStatus,
+    TPIRPercentOverride, TCIRPercentOverride,
+    TSapEgrEncapGrpQosPolicyIdOrZero, TSapEgrEncapGroupType,
+    TSapEgrEncapGroupActionType, SvcISID,
+    THsmdaWrrWeightOverride, TPortSchedulerAggRateLimitPIR,
+    THSMDABurstSizeBytesOverride,
+    XhaulBsxAarpIdOrZero, XhaulBsxAarpServiceRefType,
+    TQosQGrpInstanceIDorZero, THPolVirtualSchePIRRate,
+    TQosIngressPolicyID,
+    XhaulLagPerLinkHashClass, XhaulLagPerLinkHashWeight,
+    THPolVirtualScheCIRRate, XhaulLinkMapProfileIdOrZero,
+    XhaulDistCpuProtActionDuration, XhaulDistCpuProtState,
+    XhaulDistCpuProtProtocolId, XhaulISID, XhaulIsidMFibStatus
+                                               FROM XHAUL-TC-MIB
+
+    xhaulServObjs, xhaulServConformance, xhaulServNotifications,
+    svcId,
+    ServObjName, ServObjDesc, ServType, VpnId,
+    BridgeId, TSapIngQueueId, TSapEgrQueueId, TStpPortState, StpPortRole,
+    StpProtocol, MvplsPruneState, TQosQueueAttribute, TVirtSchedAttribute,
+    MstiInstanceIdOrZero, TdmOptionsCasTrunkFraming, CemSapReportAlarm,
+    CemSapEcid, L2ptProtocols, ConfigStatus     FROM XHAUL-SERV-MIB
+
+    xhaulim, xhaulBasicMib		FROM XHAUL-BASICREG-MIB
+
+    -- XHAULSRMIBModules                         FROM XHAUL-GLOBAL-MIB
+
+    -- xhaulPortCemStatsReportAlarm                 FROM XHAUL-PORT-MIB
+    -- xhaulChassisIndex, xhaulCardSlotNum, xhaulFPNum,
+    -- XhaulHwIndexOrZero                           FROM XHAUL-CHASSIS-MIB
+
+    -- tSapIngPolicerId, tSapEgrPolicerId,
+    -- tVirtualSchedulerName, tSchedulerPolicyName,
+    -- tQosPolicerLevel,
+    -- XhaulMcFrClassIndex                          FROM XHAUL-QOS-MIB
+
+    -- TFilterID                                   FROM XHAUL-FILTER-MIB
+;
+
+xhauklSvcSapMIBModule   MODULE-IDENTITY
+        LAST-UPDATED "201705200000Z"
+        ORGANIZATION "Alcatel-Lucent"
+        CONTACT-INFO
+            "Alcatel-Lucent SROS Support
+             Web: http://support.alcatel-lucent.com"
+    DESCRIPTION
+        "This document is the SNMP MIB module to manage and provision
+        the various services of the Alcatel-Lucent SROS system.
+
+        Copyright 2003-2014 Alcatel-Lucent. All rights reserved. 
+        Reproduction of this document is authorized on the condition that
+        the foregoing copyright notice is included.
+
+        This SNMP MIB module (Specification) embodies Alcatel-Lucent's
+        proprietary intellectual property.  Alcatel-Lucent retains
+        all title and ownership in the Specification, including any
+        revisions.
+
+        Alcatel-Lucent grants all interested parties a non-exclusive
+        license to use and distribute an unmodified copy of this
+        Specification in connection with management of Alcatel-Lucent
+        products, and without fee, provided this copyright notice and
+        license appear on all copies.
+
+        This Specification is supplied 'as is', and Alcatel-Lucent
+        makes no warranty, either express or implied, as to the use,
+        operation, condition, or performance of the Specification."
+
+--
+--  Revision History
+--
+    REVISION        "201705200000Z"
+    DESCRIPTION     "Rev 1.0                20 MAY 2017 00:00
+                     1.0 release of the XHAUL-SAP-MIB from XHAUL-SERV-MIB."
+
+    ::= { xhaulBasicMib 7 }
+
+-- --------------------------------------------------------------------
+--      XHAUL-SAP-MIB organisation
+-- --------------------------------------------------------------------
+xhaulSapObjs             OBJECT IDENTIFIER ::= { xhaulServObjs 4 }
+    xhaulSapNotifyObjs       OBJECT IDENTIFIER ::= { xhaulSapObjs 100 }
+
+xhaulSapConformance      OBJECT IDENTIFIER ::= { xhaulServConformance 3 }
+
+sapTraps           OBJECT IDENTIFIER ::= { xhaulServNotifications 3 }
+
+-- ----------------------------------------------------------------------------
+--  Textual Conventions
+-- ----------------------------------------------------------------------------
+
+XhaulSapAtmEncapsulation ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+       "The XhaulSapAtmEncapsulation data type is an enumerated integer 
+         that specifies the data encapsulation used over the AAL5 SSCS layer.  
+         
+         The definition references RFC 2684 Multiprotocol Encapsulation over 
+         ATM AAL5 and the ATM Forum LAN Emulation specification."
+     SYNTAX          INTEGER {
+                          vcMultiplexRoutedProtocol      (1),
+                          vcMultiplexBridgedProtocol8023 (2),
+                          llcSnapRoutedProtocol          (7),
+                          multiprotocolFrameRelaySscs    (8),
+                          unknown                        (10),
+                          llcSnapBridgedProtocol8023     (11),
+                          vcMultiplexPpp                 (12),
+                          llcNlpidPpp                    (13),
+                          auto                           (14)
+                      }
+
+XhaulSapSubscriberLimit ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+       "The XhaulSapSubscriberLimit data type is an enumerated integer 
+         that specifies the maximum number of subscribers allowed on
+         a SAP."
+    SYNTAX Unsigned32 (0..65535)
+
+XhaulVlanGroupId ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+       "The XhaulVlanGroupId data type is an enumerated integer 
+         that specifies the VLAN range group identifer."
+    SYNTAX Unsigned32 (1..4094)
+
+XhaulSapInstStatus ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+       "The XhaulSapInstStatus data type is an enumerated integer 
+        that indicates status of the SAP instantiating other SAPs
+        controlled by this SAP."
+    SYNTAX INTEGER {
+             notApplicable (1),
+             complete (2),
+             inProgress (3),
+             failed (4)
+           }
+
+-- --------------------------------------------------------------------
+-- xhaulSapObjs group
+-- --------------------------------------------------------------------
+sapNumEntries OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The current number of SAPs configured in this
+                     device."
+    ::= { xhaulSapObjs 1 }
+
+-- ----------------------------------
+-- Base SAP Table
+-- ----------------------------------
+sapBaseInfoTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF SapBaseInfoEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "A table that contains basic SAP information."
+    ::= { xhaulSapObjs 2 }
+
+sapBaseInfoEntry OBJECT-TYPE
+    SYNTAX          SapBaseInfoEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "Information about a specific SAP."
+    INDEX           { svcId, sapPortId, sapEncapValue }
+    ::= { sapBaseInfoTable 1 }
+
+SapBaseInfoEntry ::=
+    SEQUENCE {
+        sapPortId                       XhaulPortID,
+        sapEncapValue                   XhaulEncapVal,
+        sapRowStatus                    RowStatus,
+        sapType                         ServType,
+        sapDescription                  ServObjDesc,
+        sapAdminStatus                  ServiceAdminStatus,
+        sapOperStatus                   INTEGER,
+        sapIngressQosPolicyId           TSapIngressPolicyID,
+        sapEgressQosPolicyId            TSapEgressPolicyID,
+        sapLastMgmtChange               TimeStamp,
+        sapOperFlags                    BITS,
+        sapLastStatusChange             TimeStamp,
+        sapVprnIfIndex                  InterfaceIndexOrZero
+    }
+
+sapPortId OBJECT-TYPE
+    SYNTAX          XhaulPortID
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The ID of the access port where this SAP
+                     is defined."
+    ::= { sapBaseInfoEntry 1 }
+
+sapEncapValue OBJECT-TYPE
+    SYNTAX          XhaulEncapVal
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of the label used to identify this
+                     SAP on the access port specified by sapPortId."
+    ::= { sapBaseInfoEntry 2 }
+
+sapRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "This object indicates the status of this row. The
+                     only values supported during a set operation are
+                     'createAndGo' and 'destroy'."
+    ::= { sapBaseInfoEntry 3 }
+
+sapType OBJECT-TYPE
+    SYNTAX          ServType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "This object indicates the type of service where
+                     this SAP is defined."
+    ::= { sapBaseInfoEntry 4 }
+
+sapDescription OBJECT-TYPE
+    SYNTAX          ServObjDesc
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "Generic information about this SAP."
+    DEFVAL          { "" }
+    ::= { sapBaseInfoEntry 5 }
+
+sapAdminStatus OBJECT-TYPE
+    SYNTAX          ServiceAdminStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The desired state of this SAP."
+    DEFVAL          { up }
+    ::= { sapBaseInfoEntry 6 }
+
+sapOperStatus OBJECT-TYPE
+    SYNTAX          INTEGER {
+                        up                 (1),
+                        down               (2),
+                        ingressQosMismatch (3),
+                        egressQosMismatch  (4),
+                        portMtuTooSmall    (5),
+                        svcAdminDown       (6),
+                        iesIfAdminDown     (7)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of the object sapOperStatus indicates the
+                     operating state of this SAP."
+    ::= { sapBaseInfoEntry 7 }
+
+sapIngressQosPolicyId OBJECT-TYPE
+    SYNTAX          TSapIngressPolicyID
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The value of the object sapIngressQosPolicyId specifies
+                     the row index in the tSapIngressTable corresponding to this
+                     ingress QoS policy, or one if no policy is specified.
+                     The value 0 is needed for mirror SAPs that
+                     cannot have a QoS policy assigned."
+    DEFVAL          { 1 }
+    ::= { sapBaseInfoEntry 8 }
+
+sapEgressQosPolicyId OBJECT-TYPE
+    SYNTAX          TSapEgressPolicyID
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The row index in the tSapEgressTable
+                     corresponding to this egress QoS policy,
+                     or one if no policy is specified."
+    DEFVAL          { 1 }
+    ::= { sapBaseInfoEntry 11 }
+
+sapLastMgmtChange OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of sysUpTime at the time of the
+                     most recent management-initiated change to
+                     this SAP."
+    ::= { sapBaseInfoEntry 16 }
+
+sapOperFlags OBJECT-TYPE
+    SYNTAX          BITS {
+                        sapAdminDown         (0),  -- SAP is admin down
+                        svcAdminDown         (1),  -- Service is admin down
+                        iesIfAdminDown       (2),  -- IP interface is admin down
+                                                   -- (IES and VPRN only)
+                        portOperDown         (3),  -- Access port is oper down
+                        portMtuTooSmall      (4),  -- Access port's MTU is less 
+                                                   -- than Service MTU
+                        l2OperDown           (5),  -- L2 PVC/PVP is oper down 
+                                                   -- (FR and ATM only)
+                        ingressQosMismatch   (6),  -- Mismatch between ingress 
+                                                   -- QoS and Scheduler policies
+                        egressQosMismatch    (7),  -- Mismatch between egress 
+                                                   -- QoS and Scheduler policies
+                        relearnLimitExceeded (8),  -- MAC relearn limit was 
+                                                   -- exceeded (TLS only)
+                        recProtSrcMac        (9),  -- Received a packet with a 
+                                                   -- protected source MAC 
+                                                   -- (TLS only)
+                        subIfAdminDown       (10), -- Subscriber interface is 
+                                                   -- admin down (group-
+                                                   -- interface SAP only)
+                        sapIpipeNoCeIpAddr   (11), -- CE IP Address not 
+                                                   -- configured for Ipipe SAP 
+                                                   -- (IPIPE SAP only)
+                        sapTodResourceUnavail (12),-- SAP with ToD had 
+                                                   -- insufficient resources
+                                                   -- at boot time and got
+                                                   -- default policies.
+                        sapTodMssResourceUnavail (13), -- MSS of this SAP uses
+                                                       -- ToD and due to
+                                                       -- insufficient resources
+                                                       -- at boot time got
+                                                       -- default scheduler
+                                                       -- policies.
+                        sapParamMismatch      (14),    -- Service specific local
+                                                       -- parameter mismatch
+                        sapCemNoEcidOrMacAddr (15),    -- ECID or MAC address
+                                                       -- not configured (CEM
+                                                       -- SAP only)
+                        sapStandbyForMcRing   (16),    -- mc-ring keeps this SAP
+                                                       -- standby for the
+                                                       -- corresponding SAP on
+                                                       -- peer
+                        sapSvcMtuTooSmall     (17),    -- Service MTU is less
+                                                       -- than the SAP payload
+                        ingressNamedPoolMismatch (18), -- Invalid named-pool
+                                                       -- on the ingress side
+                        egressNamedPoolMismatch  (19), -- Invalid named-pool
+                                                       -- on the egress side
+                        ipMirrorNoMacAddr     (20),    -- No MAC Address
+                                                       -- configured for the
+                                                       -- ip-mirror
+                        sapEpipeNoRingNode (21),-- No XHAUL-MC-REDUNDANCY-MIB
+                                                -- ::xhaulMcEpipeSapEntry object
+                                                -- configured for Epipe SAP
+                                                -- (EPIPE SAP only)
+                        mcStandby          (22),-- indicates the SAP is standby
+                                        -- because of a mutli-chassis protocol
+                        mhStandby          (23),-- indicates the SAP is standby
+                                        -- because of a BGP multi-home protocol
+                        oamDownMepFault (24), -- ETH-CFM down MEP fault detected
+                        oamUpMepFault   (25),  -- ETH-CFM up MEP fault detected 
+                        ethTunTagMisconfig (26),-- missing tag(s) for Eth-Tunnel
+                                                -- SAP
+                        ingressPolicerMismatch (27),-- indicate ingress policer 
+                                     -- is parented to non-existent arbiter
+                        egressPolicerMismatch (28),  -- indicate egress policer 
+                                     -- is parented to non-existent arbiter
+                        sapTlsNoRingNode (29),-- No XHAUL-MC-REDUNDANCY-MIB
+                                                -- ::xhaulMcTlsSapEntry object
+                                                -- configured for TLS SAP
+                                                -- (VPLS SAP only)
+                        ethRingPathBlocked (30), -- indicates eth-ring path is
+                                                 -- blocked.
+                        oamTunnelMepFault (31),  -- indicates eth-cfm Tunnel
+                                                 -- MEP fault detected.
+                        operGrpDown (32), -- indicates operational-group is down
+                        portBouncing (33)  -- indicates port is oper down and bouncing.
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "This object specifies all the conditions that
+                     affect the operating status of this SAP.
+
+                     The bit values are:
+
+             sapAdminDown           (0) - SAP is admin down.
+             svcAdminDown           (1) - Service is admin down.
+             iesIfAdminDown         (2) - IP interface is admin down (IES and
+                                          VPRN only).
+             portOperDown           (3) - Access port is oper down.
+             portMtuTooSmall        (4) - Access port's MTU is < Service MTU
+             l2OperDown             (5) - L2 PVC/PVP is oper down (FR and ATM
+                                          only).
+             ingressQosMismatch     (6) - Mismatch between ingress QoS and
+                                          Scheduler policies.
+             egressQosMismatch      (7) - Mismatch between egress QoS and
+                                          Scheduler policies.
+             relearnLimitExceeded   (8) - MAC relearn limit was exceeded (TLS
+                                          only).
+             recProtSrcMac          (9) - Received a packet with a protected
+                                          source MAC (TLS only).
+             subIfAdminDown        (10) - Subscriber interface is admin down
+                                          (group-interface SAP only).
+             sapIpipeNoCeIpAddr    (11) - CE IP Address not configured for Ipipe
+                                          SAP (IPIPE SAP only).
+             sapTodResourceUnavail (12) - SAP with ToD had insufficient
+                                          resources at boot time and got default
+                                          policies.
+             sapTodMssResourceUnavail (13)
+                                        - MSS of this SAP uses ToD and due to
+                                          insufficient resources at boot time
+                                          got default scheduler policies.
+             sapParamMismatch      (14) - Service specific local parameter
+                                          mismatch.
+             sapCemNoEcidOrMacAddr (15) - ECID or MAC address not configured
+                                          (CEM SAP only).
+             sapStandbyForMcRing   (16) - mc-ring keeps this SAP standby for the
+                                          corresponding SAP on peer.
+             sapSvcMtuTooSmall     (17) - Service MTU is < SAP payload.
+             ingressNamedPoolMismatch (18)
+                                        - Invalid named-pool on the ingress
+                                          side.
+             egressNamedPoolMismatch (19)
+                                        - Invalid named-pool on the egress side.
+             ipMirrorNoMacAddr     (20) - No MAC Address configured for the
+                                          ip-mirror.
+             sapEpipeNoRingNode    (21) - No XHAUL-MC-REDUNDANCY-MIB
+                                          ::xhaulMcEpipeSapEntry object
+                                          configured for Epipe SAP (EPIPE SAP
+                                          only).
+             mcStandby             (22) - indicates the SAP is standby because
+                                          of a mutli-chassis protocol.
+             mhStandby             (23) - indicates the SAP is standby because
+                                          of a BGP multi-home protocol.
+             oamDownMepFault       (24) - ETH-CFM down MEP fault detected.
+             oamUpMepFault         (25) - ETH-CFM up MEP fault detected.
+             ethTunTagMisconfig    (26) - Missing Eth-tunnel SAP tag(s).
+             ingressPolicerMismatch (27)- indicate ingress policer
+                                        - is parented to non-existent arbiter
+             egressPolicerMismatch (28) - indicate egress policer
+                                        - is parented to non-existent arbiter.
+             sapTlsNoRingNode      (29) - No XHAUL-MC-REDUNDANCY-MIB
+                                          ::xhaulMcTlsSapEntry object
+                                          configured for TLS SAP (VPLS SAP
+                                          only).
+             ethRingPathBlocked (30)    - indicates eth-ring path is
+                                          blocked.
+             oamTunnelMepFault (31)     - ETH-CFM Tunnel MEP fault detected.
+             operGrpDown (32)           - indicates operational-group is down.
+             portBouncing (33)          - indicates port is oper down and bouncing."
+
+    ::= { sapBaseInfoEntry 27 }
+
+sapLastStatusChange OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The value of sysUpTime at the time of the
+                     most recent operating status change to this
+                     SAP."
+    ::= { sapBaseInfoEntry 28 }
+
+sapVprnIfIndex  OBJECT-TYPE
+    SYNTAX          InterfaceIndexOrZero
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "When the value of sapType is 'vprn' this
+                     object specifies the index of the VPRN interface
+                     where this SAP is defined. The value of this object
+                     can be set only when the row is created and cannot
+                     be changed while the row status is 'active'. This
+                     object is otherwise not significant and should have
+                     the value zero."
+    ::= { sapBaseInfoEntry 37 }
+
+
+-- ---------------------------------
+-- Base SAP Statistics Table
+-- ---------------------------------
+sapBaseStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF SapBaseStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "A table that contains basic SAP statistics.
+                     In the descriptions below 'Pchip' refers
+                     to the Alcatel-Lucent SROS series Packet Processing
+                     chip, while 'Qchip' refers to the Alcatel-Lucent
+                     SROS series QoS Queueing Engine chip."
+    ::= { xhaulSapObjs 6 }
+
+sapBaseStatsEntry OBJECT-TYPE
+    SYNTAX          SapBaseStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "Basic statistics about a specific SAP."
+    INDEX           { svcId, sapPortId, sapEncapValue }
+    ::= { sapBaseStatsTable 1 }
+
+SapBaseStatsEntry ::=
+    SEQUENCE {
+        sapBaseStatsIngressOfferedPackets		Counter64,
+        sapBaseStatsIngressOfferedOctets		Counter64,
+        sapBaseStatsIngressDroppedPackets		Counter64,
+        sapBaseStatsIngressDroppedOctets		Counter64,
+        sapBaseStatsIngressForwardedInProfPackets	Counter64,
+        sapBaseStatsIngressForwardedInProfOctets	Counter64,
+        sapBaseStatsIngressForwardedOutProfPackets	Counter64,
+        sapBaseStatsIngressForwardedOutProfOctets	Counter64,
+        sapBaseStatsEgressDroppedInProfPackets		Counter64,
+        sapBaseStatsEgressDroppedInProfOctets		Counter64,
+        sapBaseStatsEgressDroppedOutProfPackets		Counter64,
+        sapBaseStatsEgressDroppedOutProfOctets		Counter64,
+        sapBaseStatsEgressForwardedInProfPackets	Counter64,
+        sapBaseStatsEgressForwardedInProfOctets		Counter64,
+        sapBaseStatsEgressForwardedOutProfPackets	Counter64,
+        sapBaseStatsEgressForwardedOutProfOctets	Counter64
+    }
+
+sapBaseStatsIngressOfferedPackets		OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of ipackets offered to forwarding at ingress SAP."
+    ::= { sapBaseStatsEntry 1 }
+
+sapBaseStatsIngressOfferedOctets		OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of octets, offered to forwarding at the ingress SAP."
+    ::= { sapBaseStatsEntry 2 }
+
+sapBaseStatsIngressDroppedPackets		OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of packets dropped at the ingress SAP due to SAP state, ingress MAC, bad checksum, etc."
+    ::= { sapBaseStatsEntry 3 }
+
+sapBaseStatsIngressDroppedOctets		OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of octets dropped at the ingress SAP due to SAP state, ingress MAC, bad checksum, etc."
+    ::= { sapBaseStatsEntry 4 }
+
+sapBaseStatsIngressForwardedInProfPackets	OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of in-profile packets (rate below CIR) forwarded by the ingress SAP."
+    ::= { sapBaseStatsEntry 5 }
+
+sapBaseStatsIngressForwardedInProfOctets	OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of in-profile octets (rate below CIR) forwarded by the ingress SAP."
+    ::= { sapBaseStatsEntry 6 }
+
+sapBaseStatsIngressForwardedOutProfPackets	OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of out-of-profile packets (rate above CIR) forwarded by the ingress SAP."
+    ::= { sapBaseStatsEntry 7 }
+
+sapBaseStatsIngressForwardedOutProfOctets	OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of out-of-profile octets (rate above CIR) forwarded by the ingress SAP."
+    ::= { sapBaseStatsEntry 8 }
+
+sapBaseStatsEgressDroppedInProfPackets		OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of in-profile packets discarded by the egress SAP."
+    ::= { sapBaseStatsEntry 9 }
+
+sapBaseStatsEgressDroppedInProfOctets		OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of in-profile octets discarded by the egress SAP."
+    ::= { sapBaseStatsEntry 10 }
+
+sapBaseStatsEgressDroppedOutProfPackets		OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of out-of-profile packets discarded by the egress SAP."
+    ::= { sapBaseStatsEntry 11 }
+
+sapBaseStatsEgressDroppedOutProfOctets		OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of out-of-profile packets discarded by the egress SAP."
+    ::= { sapBaseStatsEntry 12 }
+
+sapBaseStatsEgressForwardedInProfPackets	OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of of in-profile packets forwarded by the egress SAP."
+    ::= { sapBaseStatsEntry 13 }
+
+sapBaseStatsEgressForwardedInProfOctets		OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of in-profile octets forwarded by the egress SAP."
+    ::= { sapBaseStatsEntry 14 }
+
+sapBaseStatsEgressForwardedOutProfPackets	OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of of out-of-profile packets forwarded by the egress SAP."
+    ::= { sapBaseStatsEntry 15 }
+
+sapBaseStatsEgressForwardedOutProfOctets	OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION     "The number of of out-of-profile octets forwarded by the egress SAP."
+    ::= { sapBaseStatsEntry 16 }
+
+
+
+-- --------------------------------------
+-- SAP Notification Objects
+-- --------------------------------------
+
+sapNotifyPortId OBJECT-TYPE
+    SYNTAX          XhaulPortID
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION     "The ID of the access port where a SAP is defined."
+    ::= { xhaulSapNotifyObjs 1 }
+
+
+-- --------------------------------------
+-- SAP Traps 
+-- --------------------------------------
+
+sapStatusChanged NOTIFICATION-TYPE
+    OBJECTS {
+        svcId,
+        sapPortId,
+        sapEncapValue,
+        sapAdminStatus,
+        sapOperStatus,
+        sapOperFlags
+    }
+    STATUS          current
+    DESCRIPTION     "The sapStatusChanged notification is generated
+                     when there is a change in the administrative or
+                     operating status of an SAP.
+                     
+                     Notice that this trap is not generated whenever
+                     the SAP operating status change is caused by an
+                     operating status change on the associated access
+                     port."
+    ::= { sapTraps 3 }
+
+
+sapPortStateChangeProcessed NOTIFICATION-TYPE
+    OBJECTS {
+        sapNotifyPortId
+    }
+    STATUS          current
+    DESCRIPTION     "The sapPortStateChangeProcessed notification indicates
+                     that the agent has finished processing an access port
+                     state change event, and that the operating status of
+                     all the affected SAP's has been updated accordingly.
+                     The value of the sapNotifyPortId object indicates the
+                     ID of the port that experienced the state change."
+    ::= { sapTraps 21 }
+
+
+
+
+
+-- ----------------------------------------------------------------------------
+-- Conformance Information
+-- ----------------------------------------------------------------------------
+xhaulSapCompliances  OBJECT IDENTIFIER ::= { xhaulSapConformance 1 }
+xhaulSapGroups       OBJECT IDENTIFIER ::= { xhaulSapConformance 2 }
+xhaulDCSapCompliances  OBJECT IDENTIFIER ::= { xhaulSapConformance 3 }
+xhaulDCSapGroups       OBJECT IDENTIFIER ::= { xhaulSapConformance 4 }
+
+
+-- ----------------------------------------------
+-- Compliance Statements
+-- ----------------------------------------------
+
+
+
+END

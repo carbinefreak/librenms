@@ -1,0 +1,588 @@
+OpticsIM-PROVIDER-BRIDGE-MIB DEFINITIONS ::= BEGIN 
+ 
+IMPORTS
+    opticsimEthMib                 FROM OPTICSIM-ETHREG-MIB
+    OBJECT-TYPE,MODULE-IDENTITY,
+    Integer32, enterprises	   FROM SNMPv2-SMI
+    RowStatus, TruthValue,
+    TEXTUAL-CONVENTION             FROM SNMPv2-TC
+    VlanId 			   FROM Q-BRIDGE-MIB
+;
+                                    
+opticsIMProviderBridgeMIB MODULE-IDENTITY
+    LAST-UPDATED "1209300000Z"
+    ORGANIZATION "Alcatel-Lucent Optics"
+    CONTACT-INFO "Alcatel-Lucent Optics"
+
+    DESCRIPTION
+                "D.Spreafico:
+		 - added opticsIMProviderBridgeDSCPtoPCPProfile and opticsIMProviderBridgePCPtoPCPProfile columnar objects to 
+		         opticsIMProviderBridgePortTable
+		 - added CVidRegistrationTable (the same in 1adMib) adding 2 new columnar objects: 
+                         opticsIMProviderBridgeCVidRegistrationUseServicePriority and 
+                         opticsIMProviderBridgeCVidRegistrationSPriority 
+		 - added opticsIMProviderBridgePepTable
+                "
+
+    REVISION    "1206080000Z"
+    DESCRIPTION
+                "First release of Optics-IM PROVIDER BRIDGE MIB 802.1ad compatible with IETF MIB qBridgeMIB "
+
+::= { opticsimEthMib 60 }
+                
+--MIB objects for configuring the IEEE802.1ad Provider Bridging
+
+opticsIMProviderBridge  OBJECT IDENTIFIER  ::= { opticsIMProviderBridgeMIB 1 }
+
+
+-- -------------------------------------------------------------
+-- The 802.1ad Provider Bridge Port Configuration Table
+-- -------------------------------------------------------------
+
+opticsIMProviderBridgePortTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMProviderBridgePortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table containing provider bridge port related configurations.
+   
+        All the values for the objects in this table will take effect
+        only when the Bridge Mode is set as  
+        ProviderCoreBridge or ProviderEdgeBridge."
+    ::= { opticsIMProviderBridge  1 }
+    
+opticsIMProviderBridgePortEntry   OBJECT-TYPE
+    SYNTAX      OpticsIMProviderBridgePortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Information controlling per port configurations for 
+        the externally accessible ports of Provider Bridges."
+    INDEX { opticsIMProviderBridgePortNum}
+    ::= { opticsIMProviderBridgePortTable  1 }
+            
+OpticsIMProviderBridgePortEntry ::=
+    SEQUENCE {
+        opticsIMProviderBridgePortNum                       Integer32,
+        opticsIMProviderBridgePortType                      INTEGER,
+        opticsIMProviderBridgePortUseCustomerPriority 	    TruthValue,
+	opticsIMProviderBridgeDSCPtoPCPProfile		    INTEGER,
+	opticsIMProviderBridgePCPtoPCPProfile		    INTEGER
+    }
+    
+opticsIMProviderBridgePortNum OBJECT-TYPE
+   SYNTAX      Integer32 (1..65535)
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION
+      "The Index value of the port in the system for which this entry
+      applies. The maximum index value of the port is defined by the
+      system."
+   ::= { opticsIMProviderBridgePortEntry 1 }
+
+opticsIMProviderBridgePortType OBJECT-TYPE
+   SYNTAX      INTEGER {
+                        providerNetworkPort      (1),
+                        customerNetworkPort      (2),
+                        customerEdgePort         (3),
+                        propCustomerEdgePort     (4),
+                        propCustomerNetworkPort  (5),
+                        propProviderNetworkPort  (6)
+    }
+   MAX-ACCESS  read-write
+   STATUS      current
+   DESCRIPTION
+        "The port type of this specified externally accessible port.
+        Unless and otherwise mentioned, the port type configuration is allowed
+        for the Provider Edge Bridges and Provider Code Bridges.
+
+        providerNetworkPort - Port Connected to a single Provider.
+        SVLAN Classification is based on only the PVID configured for the port
+        for untagged packets.
+
+        customerNetworkPort - Port in the S-VLAN component that can transmit or
+        receive frames for single customer. Customer Network Port can support 
+        either port based service or S-tagged service. 
+        In port based service interface, all customer packets are mapped to one
+        single service instance identified by PVID of that Port.
+        In S-tagged service interface, either untagged or S-Tagged/S-Priority 
+        tagged packets can be received. The VLAN classification on this 
+        interface will be based on the S-tag received or on the PVID of the 
+        port. Ingress Filtering will be enabled on this port.
+
+        customerEdgePort - Port connected to a single customer, where multiple services
+        can be provided based on only CVID Registration table. The Packets received
+        on this interface will always be classified to CVLAN and then to SVLAN by CVID
+        Registration table. CustomerEdgePort configuration is allowed only in
+        Provider Edge Bridges.
+
+        propCustomerEdgePort - Port connected to a single customer, where multiple
+        services can be provided based on only Proprietary SVLAN classification 
+        tables.propCustomerEdgePort configuration is allowed only in 
+        Provider Edge Bridges.
+
+        propCustomerNetworkPort - Port connected to a single customer, where multiple
+        service can be provided based on CVLANs by assigning one of the Proprietary
+        SVLAN classification tables to this port. The services can also be assigned
+        using other proprietary SVLAN classification tables where CVLAN is not the 
+        index of the table.
+
+        propProviderNetworkPort - Port connected to a Q-in-Q Bridge located
+        inside Provider Network. These are Q-in-Q compatible ports,that will
+        interact with Q-in-Q Bridges.These are S-VLAN component ports and 
+        will not operate in standard 802.1ad mode.
+        
+        Whenever the port type changes,the previous configuration associated with 
+        the port will be flushed.
+
+        For e.g. 
+        
+        whenever CNP(STagged) and PNP port types are changed to any 
+        other port type,
+          - The unicast entries learnt on this port and 
+          - The VID translation table entries associated with the port 
+            will be flushed.
+
+        Whenever CEP port type is changed to any other port type,
+          - The unicast entries learnt on this port
+          - The C-VID registration table entries associated with the port
+          - The PEP configuration table entries
+          - The service priority regeneration table entries 
+          will be flushed.
+
+        Whenever PCEP port type is changed to any other port type,
+
+          - The unicast MAC addresses learnt on this port 
+          - The S-VLAN classification entries configured for this port 
+            will be flushed.
+          
+        Whenever PCNP port type is changed to any other port type,
+          - The unicast MAC addresses learnt on this port
+          - The S-VLAN classification entries configured for this port 
+            will be flushed.
+          - The VID translation table entries associated with the port 
+          will be flushed.
+        
+         Whenever the PPNP port type is changed to any other port type,
+          - The unicast MAC addresses learnt on this port
+          will be flushed.
+          
+         The port admin status must be made down to change the port type."
+
+    DEFVAL { 1 }
+    ::= { opticsIMProviderBridgePortEntry 2 }
+
+
+opticsIMProviderBridgePortUseCustomerPriority OBJECT-TYPE
+   SYNTAX      TruthValue
+   MAX-ACCESS  read-write 
+   STATUS      current 
+   DESCRIPTION 
+      "If this object is set to True, the PCP of the S-tag added to the Ethernet frames ingressing this port 
+       (identified by opticsIMProviderBridgePortNum ) is determined looking at the PCP of C-tag received 
+       frames, whereas the DEI field of the S-tag is set to false.
+       If this object is set to False, the PCP of the S-tag added to the Ethernet frames ingressing this port 
+       (identified by opticsIMProviderBridgePortNum ) is determined by the default priority configured for this port, 
+       whereas the DEI field of the S-tag is set to false.
+
+       This object can be set only on external CNPs."
+
+   ::= { opticsIMProviderBridgePortEntry 3 } 
+
+
+opticsIMProviderBridgeDSCPtoPCPProfile		    OBJECT-TYPE
+   SYNTAX      INTEGER
+   MAX-ACCESS  read-write 
+   STATUS      current 
+   DESCRIPTION 
+      "The profile of the mapping of DSCP values of Ethernet frames ingressing this port and encapsulating an IP packet to 
+       the PCP of the S-tag to be add to the Ethernet frames self.
+       The value has to be one of the values of opticsIMPBridgeDSCPtoPCPProfileID index on opticsIMPBridgeDSCPtoPCPProfileTable."
+
+   ::= { opticsIMProviderBridgePortEntry 4 } 
+
+
+opticsIMProviderBridgePCPtoPCPProfile		    OBJECT-TYPE
+   SYNTAX      INTEGER
+   MAX-ACCESS  read-write 
+   STATUS      current 
+   DESCRIPTION 
+     "The profile of the mapping of PCP values of Ethernet frames ingressing this port to the PCP of the S-tag to be add to 
+       the Ethernet frames self.
+        The value has to be one of the values of opticsIMPBridgePCPtoPCPProfileID index on opticsIMPBridgePCPtoPCPProfileTable."
+
+   ::= { opticsIMProviderBridgePortEntry 5 } 
+
+
+-- -------------------------------------------------------------
+-- This table is the C-VID Registration table (Ref. Section
+-- 12.13.3.1 IEEE802.1ad/D6)
+-- -------------------------------------------------------------
+opticsIMProviderBridgeCVidRegistrationTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMProviderBridgeCVidRegistrationEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       " This table provides a mapping between a customer VLAN Identifier (C-VID)
+         and service instance represented by Service VLAN identifier(S-VID)  
+         for a customer edge port.
+         An Entry in this table result in 'cvlan' type of SVLAN classification for 
+         CEP Ports. This can be configured only on Customer Edge Port."
+  ::= { opticsIMProviderBridge  3}
+
+opticsIMProviderBridgeCVidRegistrationEntry  OBJECT-TYPE
+    SYNTAX      OpticsIMProviderBridgeCVidRegistrationEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       " An Entry in this table provides functionality of
+         a) Configuring PVID of the internal Customer Network Port of SVLAN component.
+         b) Adding PEP on the C-VLAN component to member set of C-VLAN
+         c) Adding PEP and/or CEP to the untagged set of C-VLAN, if it is desired."
+    INDEX { opticsIMProviderBridgePortNum, 
+            opticsIMProviderBridgeCVidRegistrationCVid 
+          }
+    ::= { opticsIMProviderBridgeCVidRegistrationTable  1 }
+
+OpticsIMProviderBridgeCVidRegistrationEntry ::=
+    SEQUENCE {
+        opticsIMProviderBridgeCVidRegistrationCVid               	VlanId,
+        opticsIMProviderBridgeCVidRegistrationSVid               	VlanId,
+        opticsIMProviderBridgeCVidRegistrationUntaggedPep        	TruthValue,
+        opticsIMProviderBridgeCVidRegistrationUntaggedCep        	TruthValue,
+        opticsIMProviderBridgeCVidRegistrationRowStatus          	RowStatus,
+        opticsIMProviderBridgeCVidRegistrationUseServicePriority 	TruthValue,
+        opticsIMProviderBridgeCVidRegistrationSPriority		 	INTEGER
+    }
+    
+opticsIMProviderBridgeCVidRegistrationCVid OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The customer VLAN ID in the customer VLAN tag of an ingress frame
+        at this specified port or the customer VLAN ID to which the ingress
+        frame is classified to, at this specified port."
+    ::= { opticsIMProviderBridgeCVidRegistrationEntry  1 }
+    
+opticsIMProviderBridgeCVidRegistrationSVid OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "S-VLAN Id for the service instance to which this port and this 
+        C-VLAN are mapped to.
+         ie) CEP,C-VID ===> S-VID."
+    ::= { opticsIMProviderBridgeCVidRegistrationEntry  2 }
+
+opticsIMProviderBridgeCVidRegistrationUntaggedPep OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "A boolean indicating frames for this specified Customer VLAN 
+        identifier ingress at this specified Customer Edge Port (CEP)
+        should be forwarded untagged through the Provider Edge Port
+        (PEP). 
+        When it is set to 'True' the C-VLAN tag will be stripped. Otherwise
+        the packet will be sent out with a C-tag and with valid C-VID."
+    ::= { opticsIMProviderBridgeCVidRegistrationEntry  3 }
+    
+opticsIMProviderBridgeCVidRegistrationUntaggedCep OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "A boolean indicating frames for this specified Customer VLAN 
+        identifier should be forwarded untagged through this specified
+        Customer Edge Port (CEP).
+        When it is set to 'True' the C-VLAN tag will be stripped. Otherwise 
+        the tag will be added if the packet is C-VLAN untagged."
+
+    ::= { opticsIMProviderBridgeCVidRegistrationEntry  4 }
+
+opticsIMProviderBridgeCVidRegistrationRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the status of this entry. An entry is
+        created in this table when this object is SET to 'createAndWait'.
+        The entry in this table is used when the status of this object 
+        is SET 'active'. The entry in this table is not used when this 
+        object is SET 'notInService'. An entry created in this table is
+        deleted when this object is SET 'destroy'."
+
+    ::= { opticsIMProviderBridgeCVidRegistrationEntry  5 }
+
+opticsIMProviderBridgeCVidRegistrationUseServicePriority OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "If this object is set to True, the PCP of the S-tag added to the Ethernet frames ingressing this port 
+       (identified by opticsIMProviderBridgePortNum ) is determined by S-VLAN Id for the service instance to which this port and this 
+        C-VLAN are mapped to and defined by user on opticsIMProviderBridgeCVidRegistrationSPriority object value.
+       If this object is set to False, the PCP of the S-tag added to the Ethernet frames ingressing this port 
+       (identified by opticsIMProviderBridgePortNum ) is determinated looking at the PCP of the C-tag for this C-VLAN (the default priority
+        in case of untagged frames)."
+    ::= { opticsIMProviderBridgeCVidRegistrationEntry  6 }
+
+opticsIMProviderBridgeCVidRegistrationSPriority	OBJECT-TYPE
+    SYNTAX      INTEGER (0..7)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The priority to be used in case opticsIMProviderBridgeCVidRegistrationUseServicePriority is set to True value."
+    ::= { opticsIMProviderBridgeCVidRegistrationEntry  7 }
+
+
+-- ----------------------------------------------------------------
+-- Provider Edge Port configuration table (Ref. IEEE802.1ad/D6 - Section
+-- 12.13.3.3 and 12.13.3.4)
+-- ----------------------------------------------------------------
+
+opticsIMProviderBridgePepTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMProviderBridgePepEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+    "The table provides configuration options (PVID,Acceptable
+    frame type, default user priority and ingress filtering) for the internal
+    PEP interfaces created when an entry is created in C-VID registration table."
+::= { opticsIMProviderBridge  4}
+
+opticsIMProviderBridgePepEntry OBJECT-TYPE
+    SYNTAX      OpticsIMProviderBridgePepEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+
+    "Entry  contains information (PVID, Acceptable frame type, default user priority
+    and ingress filtering) for the packets received over internal PEPs.
+    
+    Creation of an entry in this table is not allowed and only modification
+    is allowed."
+        
+    INDEX {opticsIMProviderBridgePortNum, 
+ --          opticsIMProviderBridgeCVidRegistrationSVid
+           opticsIMProviderBridgePepSvid
+          }
+   ::= { opticsIMProviderBridgePepTable 1 }
+            
+OpticsIMProviderBridgePepEntry ::=
+    SEQUENCE {
+        opticsIMProviderBridgePepSvid                 VlanId,
+        opticsIMProviderBridgePepPvid                 VlanId,
+        opticsIMProviderBridgePepDefaultUserPriority  INTEGER,
+        opticsIMProviderBridgePepAcceptableFrameTypes INTEGER,
+        opticsIMProviderBridgePepIngressFiltering     TruthValue
+    }
+
+opticsIMProviderBridgePepSvid  OBJECT-TYPE
+   SYNTAX      VlanId
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION
+   "The The 12 bit S-VID associated with the PEP ."
+   ::= { opticsIMProviderBridgePepEntry 1 }
+
+opticsIMProviderBridgePepPvid OBJECT-TYPE
+   SYNTAX      VlanId
+   MAX-ACCESS  read-write 
+   STATUS      current
+   DESCRIPTION
+   "A 12-bit C-VID to be used for untagged frames received at
+        the Provider Edge Port."
+   
+   ::= { opticsIMProviderBridgePepEntry 2 }
+
+opticsIMProviderBridgePepDefaultUserPriority OBJECT-TYPE
+    SYNTAX      INTEGER (0..7)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The default ingress user priority to be used for the untagged
+         packets received over provider edge ports.This will be used for
+         the PCP encoding of C-VLAN tag for the outgoing packets when the 
+         outgoing CEP is tagged i.e untagged CEP is set to False in the 
+         C-VID registration table entry for this port."
+    DEFVAL      { 0 }
+    ::= { opticsIMProviderBridgePepEntry 3 }
+
+opticsIMProviderBridgePepAcceptableFrameTypes OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    admitAll(1),
+                    admitOnlyVlanTagged(2),
+                    admitOnlyUntaggedAndPriorityTagged (3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "When this is admitOnlyVlanTagged(2) the device will
+        discard untagged frames or Priority-Tagged frames
+        received on this port.  When admitAll(1) is set, all frames
+        tagged/untagged/priority tagged frames received on this port
+        will be accepted.
+        When admitOnlyUntaggedAndPriorityTagged(3) is set, untagged and 
+        priority tagged frames alone will be accepted and tagged 
+        frames received over this PEP will be discarded."
+
+    DEFVAL      { admitAll }
+    ::= { opticsIMProviderBridgePepEntry 4 }
+
+
+opticsIMProviderBridgePepIngressFiltering OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "When this is true(1), if this port is not in the member set of a 
+      C-VLAN, then frames received on this port classified to that C-VLAN 
+      will be discarded. When false(2), the port will accept all
+      incoming frames received over this PEP"
+
+    DEFVAL      { false }
+    ::= { opticsIMProviderBridgePepEntry 5 }
+
+
+-- ----------------------------------------------------------------
+-- The mapping profile from DSCP to PCP value
+-- (proprietary table)
+-- ----------------------------------------------------------------
+
+opticsIMPBridgeDSCPtoPCPProfileTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMPBridgeDSCPtoPCPProfileEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+    "The table provides a mapp between the DSCP value of Ethernet incoming frames incapsulating IP packets and the PCP value 
+     to insert on S-Tag of the Ethernet frames self.
+     This table is on NE basis. The user is able to associate a profile to a specific bridge port."
+::= { opticsIMProviderBridge  8}
+
+opticsIMPBridgeDSCPtoPCPProfileEntry OBJECT-TYPE
+    SYNTAX      OpticsIMPBridgeDSCPtoPCPProfileEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+
+    "Entry  contains information about the DSCP to PCP mapping."
+        
+    INDEX {opticsIMPBridgeDSCPtoPCPProfileID,
+           opticsIMPBridgeDSCPtoPCPprofileFromDSCPvalue 
+          }
+   ::= { opticsIMPBridgeDSCPtoPCPProfileTable 1 }
+            
+OpticsIMPBridgeDSCPtoPCPProfileEntry ::=
+    SEQUENCE {
+        opticsIMPBridgeDSCPtoPCPProfileID		INTEGER,
+        opticsIMPBridgeDSCPtoPCPprofileFromDSCPvalue 	INTEGER,
+        opticsIMPBridgeDSCPtoPCPprofileToPCPvalue	INTEGER,
+        opticsIMPBridgeDSCPtoPCPprofileRowStatus	RowStatus
+    }
+
+opticsIMPBridgeDSCPtoPCPProfileID		OBJECT-TYPE
+   SYNTAX      INTEGER
+   MAX-ACCESS  not-accessible 
+   STATUS      current
+   DESCRIPTION
+   "The index of the table identifying the profile number of the DSCP to PCP mapping."
+   
+   ::= { opticsIMPBridgeDSCPtoPCPProfileEntry 1 }
+
+opticsIMPBridgeDSCPtoPCPprofileFromDSCPvalue 	OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The DSCP value to be mapped to the priority value on opticsIMPBridgeDSCPtoPCPprofileToPCPvalue."
+     ::= { opticsIMPBridgeDSCPtoPCPProfileEntry 2 }
+
+opticsIMPBridgeDSCPtoPCPprofileToPCPvalue		OBJECT-TYPE
+    SYNTAX      INTEGER (0..7)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The priority value to map from opticsIMPBridgeDSCPtoPCPprofileFromDSCPvalue."
+    ::= { opticsIMPBridgeDSCPtoPCPProfileEntry 3 }
+
+opticsIMPBridgeDSCPtoPCPprofileRowStatus	OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "To create/remove the entry"
+    ::= { opticsIMPBridgeDSCPtoPCPProfileEntry 4 }
+
+-- ----------------------------------------------------------------
+-- The mapping profile from PCP to PCP value
+-- (proprietary table)
+-- ----------------------------------------------------------------
+
+opticsIMPBridgePCPtoPCPProfileTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF OpticsIMPBridgePCPtoPCPProfileEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+    "The table provides a mapp between the PCP value of Ethernet incoming frames  and the PCP value 
+     to insert on S-Tag of the Ethernet frames self.
+     This table is on NE basis. The user is able to associate a profile to a specific bridge port."
+::= { opticsIMProviderBridge  9}
+
+opticsIMPBridgePCPtoPCPProfileEntry OBJECT-TYPE
+    SYNTAX      OpticsIMPBridgePCPtoPCPProfileEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+
+   "Entry  contains information about the PCP to PCP mapping."
+        
+    INDEX {opticsIMPBridgePCPtoPCPProfileID,
+           opticsIMPBridgePCPtoPCPprofileFromPCPvalue 
+          }
+   ::= { opticsIMPBridgePCPtoPCPProfileTable 1 }
+            
+OpticsIMPBridgePCPtoPCPProfileEntry ::=
+    SEQUENCE {
+        opticsIMPBridgePCPtoPCPProfileID		INTEGER,
+        opticsIMPBridgePCPtoPCPprofileFromPCPvalue 	INTEGER,
+        opticsIMPBridgePCPtoPCPprofileToPCPvalue	INTEGER,
+        opticsIMPBridgePCPtoPCPprofileRowStatus		RowStatus
+    }
+
+opticsIMPBridgePCPtoPCPProfileID		OBJECT-TYPE
+   SYNTAX      INTEGER
+   MAX-ACCESS  not-accessible 
+   STATUS      current
+   DESCRIPTION
+   "The index of the table identifying the profile number of the PCP to PCP mapping."
+   
+   ::= { opticsIMPBridgePCPtoPCPProfileEntry 1 }
+
+opticsIMPBridgePCPtoPCPprofileFromPCPvalue 	OBJECT-TYPE
+    SYNTAX      INTEGER (0..7)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The PCP value to be mapped to the priority value on opticsIMPBridgePCPtoPCPprofileToPCPvalue."
+     ::= { opticsIMPBridgePCPtoPCPProfileEntry 2 }
+
+opticsIMPBridgePCPtoPCPprofileToPCPvalue		OBJECT-TYPE
+    SYNTAX      INTEGER (0..7)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The priority value to map from opticsIMPBridgeDSCPtoPCPprofileFromPCPvalue."
+    ::= { opticsIMPBridgePCPtoPCPProfileEntry 3 }
+
+opticsIMPBridgePCPtoPCPprofileRowStatus	OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "To create/remove the entry"
+    ::= { opticsIMPBridgePCPtoPCPProfileEntry 4 }
+
+
+END

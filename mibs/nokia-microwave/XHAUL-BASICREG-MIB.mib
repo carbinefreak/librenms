@@ -1,0 +1,35 @@
+-- "CONFIDENTIAL. All rights reserved. Nokia. This computer program is protected under Copyright. 
+-- Recipient is to retain the program in confidence, and is not permitted to copy, use, distribute, modify or 
+-- translate the program without authorization. Passing on and copying,use and communication of its
+-- contents is not permitted without written authorization."
+
+XHAUL-BASICREG-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+    MODULE-IDENTITY, OBJECT-IDENTITY FROM SNMPv2-SMI
+    ltt FROM TSDIM-BASICREG-MIB;
+
+xhaulBasicReg MODULE-IDENTITY
+    LAST-UPDATED "201704300000Z"
+    ORGANIZATION "Alcatel TND"
+    CONTACT-INFO "Alcatel TND"
+    DESCRIPTION
+        "X-HAUL BASIC REGISTRATION MODULE"
+
+    REVISION "201704300000Z"
+    DESCRIPTION
+        "Initial Release X-HAUL BASIC REGISTRATION MODULE"
+::= { xhaulBasicMib 1 }
+
+-- Registration Tree
+
+
+xhaulim                 OBJECT IDENTIFIER ::= { ltt 2 }
+
+xhaulBasicMib 		OBJECT IDENTIFIER ::= { xhaulim 1 }
+
+xhaulBasicMC            OBJECT IDENTIFIER ::= { xhaulBasicMib 99 }
+
+END
+
+
+

@@ -1,0 +1,450 @@
+
+
+OPTICSIM-GFP-MIB DEFINITIONS ::= BEGIN
+
+
+
+IMPORTS
+
+    MODULE-IDENTITY, OBJECT-TYPE, IpAddress, Counter64,
+
+    NOTIFICATION-TYPE, Integer32, Unsigned32, Gauge32, Counter32 FROM SNMPv2-SMI
+
+    TEXTUAL-CONVENTION, DisplayString, RowStatus, TimeStamp, TruthValue FROM SNMPv2-TC
+
+    MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+
+    ifIndex FROM IF-MIB
+
+    IANAifType                               FROM IANAifType-MIB
+
+    opticsimProtMappingMib, opticsimProtMappingMC FROM OPTICSIM-PROTMAPPINGREG-MIB;
+
+
+
+opticsimGFPMib MODULE-IDENTITY
+
+    LAST-UPDATED "0510270000Z"
+
+    ORGANIZATION "Alcatel Optics"
+
+    CONTACT-INFO "Alcatel Optics"
+
+    DESCRIPTION
+        "Ed. 5
+         The behavior of opticsimGFPConfCsf object has been reviewed, adding below values:
+         - 4(unidirVC-AIS), 5(Bidir_UPI_LOF),6(Unidir_UPI_LOF),7(backward_UPI_LOF)
+            
+         Added to opticsimGFPConfTable:
+         - opticsimGFPClientLayerType
+
+        "        
+
+    REVISION
+        "0504070000Z"
+
+    DESCRIPTION
+
+        "Ed. 4
+
+         The value backward(3) has been added to opticsimGFPConfCsf object
+
+        "
+
+    REVISION
+
+        "0409100000Z"
+
+    DESCRIPTION
+
+        "Ed. 3.3
+
+         Added to opticsimGFPConfTable:
+       
+         - opticsimGFPConfCsf 
+
+        "
+
+
+
+    REVISION
+
+        "0307250000Z"
+
+    DESCRIPTION
+
+        "Ed. 2.3
+
+         Added the textual convention:
+
+         - OpticsimGfpConfType
+
+         Added to opticsimGFPConfTable:
+
+         - opticsimGfpConfRxFcs
+
+         - opticsimGfpConfRxClientType
+
+         Modified syntax to OpticsimGfpConfType
+
+         of the following objects in the
+
+         opticsimGFPConfTable:
+
+         - opticsimGfpConfEncaps
+
+         - opticsimGfpConfRxTypeHeader
+
+        "
+
+    REVISION
+
+        "0306120000Z"
+
+    DESCRIPTION
+
+        "Ed. 2.2
+
+         Added to opticsimGFPConfTable:
+
+         - opticsimGfpConfEncaps
+
+         - opticsimGfpConfRxTypeHeader
+
+         Changed MAX-ACCESS (from read-create to read-write):
+
+         - opticsimGFPConfFcs
+
+        "
+
+    REVISION
+
+        "0212180000Z"
+
+    DESCRIPTION
+
+        "Initial Release Optics-IM GFP MIB"
+
+::= { opticsimProtMappingMib 4 }
+
+
+
+opticsimGFPMibObject OBJECT IDENTIFIER ::= { opticsimGFPMib 1 }
+
+
+
+---Textual Conventions
+
+
+
+OpticsimGfpConfType ::= TEXTUAL-CONVENTION
+
+    STATUS current
+
+    DESCRIPTION
+
+        "It defines the type of GFP encapsulation format.
+
+         The values (0..15) are used to configure standard
+
+         GFP formats as defined in table 6-2/G.7041.
+
+         The value 16 is used to configure the
+
+         proprietaryBasicGFP frame format.
+
+         The value 17 is used to configure the
+
+         proprietaryExtendedGFP frame format.
+
+         The value 18 is used to report an unknown
+
+         received GFP frame format."
+
+    SYNTAX INTEGER
+
+
+
+-- opticsimGFPConfTable
+
+
+
+opticsimGFPConfTable OBJECT-TYPE
+
+    SYNTAX SEQUENCE OF OpticsimGFPConfEntry
+
+    MAX-ACCESS not-accessible
+
+    STATUS current
+
+    DESCRIPTION
+
+        "This media-specific interface table is used to define
+
+         the configuration parameters for both standard and
+
+         proprietary GFP interfaces."
+
+::= { opticsimGFPMibObject 1 }
+
+
+
+opticsimGFPConfEntry OBJECT-TYPE
+
+    SYNTAX OpticsimGFPConfEntry
+
+    MAX-ACCESS not-accessible
+
+    STATUS current
+
+    DESCRIPTION
+
+        ""
+
+    INDEX { ifIndex }
+
+::= { opticsimGFPConfTable 1 }
+
+
+
+OpticsimGFPConfEntry ::= SEQUENCE {
+
+    opticsimGFPConfFcs TruthValue,
+
+    opticsimGfpConfEncaps OpticsimGfpConfType,
+
+    opticsimGfpConfRxTypeHeader OpticsimGfpConfType,
+
+    opticsimGfpConfRxFcs TruthValue,
+
+    opticsimGfpConfRxClientType INTEGER,
+
+    opticsimGFPConfCsf INTEGER,
+
+    opticsimGFPClientLayerType INTEGER
+    }
+
+
+
+opticsimGFPConfFcs OBJECT-TYPE
+
+    SYNTAX TruthValue
+
+    MAX-ACCESS read-write
+
+    STATUS current
+
+    DESCRIPTION
+
+        "This objects enables or disables the usage of the GFP FCS.
+
+         The default value is 'false'."
+
+::= { opticsimGFPConfEntry 1 }
+
+
+
+opticsimGfpConfEncaps OBJECT-TYPE
+
+    SYNTAX OpticsimGfpConfType
+
+    MAX-ACCESS read-write
+
+    STATUS current
+
+    DESCRIPTION
+
+        "This object configures the type of GFP encapsulation format.
+
+         The value unknown (18) is not allowed.
+
+         The values in the range (0..15) are
+
+         admitted only with standard GFP (ifType = 221).
+
+         The proprietaryBasicGFP (16) and proprietaryExtendedGFP (17)
+
+         values are admitted only with proprietary GFP (ifType = 22).
+
+         With the standard GFP (ifType = 221), the default value
+
+         is the nullExtHeader (0).
+
+         With the proprietary GFP (ifType = 22), the default value is
+
+         the proprietaryBasicGFP (16)."
+
+::= { opticsimGFPConfEntry 2 }
+
+
+
+opticsimGfpConfRxTypeHeader OBJECT-TYPE
+
+    SYNTAX OpticsimGfpConfType
+
+    MAX-ACCESS read-only
+
+    STATUS current
+
+    DESCRIPTION
+
+        "This object reports the received Type Header
+
+         as determined by the GFP Type Reporting Procedure."
+
+::= { opticsimGFPConfEntry 3 }
+
+
+
+opticsimGfpConfRxFcs OBJECT-TYPE
+
+    SYNTAX TruthValue
+
+    MAX-ACCESS read-only
+
+    STATUS current
+
+    DESCRIPTION
+
+        "This object reports whether the received frames
+
+         are using the GFP FCS or not, as determined by
+
+         the GFP Type Reporting Procedure.
+
+         This values is meaningful only if the value
+
+         of the opticsimGfpConfRxTypeHeader object is
+
+         different than unknown (18). When the value of the
+
+         opticsimGfpConfRxTypeHeader object is equal to
+
+         unknown (18), this object always return the value false."
+
+::= { opticsimGFPConfEntry 4 }
+
+
+
+opticsimGfpConfRxClientType OBJECT-TYPE
+
+    SYNTAX INTEGER
+
+    MAX-ACCESS read-only
+
+    STATUS current
+
+    DESCRIPTION
+
+        "This object reports the received GFP Client Type
+
+         as determined by the GFP Type Reporting Procedure.
+
+         The values are defined in table 6-3/G.7041.
+
+         The value 0 is used to report an unknown client type."
+
+::= { opticsimGFPConfEntry 5 }
+
+
+opticsimGFPConfCsf OBJECT-TYPE
+
+    SYNTAX INTEGER 
+
+    MAX-ACCESS read-write
+
+    STATUS current
+
+    DESCRIPTION
+
+        "This object enables or disables the usage of transmit capability (for both GFP CSF and VC-AIS)
+
+	 for clients that have no client AIS signal defined. 
+
+           disabled (0)	no consequent action (IDLE insertion)
+
+           bidir    (1)	is defined to enable the usage of GFP CSF transmit capability in 'bi-directional mode' AND with GFP CSF frame UPI sub-field filled up with Loss of Client Signal CSF failure type
+
+           unidir   (2) is defined to enable the usage of GFP CSF transmit capability in 'uni-directional mode' AND with GFP CSF frame UPI sub-field filled up with Loss of Client Signal CSF failure type
+
+	   backward (3) is defined to enable the usage of GFP CSF transmit capability only in the 'backward direction mode'AND with GFP CSF frame UPI sub-field filled up with Loss of Client Signal CSF failure type
+
+           Uni-dir VC-AIS (4) is defined to enable VC-AIS Insertion
+  
+           Bidir_UPI_LOF(5) is defined to enable the usage of GFP CSF transmit capability in 'bi-directional mode' AND with GFP CSF frame UPI sub-field filled up with Loss of Client Character Synchronization Signal CSF failure type
+
+	   Unidir_UPI_LOF (6) is defined to enable the usage of GFP CSF transmit 
+           capability only in the 'backward direction mode'AND with GFP CSF frame UPI sub-field filled up 
+           with Loss of Client Character Synchronization Signal CSF failure type
+
+           Backward_UPI_LOF (7) is defined to enable the usage of GFP CSF transmit capability only  in the 'backward direction mode'AND with GFP CSF frame UPI sub-field filled up with Loss of Client Character Synchronization Signal CSF failure type
+
+          The default value is 'disabled'."
+
+::= { opticsimGFPConfEntry 6 }
+
+
+opticsimGFPClientLayerType OBJECT-TYPE
+
+    SYNTAX INTEGER 
+
+    MAX-ACCESS read-write
+
+    STATUS current
+
+    DESCRIPTION
+
+        "It is used to determine the transmission direction of the frames received from 
+         GFP Interface.
+
+           SingleClientLayer (0)	GFP frames will be sent to UpperSingle Client Layer (e.g. Ethernet Layer)
+           
+           MultiClientLayer (1)      GFP frames will be sent to a UPI demultiplexing block and forwarded to specific upper GFP Client Layer according to UPI value
+          
+          The default value is 'SingleClientLayer'."
+
+::= { opticsimGFPConfEntry 7 }
+
+
+--  END
+
+
+
+-- OPTICSIM-GFP-MC DEFINITIONS ::= BEGIN
+
+--     IMPORTS
+
+--     MODULE-IDENTITY, OBJECT-TYPE FROM SNMPv2-SMI
+
+--     MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+
+--     opticsimMib, opticsimIpMC FROM OPTICSIM-IPREG-MIB;
+
+--
+
+-- opticsimGFPMCCompl MODULE-IDENTITY
+
+-- LAST-UPDATED "0212130000Z"
+
+-- ORGANIZATION "Alcatel Optics"
+
+-- CONTACT-INFO "Alcatel Optics"
+
+-- DESCRIPTION
+
+--     "Initial Release OPTICS-IM GFP MODULE COMPLIANCE"
+
+-- ::= { tsdimSnmpNEMCConf 4 }
+
+
+
+opticsimGFPMCConf       OBJECT IDENTIFIER ::= { opticsimProtMappingMC 4 }
+
+opticsimGFPMCCompl      OBJECT IDENTIFIER ::= { opticsimGFPMCConf 1 }
+
+opticsimGFPMCGroup      OBJECT IDENTIFIER ::= { opticsimGFPMCConf 2 }
+
+
+
+END
+

@@ -1,0 +1,2450 @@
+XHAUL-VRTR-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE,
+        NOTIFICATION-TYPE,
+        Unsigned32, IpAddress, TimeTicks,
+        Integer32,  Gauge32, Counter32,
+        Counter64                               FROM SNMPv2-SMI
+
+        MODULE-COMPLIANCE, OBJECT-GROUP,
+        NOTIFICATION-GROUP                      FROM SNMPv2-CONF
+
+        TEXTUAL-CONVENTION, DisplayString,
+        RowStatus, TruthValue, MacAddress,
+        TimeStamp, TimeInterval, TestAndIncr    FROM SNMPv2-TC
+
+        IANAipRouteProtocol                     FROM IANA-RTPROTO-MIB
+
+        InetAutonomousSystemNumber,
+        InetAddress, InetAddressType,
+        InetAddressPrefixLength,
+        InetAddressIPv6z,
+        InetAddressIPv6,
+        InetAddressIPv4                         FROM INET-ADDRESS-MIB
+
+        InterfaceIndex, InterfaceIndexOrZero    FROM IF-MIB
+
+        inetCidrRouteDestType,
+        inetCidrRouteDest,
+        inetCidrRoutePfxLen,
+        inetCidrRoutePolicy,
+        inetCidrRouteProto,
+        inetCidrRouteNextHopType,
+        inetCidrRouteNextHop,
+        ipCidrRouteEntry, inetCidrRouteEntry    FROM IP-FORWARD-MIB
+
+        ipNetToMediaEntry, ipNetToPhysicalEntry,
+        ipv6RouterAdvertEntry                   FROM IP-MIB
+    
+        XhaulVRtrID, IpAddressPrefixLength,
+        XhaulBgpAutonomousSystem,
+        XhaulVRtrIDOrZero,
+        XhaulAdminState, XhaulOperState,
+        XhaulStatus, XhaulPortID, XhaulEncapVal,
+        TNamedItem, TNamedItemOrEmpty,
+        TItemDescription, TPIRRate, TCIRRate,
+        TItemLongDescription,
+        XhaulServId, XhaulCustId,
+        XhaulTunnelType, XhaulTunnelID,
+        TPolicyStatementNameOrEmpty,
+        XhaulVPNRouteDistinguisher,
+        TCpmProtPolicyID, TDSCPValue,
+        TDSCPValueOrNone, TFCType,
+        XhaulDhcpOptionType, XhaulDhcpServerDUIDTypeCode,
+        XhaulDHCP6MsgType, Dot1PPriority,
+        XNetworkPolicyID, XhaulEnabledDisabled,
+        XhaulPwGlobalIdOrZero,
+        TFCNameOrEmpty, TPriority, XhaulReasContextVal,
+        TPriorityOrUndefined, TQosQGrpInstanceIDorZero, 
+        TQosIngressPolicyID,
+        XhaulVpnIpBackupFamily,
+        XhaulLinkMapProfileIdOrZero,
+        XhaulCreateOrigin, SdpBindId,
+        XhaulIsaBbGrpId, XhaulDistCpuProtProtocolId,
+        XhaulDistCpuProtActionDuration, XhaulDistCpuProtState,
+        XhaulMplsTpNodeID, XhaulMplsTpGlobalID
+                                                FROM XHAUL-TC-MIB
+
+        xhaulim, xhaulBasicMib		FROM XHAUL-BASICREG-MIB
+
+        ;
+
+xhaulVRtrMIBModule MODULE-IDENTITY
+        LAST-UPDATED "201910180000Z"
+        ORGANIZATION "Nokia"
+        CONTACT-INFO
+            "Nokia Xhaul Support "
+        DESCRIPTION
+            "This document  is the SNMP MIB  module to manage and provision
+             the  NOKIA X-HAUL device transport and virtual routers, 
+             their interfaces, and other related features."
+
+--
+--  Revision History
+--
+
+        REVISION        "201910180000Z"
+        DESCRIPTION     "Rev 0.8         18 October 2019 00:00
+			 Added vRtrIfBfdExtTable, vRtrIfBfdSessionTable SNMP tables and xhaulVRtrBfdSessionDown/xhaulVRtrBfdSessionUp norification types."
+
+
+        REVISION        "201807100000Z"
+        DESCRIPTION     "Rev 0.7                10 July 2018 00:00
+			 Added xhaulVRtrInetAddressAttachFailed  notification and associated notification objects. 
+			 Added vRtrIfAdminLinkLocalAddrType  and vRtrIfAdminLinkLocalAddr  to vRtrIfTable."
+
+        REVISION        "201801310000Z"
+        DESCRIPTION     "Rev 0.6                31 January 2018 00:00
+                         Added vRtrIfLinkLocalAddressType, vRtrIfLinkLocalAddress and vRtrIfLinkLocalAddressState to vRtrIfTable."
+ 
+        REVISION        "201801300000Z"
+        DESCRIPTION     "Rev 0.5                30 Jan 2018 00:00
+                         Added vRtrInetCidrRoutePreference to vRtrInetCidrRouteTable. "
+
+        REVISION        "201707240000Z"
+        DESCRIPTION     "Rev 0.4                24 July 2017 00:00
+                         Added vRtrIfQosTable. "
+
+        REVISION        "201706300000Z"
+        DESCRIPTION     "Rev 0.3                30 June 2017 00:00
+                         Removed vRtrVpnId on vRtrConfTable.
+			 Added  vRtrIfTxV4DiscardPkts, vRtrIfTxV6DiscardPkts, 
+                         vRtrIfRxV4DiscardPkts, vRtrIfRxV6DiscardPkts to vRtrIfStatsTable"
+
+        REVISION        "201705200000Z"
+        DESCRIPTION     "Rev 0.2                20 May 2017 00:00
+                         Added vRtrStatTable."
+
+        REVISION        "201704300000Z"
+        DESCRIPTION     "Rev 0.1                30 Apr 2017 00:00
+                         Initial version of the XHAUL-VRTR-MIB."
+
+        ::= { xhaulBasicMib 3 }
+
+xhaulVRtrMib            OBJECT IDENTIFIER ::= { xhaulim 2 }
+
+-- cc  xhaulVRtrMobGatewayObjs    OBJECT IDENTIFIER ::= { xhaulVRtrObjs 69 }
+
+-- cc xhaulVRtrNotifyPrefix    OBJECT IDENTIFIER ::= { xhaulSRNotifyPrefix 3}
+
+-- cc xhaulVRtrDCObjs          OBJECT IDENTIFIER ::= { xhaulVRtrObjs 200 }
+
+xhaulVRtrObjs 		     OBJECT IDENTIFIER ::= { xhaulVRtrMib 1 }
+xhaulVRtrNotifications       OBJECT IDENTIFIER ::= { xhaulVRtrMib 2 }
+xhaulVRtrGlobalObjs          OBJECT IDENTIFIER ::= { xhaulVRtrObjs 15 }
+xhaulVRtrConformance         OBJECT IDENTIFIER ::= { xhaulVRtrMib 99 }
+
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--      XHAUL-VRTR-MIB textual conventions
+--
+
+-- XhaulVPNId ::= TEXTUAL-CONVENTION
+--     STATUS      current
+--    DESCRIPTION
+--        "The purpose of a VPN-ID is to identify a VPN.
+--         The global VPN Identifier format is:
+--            3-octet VPN Authority, organizationally unique ID followed by a
+--            4-octet VPN index identifying the VPN according to OUI."
+--    REFERENCE
+--        "RFC 2685, Fox & Gleeson, 'Virtual Private Networks Identifier',
+--         September 1999."
+--    SYNTAX      OCTET STRING (SIZE (0..7))
+
+XhaulInetAddrState ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulInetAddrState is the state of an ipv6 address."
+    SYNTAX      INTEGER {
+                    unknown      (0),
+                    tentative    (1),
+                    duplicated   (2),
+                    inaccessible (3),
+                    deprecated   (4),
+                    preferred    (5)
+                }
+
+TDSCPAppId ::=  TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "DSCP Application identifiers for protocols that generate control
+         traffic on the the Alcatel-Lucent SROS router."
+    SYNTAX      INTEGER {
+                    bgp                (1),
+                    cflowd             (2),
+                    dhcp               (3),
+                    dns                (4),
+                    ftp                (5),
+                    icmp               (6),
+                    igmp               (7),
+                    l2tp               (8),
+                    ldp                (9),
+                    mld               (10),
+                    msdp              (11),
+                    ndis              (12),
+                    ntp               (13),
+                    ospf              (14),
+                    pim               (15),
+                    radius            (16),
+                    rip               (17),
+                    rsvp              (18),
+                    snmp              (19),
+                    snmp-notification (20),
+                    srrp              (21),
+                    ssh               (22),
+                    syslog            (23),
+                    tacplus           (24),
+                    telnet            (25),
+                    tftp              (26),
+                    traceroute        (27),
+                    vrrp              (28),
+                    ptp               (29),
+                    igmp-reporter     (30),
+                    gtp               (31),
+                    reserved32 (32),
+                    reserved33 (33),
+                    reserved34 (34)
+                 }
+
+TDot1pAppId ::=  TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "IEEE 802.1p priority (Dot1p) Application identifiers for Layer-2
+         protocols that generate control traffic on the the Alcatel-Lucent
+         SROS router."
+    SYNTAX      INTEGER {
+                    arp               (1),
+                    isis              (2),
+                    pppoe             (3)
+                 }
+
+XhaulVrtrSingleSfmOverloadState ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+        "The XhaulVrtrSingleSfmOverloadState data type is an enumerated integer
+        that describes the values used to identify the IGP single-SFM-overload
+        state (SFM:Switch-Fabric/Control Processor Module).
+                notApplicable   : the IGP overload reaction to the single-SFM
+                                  condition is disabled;
+                normal          : the full system multicast capacity of a
+                                  dual-SFM chassis is available;
+                overload        : only reduced system multicast capacity is
+                                  available, and IGP protocols are in overload."
+
+    SYNTAX  INTEGER {
+                notApplicable   (0),
+                normal          (1),
+                overload        (2)
+                }
+
+XhaulInetCidrNextHopType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulInetCidrNextHopType is the type of next hop for a route.
+            regular     :  Next hop is an IPv4 destination address for an
+                          IPv4 prefix or and IPv6 destination address for 
+                          and IPv6 prefix.
+            tunneled    : Next hop refers to a LDP/RSVP/GRE tunnel for IPv4
+                          prefix.
+            sixOverMPLS : Next hop is a MPLS tunnel for IPv6 prefix.
+            sixOverFour : Next hop is a IPv4 destination for IPv6 prefix."
+    SYNTAX      INTEGER {
+                    regular      (1),
+                    tunneled     (2),
+                    sixOverMPLS  (3),
+                    sixOverFour  (4)
+                }
+
+XhaulInetCidrNextHopOwner ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulInetCidrNextHopOwner is the owner of the next hop for a route.
+            unknown     :  Next hop owner is unknown.
+            rsvp        :  Next hop owner is RSVP.
+            ldp         :  Next hop owner is LDP.
+            ldpOverRsvp :  Next hop owner is LDP over RSVP."
+    SYNTAX      INTEGER {
+                    unknown     (0),
+                    rsvp        (1),
+                    ldp         (2),
+                    ldpOverRsvp (3)
+                }
+
+XhaulL3RouteOwner ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The XhaulL3RouteOwner is the owner of the next hop for a Layer 3 route."
+    SYNTAX      INTEGER {
+                    unknown     (0),
+                    local       (1),
+                    host        (2),
+                    static      (5),
+                    bgp         (16)
+                }
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--      The Nokia Wavence series Virtual Router Group
+--
+
+--
+--      Virtual Router Table
+--
+
+
+vRtrConfiguredVRtrs  OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrConfiguredVRtrs indicates the current number of
+         virtual routers configured in the system and represented as rows
+         in the vRtrConfTable."
+    ::= { xhaulVRtrGlobalObjs 2 }
+
+vRtrActiveVRtrs  OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrActiveVRtrs indicates the current number of virtual
+         routers in the system with vRtrAdminState equal 'inService'."
+    ::= { xhaulVRtrGlobalObjs 3 }
+
+vRtrVlanId  OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrVlanId allows to identify the transport virtual router for IP Data Plane.
+	 When vRtrVlanId is 0, no transport virtual router is defined in the NE (no vRtrConfEntry representing transport router is created).
+	 Setting vRtrVlanId to a not 0 value (changing from 0), then the administrative state of vRtrConfEntry  with vRtrID = 1 is set to 'inService' by the Agent. 
+         Setting vRtrVlanId to a 0 value , then the administrative state of vRtrConfEntry  with vRtrID = 1 is set to 'outOfService' by the Agent. "
+    ::= { xhaulVRtrGlobalObjs 7 }
+
+
+vRtrConfTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrConfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrConfTable has an entry for each virtual router configured
+         in the system.Transport router (IP Data Plane) and VRFs are managed as virtual router in the system."
+    ::= { xhaulVRtrObjs 1 }
+
+vRtrConfEntry  OBJECT-TYPE
+    SYNTAX      VRtrConfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents a virtual router in the system. Entries can be created and deleted via SNMP SET operations.  		Creation requires a SET request containing vRtrRowStatus, vRtrName and vRtrType. Note that rows in this table are usually 	created by the agent itself as a side affect of some other configuration; for example, when a service vprn is created by
+	setting the appropriate objects in the XHAUL-SERV-MIB.
+	There will always be at least one row entry in this table representing the base or transport router. This entry is 
+	created when the system is initialized and can never be deleted.
+	The administrative state of transport router is set 'inService' by the Agent when the IP Data Plane VLAN ID is not '0',
+	is set 'outOfService' by the Agent when the IP Data Plane VLAN ID is '0'.
+"
+    INDEX { vRtrID }
+    ::= { vRtrConfTable 1 }
+
+VRtrConfEntry ::=
+    SEQUENCE {
+        vRtrID                          XhaulVRtrID,
+        vRtrRowStatus                   RowStatus,
+        vRtrAdminState                  XhaulAdminState,
+        vRtrName                        TNamedItemOrEmpty,
+        vRtrMaxNumRoutes                Integer32,
+        vRtrMplsStatus                  XhaulStatus,
+        vRtrEcmpMaxRoutes               Unsigned32,
+        vRtrNewIfIndex                  TestAndIncr,
+        vRtrRouterId                    IpAddress,
+        vRtrDescription                 TItemDescription,
+        vRtrType                        INTEGER,
+        vRtrServiceId                   XhaulServId,
+        vRtrVprnType                    INTEGER,
+        vRtrIPv6MaxNumRoutes            Integer32
+ 
+    }
+
+vRtrID  OBJECT-TYPE
+    SYNTAX      XhaulVRtrID
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The  unique value which identifies this virtual router in the system.  
+	 There will always be at least  one router entry defined by the agent 
+	with vRtrID = 1 which represents the transport router."
+    ::= { vRtrConfEntry 1 }
+
+vRtrRowStatus  OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The row status. The creation or deletion of a virtual router entry
+         causes creation or deletion of corresponding entries in other Xhaul
+         MIB tables with the same vRtrID value. Note that it is not allowed
+         to 'destroy' the row entry for vRtrID = 1.
+
+         In  order  for  row  creation  to succeed, values for vRtrName and
+         vRtrType   must   be   included  in  the  same  SNMP  SET  PDU  as
+         vRtrRowStatus."
+    ::= { vRtrConfEntry 2 }
+
+vRtrAdminState  OBJECT-TYPE
+    SYNTAX      XhaulAdminState
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The desired administrative state for this virtual router.
+         Note that it is not allowed to set vRtrAdminState to 'outOfService
+         for the row entry with vRtrID = 1."
+    DEFVAL { outOfService }
+    ::= { vRtrConfEntry 3 }
+
+vRtrName  OBJECT-TYPE
+    SYNTAX      TNamedItemOrEmpty
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The administritive name for this virtual router. The router
+         name must be unique among all virtual routers in the system.
+
+         For row creation to succeed a value must be specified for vRtrName.
+         vRtrName for entry with vRtrID = 1 is 'Base'.
+         
+         When a row is created in the vRtrConfTable for a service vprn
+         (i.e. when vRtrType is set to 'vprn'), the agent automatically assigns
+         the name 'vprn<service-id>'."
+    ::= { vRtrConfEntry 4 }
+
+vRtrMaxNumRoutes OBJECT-TYPE
+    SYNTAX      Integer32 (-1..'7FFFFFFF'h)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The maximum number of routes that can be configured on
+         this virtual router.  If the value is -1, then there
+         is no limit."
+    DEFVAL { -1 }
+    ::= { vRtrConfEntry 5 }
+
+vRtrMplsStatus  OBJECT-TYPE
+    SYNTAX      XhaulStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The desired state for MPLS on this virtual router.  An attempt
+         to set vRtrMplsStatus to 'delete' will fail if the MPLS
+         protocol is not in the administrative outOfService state,
+         i.e. XHAUL-MPLS-MIB::vRtrMplsGeneralAdminState must be
+         set to 'outOfService'."
+    DEFVAL { delete }
+    ::= { vRtrConfEntry 7 }
+
+vRtrEcmpMaxRoutes  OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..32)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrEcmpMaxRoutes specifies the maximum number
+         of equal cost routes allowed on this routing table instance.
+         When the number ecmp routes available at the best preference
+         value exceed the number of vRtrEcmpMaxRoutes allowed, then
+         the lowest next-hop IP address algorithm is used to select
+         the ecmp routes used. 
+
+         When vRtrEcmpMaxRoutes is set to zero (0), and multiple routes
+         are available with the same best preference value and equal
+         cost values, then the route with the lowest next-hop IP address
+         is used."
+    DEFVAL { 1 }
+    ::= { vRtrConfEntry 11 }
+
+vRtrNewIfIndex  OBJECT-TYPE
+    SYNTAX      TestAndIncr
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object is used to assign values to vRtrIfIndex as
+         described in 'Textual Conventions for SNMPv2'.  The network
+         manager reads the object, and then writes the value back
+         in the SET request that creates a new instance of vRtrIfEntry.
+         If the SET fails with the code 'inconsistentValue', then
+         the process must be repeated.  If the the SET succeeds, then
+         the object is incremented and the new instance is created
+         according to the manager's directions."
+    ::= { vRtrConfEntry 13 }
+
+vRtrRouterId  OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "A 32-bit integer uniquely identifying the router in the
+         Autonomous System.  By convention, to ensure uniqueness, this
+         should default to the value of one of the router's IP interface
+         addresses.
+	 BY default the system uses the System IP interface address. 
+	 If a System IP interface address is not configured, the last 4 bytes of the NE MAC address are used."
+    ::= { vRtrConfEntry 16 }
+
+
+vRtrDescription  OBJECT-TYPE
+    SYNTAX      TItemDescription
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrDescription is a user provided description
+         string for this virtual router.  It can consist of any printable,
+         seven-bit ASCII characters up to 80 characters in length."
+    DEFVAL { ''H }      -- the empty string
+    ::= { vRtrConfEntry 25 }
+
+
+vRtrType  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    unknown    (0),
+                    baseRouter (1),
+                    vprn       (2),
+                    vr         (3)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrType specifies the type of virtual router
+         represented by this row entry.  When a row is created in this
+         table using 'createAndGo', vRtrType must be specified or the
+         row creation will fail.
+
+         'baseRouter' (1) and 'vprn (2)' values are used for row entries 
+	 created internally by the agent.
+
+         The value of vRtrType cannot be modified if vRtrRowStatus has
+         a value of 'active'."
+    ::= { vRtrConfEntry 28 }
+
+vRtrServiceId  OBJECT-TYPE
+    SYNTAX      XhaulServId
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "When vRtrType has a value of 'vprn', the value of vRtrServiceId
+         indicates the service-id of the associated service that created
+         this row entry."
+    ::= { vRtrConfEntry 29 }
+
+
+vRtrVprnType    OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    regular (1),
+                    hub (2),
+                    spoke (3),
+                    subscriberSplitHorizon (4)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrVprnType specifies how traffic is routed.
+
+        regular (1)                - All traffic is routed to all
+                                     destinations.
+
+        hub (2)                    - Network traffic is routed only to
+                                     the access side. Access traffic is
+                                     routed to all destinations.
+
+        spoke (3)                  - Networks traffic is routed to all
+                                     destinations. Access traffic is
+                                     routed only to the network side.
+
+        subscriberSplitHorizon (4) - Subscriber-interface traffic is
+                                     routed only to the network side.
+                                     All other traffic is routed to
+                                     all destinations.
+
+        This object cannot be modified if vRtrType is not 'vprn'."
+    DEFVAL      { regular }
+    ::= { vRtrConfEntry 43 }
+
+
+vRtrIPv6MaxNumRoutes OBJECT-TYPE
+    SYNTAX      Integer32 (-1..'7FFFFFFF'h)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The maximum number of IPv6 routes that can be configured on
+         this virtual router.  If the value is -1, then there
+         is no limit."
+    DEFVAL { -1 }
+    ::= { vRtrConfEntry 46 }
+
+--
+--  Virtual Router Statistics Table
+--
+--  Augmentation of the vRtrConfTable.
+--  Use of AUGMENTS clause implies a one-to-one dependent relationship between
+--  the base table, vRtrConfTable, and the augmenting table, vRtrStatTable.
+--  This in effect extends the vRtrConfTable with additional columns.
+--  Creation (or deletion) of a row in the vRtrConfTable results in the same
+--  fate for the row in the vRtrStatTable.
+--
+
+vRtrStatTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF VRtrStatEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrStatTable has an entry for each virtual router configured
+        in the system."
+    ::= { xhaulVRtrObjs 2 }
+
+vRtrStatEntry  OBJECT-TYPE
+    SYNTAX      VRtrStatEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents a collection of statistics for a
+        virtual router in the system.
+
+        Entries cannot be created and deleted via SNMP SET operations."
+    AUGMENTS { vRtrConfEntry }
+    ::= { vRtrStatTable 1 }
+
+VRtrStatEntry ::=
+        SEQUENCE {
+                vRtrOperState                 XhaulOperState,
+                vRtrDirectRoutes              Gauge32,
+                vRtrDirectActiveRoutes        Gauge32,
+                vRtrStaticRoutes              Gauge32,
+                vRtrStaticActiveRoutes        Gauge32
+                 }
+vRtrOperState   OBJECT-TYPE
+    SYNTAX      XhaulOperState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "vRtrOperState indicates current operational status of this
+        virtual router."
+    ::= { vRtrStatEntry 1 }
+
+vRtrDirectRoutes  OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "vRtrDirectRoutes indicates the current number of direct routes
+        for this instance of the route table."
+    ::= { vRtrStatEntry 2 }
+
+vRtrDirectActiveRoutes  OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "vRtrDirectActiveRoutes indicates the current number of active direct
+        routes for this instance of the route table."
+    ::= { vRtrStatEntry 3 }
+
+vRtrStaticRoutes  OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "vRtrStaticRoutes indicates the current number of static routes for
+        this instance of the route table."
+    ::= { vRtrStatEntry 4 }
+
+vRtrStaticActiveRoutes  OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "vRtrStaticActiveRoutes indicates the current number of active static
+        routes for this instance of the route table."
+    ::= { vRtrStatEntry 5 }
+
+
+--
+--  Virtual Router Interfaces Table
+--
+
+vRtrIfTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrIfTable has an entry for each router interface configured in
+         the system."
+    ::= { xhaulVRtrObjs 4 }
+
+vRtrIfEntry  OBJECT-TYPE
+    SYNTAX      VRtrIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents a virtual router interface in the system.
+         Entries can be created and deleted via SNMP SET operations using the
+         vRtrIfRowStatus variable."
+        INDEX { vRtrID, vRtrIfIndex }
+        ::= { vRtrIfTable 1 }
+
+VRtrIfEntry ::=
+    SEQUENCE {
+        vRtrIfIndex                     InterfaceIndex,
+        vRtrIfRowStatus                 RowStatus,
+        vRtrIfType                      INTEGER,
+        vRtrIfName                      TNamedItem,
+        vRtrIfPortID                    XhaulPortID,
+        vRtrIfEncapValue                XhaulEncapVal,
+        vRtrIfAdminState                XhaulAdminState,
+        vRtrIfOperState                 XhaulOperState,
+
+        vRtrIfPhysicalAddress           MacAddress,
+        vRtrIfArpTimeout                Unsigned32,
+
+
+        vRtrIfMplsStatus                XhaulStatus,
+
+        vRtrIfDescription               TItemLongDescription,
+        vRtrIfProtocol                  BITS,
+
+        vRtrIfServiceId                 XhaulServId,
+ 
+        vRtrIfIPv6ConfigAllowed         TruthValue,
+        vRtrIfIPv6OperState             XhaulOperState,
+ 
+        vRtrIfLinkLocalAddressType      InetAddressType,
+        vRtrIfLinkLocalAddress          InetAddress,
+        vRtrIfLinkLocalAddressState     XhaulInetAddrState,
+
+        vRtrIfLastOperStateChange       TimeStamp,
+        vRtrIfOperMtu                   Unsigned32,
+  	vRtrIfAdminLinkLocalAddrType	InetAddressType,
+   	vRtrIfAdminLinkLocalAddr  	InetAddress,
+      
+        vRtrIfOperDownReason            BITS
+        }
+
+vRtrIfIndex  OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The unique value which identifies this interface of this virtual
+         router in the Xhaul system. This field provides an identifier for
+         virtual router interfaces similar to the ifIndex values used in the
+         mib-2 interfaces table for physical interfaces. The vRtrIfIndex values
+         can be reused for different virtual routers, but are unique within
+         those entries with the same vRtrID.
+
+         The vRtrIfIndex value for each virtual interface must remain constant
+         at least from one re-initialization of the system management processor
+         to the next."
+    ::= { vRtrIfEntry 1 }
+
+vRtrIfRowStatus  OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The row status.  The creation or deletion of a router interface entry
+         causes creation or deletion of corresponding entries in other Xhaul MIB
+         tables with the same vRtrID and vRtrIfIndex values, such as the
+         vRtrIpAddrTable.  The router interface is associated to a physical port
+         interface through the vRtrIfPortID and vRtrIfEncapValue variables. The
+         RowStatus cannot be SET to 'active' unless vRtrIfName has been
+         initialized."
+    ::= { vRtrIfEntry 2 }
+
+vRtrIfType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    network(1),
+                    service(2),
+                    serviceIes(3),
+                    serviceRtdVpls(4), --obsolete
+                    serviceVprn(5),
+                    serviceIesSubscriber(6),
+                    serviceIesGroup(7),
+                    serviceVprnSubscriber(8),
+                    serviceVprnGroup(9),
+                    serviceIesRedundant(10),
+                    serviceVprnRedundant(11),
+                    serviceVpls(12),
+                    serviceIesCem(13), --not supported
+                    serviceVprnCem(14), --not supported
+                    serviceVprnIPsec(15),
+                    serviceVprnIPMirror(16),
+                    serviceVideo(17),
+                    serviceVplsVideo(18),
+                    multiHomingPrimary(19),
+                    multiHomingSecondary(20),
+                    serviceIesTunnel(21),
+                    serviceIpReas(22),
+                    networkIpReas(23),
+                    networkVprn(24),
+                    tmsService(25),
+                    serviceIesAarp(26),
+                    serviceVprnAarp(27),
+                    serviceIesAa(28),
+                    serviceVprnAa(29),
+                    unnumMplsTp(30)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfType specifies the type of this interface. Different
+         virtual router interface types are defined as follows:
+
+         network               - defined on a network port.
+         service               - used internally.
+         serviceIes            - defined on a SAP or Spoke SDP.
+         serviceRtdVpls        - obsoleted.
+         serviceVprn           - defined on a SAP or Spoke SDP.
+         serviceIesSubscriber  - used internally.
+         serviceIesGroup       - defined on a SAP
+         serviceVprnSubscriber - used internally.
+         serviceVprnGroup      - defined on a SAP.
+         serviceIesRedundant   - defined on a Spoke SDP.
+         serviceVprnRedundant  - defined on a Spoke SDP.
+         serviceVpls           - defined on an IP endpoint for VPLS.
+         serviceIesCem         - defined on a SAP. --not supported
+         serviceVprnCem        - defined on a SAP. --not supported
+         serviceVprnIPsec      - defined on a SAP.
+         serviceVprnIPMirror   - defined on a Mirror.
+         serviceVideo          - defined on a video SAP.
+         serviceVplsVideo      - defined on an IP endpoint for video interface
+                                 for VPLS.
+         multiHomingPrimary    - defined for a primary interface.
+         multiHomingSecondary  - defined for a secondary interface.
+         serviceIesTunnel      - defined on a SAP.
+         serviceIpReas         - defined on a network port.
+         networkIpReas         - defined on a network port.
+         networkVprn           - network interface defined in a VPRN.
+         tmsService            - threat management service interface.
+         serviceIesAarp        - defined on an AARP (Assymetry Removal) Spoke SDP.
+         serviceVprnAarp       - defined on an AARP Spoke SDP.
+         serviceIesAa          - defined on an AA (Application Assurance) SAP.
+         serviceVprnAa         - defined on an AA SAP.
+         unnumMplsTp           - defined for an unummbered mpls tp interface."
+    ::= { vRtrIfEntry 3 }
+
+vRtrIfName  OBJECT-TYPE
+    SYNTAX      TNamedItem
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The administrative name assigned this router interface. The interface
+         name must be unique among entries with the same vRtrID value.
+         In order for row creation to succeed, a value must also be assigned
+         to vRtrIfName."
+    ::= { vRtrIfEntry 4 }
+
+vRtrIfPortID  OBJECT-TYPE
+    SYNTAX      XhaulPortID
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The physical port to which this interface is bound. If vRtrIfPortID is
+         zero (0), then there is no binding between this virtual router
+         interface and a physical port. Once an interface has been bound to a
+         port, several steps are required to change the binding to some other
+         XhaulPortID value.
+         vRtrIfAdminState must be 'outOfService'; vRtrIfPortID must be set to
+         zero (0) to disassociate the interface from the original port binding;
+         finally, set vRtrIfPortID to the value for the new port binding.
+
+         Setting vRtrIfPortID to 0x40000001 indicates that this interface is the
+         system interface for the device."
+    DEFVAL { 0 }
+    ::= { vRtrIfEntry 5 }
+
+
+vRtrIfEncapValue  OBJECT-TYPE
+    SYNTAX      XhaulEncapVal
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of the label used along with vRtrIfPortID to identify a SAP
+         on the specified access port."
+    DEFVAL { 0 }
+    ::= { vRtrIfEntry 7 }
+
+vRtrIfAdminState  OBJECT-TYPE
+    SYNTAX      XhaulAdminState
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The desired administrative state for this router interface."
+    DEFVAL { inService }
+    ::= { vRtrIfEntry 8 }
+
+vRtrIfOperState  OBJECT-TYPE
+    SYNTAX      XhaulOperState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current operational status of this router interface."
+    ::= { vRtrIfEntry 9 }
+
+
+vRtrIfPhysicalAddress OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The interface's address at its protocol sub-layer. For example, for an
+         802.x interface, this object normally contains a MAC address. The
+         interface's media-specific MIB must define the bit and byte ordering
+         and the format of the value of this object."
+    DEFVAL { '000000000000'H }
+    ::= { vRtrIfEntry 11 }
+
+vRtrIfArpTimeout  OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfArpTimeout determines how long an ARP entry
+         associated with this interface remains in the ARP cache. When
+         vRtrIfArpTimeout has a value of zero, '0', the entry will never be
+         cleared from the cache."
+    DEFVAL { 14400 }
+    ::= { vRtrIfEntry 12 }
+
+
+
+vRtrIfMplsStatus  OBJECT-TYPE
+    SYNTAX      XhaulStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Setting this variable to 'create' causes this interface to be
+         used with MPLS.  It also causes a row to be created in the
+         vRtrMplsIfTable.  Setting it to 'delete' removes the interface
+         from MPLS and causes the corresponding row in the vRtrMplsIfTable
+         to be removed.  However, an attempt to set vRtrIfMplsStatus to
+         'delete' will fail if MPLS activity on this interface is not
+         administratively in the outOfService state, i.e. vRtrMplsIfAdminState
+         of the vRtrMplsIfTable must be set to 'outOfService'."
+    DEFVAL { delete }
+    ::= { vRtrIfEntry 30 }
+
+
+vRtrIfDescription  OBJECT-TYPE
+    SYNTAX      TItemLongDescription
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfDescription is a user provided description
+         string for this virtual router interface.  It can consist of
+         any printable, seven-bit ASCII characters up to 80 characters in
+         length."
+    DEFVAL { ''H }      -- the empty string
+    ::= { vRtrIfEntry 34 }
+
+vRtrIfProtocol  OBJECT-TYPE
+    SYNTAX      BITS {
+                    ospfv2  (0),
+                    rip     (1),
+                    isis    (2),
+                    bgp     (3),
+                    mpls    (4),
+                    rsvp    (5),
+                    ldp     (6),
+                    igmp    (7),
+                    pim     (8),
+                    ospf3   (9),
+                    mld     (10),
+                    ripng   (11)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfProtocol indicates which protocols are running
+         on this virtual router interface. If the bit corresponding to a
+         protocol is set, then the protocol is enabled on this interface."
+    ::= { vRtrIfEntry 35 }
+
+
+
+vRtrIfServiceId  OBJECT-TYPE
+     SYNTAX      XhaulServId
+     MAX-ACCESS  read-create
+     STATUS      current
+     DESCRIPTION
+         "The value of vRtrIfServiceId specifies the service id for this
+          interface. This object must always be set at row creation when
+          the vRtrIfType is not network(1). This object cannot be modified
+          once the row is created."
+     DEFVAL { 0 }
+     ::= { vRtrIfEntry 37 }
+
+
+
+vRtrIfIPv6ConfigAllowed  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfIPv6ConfigAllowed specifies whether IPv6 can be
+         configured on this router interface. When the value is 'true', IPv6
+         can be configured on this interface. When it is 'false', IPv6
+         cannot be configured."
+    DEFVAL { false }
+    ::= { vRtrIfEntry 39 }
+
+vRtrIfIPv6OperState  OBJECT-TYPE
+    SYNTAX      XhaulOperState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current operational status for IPv6 on this router interface."
+    ::= { vRtrIfEntry 40 }
+
+vRtrIfLinkLocalAddressType  OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfLinkLocalAddressType indicates the IP address
+         type of the link local address of this virtual router interface.
+         When the value of vRtrIfIPv6OperState is 'inService', this object
+         will have a value of 'ipv6z', and 'unknown' otherwise."
+    ::= { vRtrIfEntry 58 }
+
+vRtrIfLinkLocalAddress  OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(0|20))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfLinkLocalAddress indicates the link local IP
+         address of this virtual router interface. This address valid when
+         the value of vRtrIfIPv6OperState is 'inService'."
+    ::= { vRtrIfEntry 59 }
+
+vRtrIfLinkLocalAddressState  OBJECT-TYPE
+    SYNTAX      XhaulInetAddrState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfLinkLocalAddressState indicates the address
+         state of vRtrIfLinkLocalAddress. When vRtrIfIPv6OperState is
+         'outOfService', the value of this object is 'inaccessible'.
+         When vRtrIfIpv6OperState is 'inService', the state is according DAD procedure, 
+         than means 'tentative' during the procedure, 'preferred' if address is not duplicated 
+         or 'duplicated' if address is already used. 
+         When vRtrIfIPv6ConfigAllowed is 'false' the value of this object is 'unknown' .
+        "
+    ::= { vRtrIfEntry 60 }
+
+vRtrIfLastOperStateChange       OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfLastOperStateChange indicates the sysUpTime when
+         the operational state of this interface last changed."
+    ::= { vRtrIfEntry 61 }
+
+vRtrIfOperMtu   OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "bytes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfOperMtu indicates the operational value of the
+         IP MTU on this interface. It is the minimum of the vRtrIfMtu and
+         the MTU of the physical port this interface is bound to."
+    ::= { vRtrIfEntry 62 }
+
+vRtrIfAdminLinkLocalAddrType  OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfAdminLinkLocalAddrType specifies the IP address
+         type of the link local address of this virtual router interface."
+    DEFVAL { unknown }
+    ::= { vRtrIfEntry 75 }
+
+vRtrIfAdminLinkLocalAddr  OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (0|20))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfAdminLinkLocalAddr specifies the link local IP
+         address of this virtual router interface."
+    DEFVAL { ''H }
+    ::= { vRtrIfEntry 76 }
+
+vRtrIfOperDownReason  OBJECT-TYPE
+    SYNTAX      BITS {
+                    ifAdminDown             (0),
+                    svcAdminDown            (1),
+                    portOperDown            (2),
+                    addrOrIfNotReady        (3),
+                    assocObjNotReady        (4),
+                    rvplsDown               (5),
+                    operGrpDown             (6),
+                    ifAdminDestroy          (7),
+                    noIfAddress             (8),
+                    noIfInfo                (9),
+                    delayedStartEnabled     (10),
+                    ifProtoOperDown         (11),
+                    invalidPortCfg          (12),
+                    unknown                 (13),
+                    ipv6Misconfig           (14),
+                    wlanGwRedundancyStandby (15),
+                    wlanGwGroupDegraded     (16)
+                    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfOperDownReason specifies the reason why the 
+         interface is operationally down.
+
+         The bit values are:
+         'ifAdminDown (0)'              - Interface is administratively down
+         'svcAdminDown (1)'             - Service is administratively down
+         'portOperDown (2)'             - SAP port is operationally down
+         'addrOrIfNotReady (3)'         - Address or Parent interface is not
+                                          ready
+         'assocObjNotReady (4)'         - Associated object is not ready
+         'rvplsDown (5)'                - R-VPLS service is down
+         'operGrpDown (6)'              - Associated Operational Group is down
+         'ifAdminDestroy (7)'           - Interface is being deleted
+         'noIfAddress (8)'              - Interface address is not configured
+         'noIfInfo (9)'                 - Interface info not present
+         'delayedStartEnabled (10)'     - Delayed start timer is enabled on 
+                                          the interface
+         'ifProtoOperDown (11)'         - Protocols on interface are
+                                          operationally down
+         'invalidPortCfg (12)'          - Port configuration is not valid
+         'unknown (13)'                 - Reason is unknown
+         'unused14  (14)'               - Bit 14 is not used
+         'wlanGwRedundancyStandby (15)  - Interface is in standby state for
+                                          WLAN-GW redundancy
+         'wlanGwGroupDegraded (16)      - The associated WLAN-GW group is in a
+                                          degraded state"
+    ::= { vRtrIfEntry 78 }
+
+
+--
+-- Virtual Router IP Address Table
+--
+
+vRtrIpAddrTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrIpAddrEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrIpAddrTable has an entry for each IP address configured
+         for a virtual router in the system.  An interface on the
+         virtual router may have more than one IP address assigned to
+         it."
+    ::= { xhaulVRtrObjs 6 }
+
+vRtrIpAddrEntry  OBJECT-TYPE
+    SYNTAX      VRtrIpAddrEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents an IP address assigned a virtual
+         router interface.  Entries can be created and deleted via
+         SNMP SET operations.  Setting RowStatus to 'active' requires
+         a values for all column variables to have been assigned."
+    INDEX { vRtrID, vRtrIfIndex, vRiaIndex }
+    ::= { vRtrIpAddrTable 1 }
+
+VRtrIpAddrEntry ::=
+    SEQUENCE {
+        vRiaIndex                       INTEGER,
+        vRiaRowStatus                   RowStatus,
+        vRiaIpAddress                   IpAddress,
+        vRiaNetMask                     IpAddress,
+        vRiaBcastAddrFormat             INTEGER,
+        vRiaInetAddressType             InetAddressType,
+        vRiaInetAddress                 InetAddress,
+        vRiaInetPrefixLen               InetAddressPrefixLength,
+        vRiaInetAddrState               XhaulInetAddrState,
+        vRiaInetEui64                   TruthValue,
+        vRiaInetOperAddress             InetAddress
+
+        }
+
+vRiaIndex OBJECT-TYPE
+    SYNTAX      INTEGER (1..256)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The unique value which identifies this IP address entry for
+         this interface of this virtual router in the Xhaul system.
+         Those row entries with vRiaIndex = 1 represent the primary
+         IP address for the interface identified by the vRtrID and
+         vRtrIfIndex pair.  Row entries with other values for vRiaIndex
+         are secondary IP addresses.  There must always be a primary
+         IP address assigned an interface.  This implies that if the
+         primary address row is deleted, the secondary rows are also
+         deleted."
+    ::= { vRtrIpAddrEntry 1 }
+
+vRiaRowStatus  OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The row status used for creation, deletion, or control
+         of vRtrIpAddrTable entries.  All the other row variables
+         must have been assigned values before the row can be
+         place into the 'active' state."
+    ::= { vRtrIpAddrEntry 2 }
+
+vRiaIpAddress  OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The IP address assigned to a router's interface."
+    ::= { vRtrIpAddrEntry 3 }
+
+vRiaNetMask  OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The subnet mask associated with the IP address of this
+         entry.  The value of the mask is an IP address with all
+         the network bits set to 1 and all the host bits set to
+         0."
+    DEFVAL  { 'FFFFFF00'H } -- 255.255.255.0
+    ::= { vRtrIpAddrEntry 4 }
+
+vRiaBcastAddrFormat  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    allOnes (1),
+                    hostOnes (2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "When vRiaBcastAddrFormat is set to 'allOnes', the
+         255.255.255.255 address is used for local broadcast.
+         When vRiaBcastAddrFormat is set to 'hostOnes', the
+         <prefix>-1 address is used for the local broadcast.
+         For example for subnet 10.10.16.0/20 the <prefix>-1
+         address is 10.10.31.255."
+    DEFVAL { hostOnes }
+    ::= { vRtrIpAddrEntry 5 }
+
+
+vRiaInetAddressType  OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "vRiaInetAddressType specifies the type of the
+         vRiaInetAddress address assigned to a router's interface."
+    ::= { vRtrIpAddrEntry 8 }
+
+vRiaInetAddress  OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(0|4|16))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The type of this address is determined by the value of
+         the vRiaInetAddressType object.
+
+         vRiaInetAddress indicates the IPv4/IPv6 address assigned
+         to a router's interface."
+    ::= { vRtrIpAddrEntry 9 }
+
+vRiaInetPrefixLen  OBJECT-TYPE
+    SYNTAX      InetAddressPrefixLength
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRiaInetPrefixLen specifies the length of
+         the IP netmask for this interface address."
+    ::= { vRtrIpAddrEntry 10 }
+
+vRiaInetAddrState  OBJECT-TYPE
+    SYNTAX      XhaulInetAddrState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRiaInetAddrState indicates the address
+         state of the IPv6 address of the interface.
+         Set to 'unknown (0)' for IPv4 address. "
+    ::= { vRtrIpAddrEntry 11 }
+
+vRiaInetEui64   OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRiaInetEui64 specifies whether the
+         vRiaInetOperAddress is an eui64 address.  This object
+         can only be set at creation time.
+
+         When vRiaInetEui64 is 'true', then the vRiaInetOperAddress
+         is derived from the vRiaInetAddress and the physical address
+         of the interface this address is attached to.  vRiaInetAddress
+         has to have all zeros the least significant 8 bytes. Also,
+         vRiaInetPrefixLen cannot be longer than 64.
+
+         When vRiaInetEui64 is 'false', then the vRiaInetOperAddress
+         is a copy of vRiaInetAddress.  The value is always 'false' when
+         vRiaInetAddressType is not 'ipv6'."
+    DEFVAL { false }
+    ::= { vRtrIpAddrEntry 12 }
+
+vRiaInetOperAddress     OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRiaInetOperAddress indicates the operational
+         address of this entry.  The type of this address is determined
+         by the value of the vRiaInetAddressType object."
+    ::= { vRtrIpAddrEntry 13 }
+
+
+
+
+
+
+
+--
+--
+--  Virtual router Static Route Table
+--
+
+-- vRtrInetStaticRouteTable replaces the vRtrStaticRouteTable
+-- that supports configuration of static routes using only the
+-- IPv4 address style. The vRtrInetStaticRouteTable is IP version
+-- neutral and allows configuration of static routes using IPv4 or
+-- IPv6 InetAddress style.
+
+vRtrInetStaticRouteTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrInetStaticRouteEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The table of addressing information relevant
+        to this entity's Static Routing table."
+    ::= { xhaulVRtrObjs 24 }
+
+vRtrInetStaticRouteEntry OBJECT-TYPE
+    SYNTAX      VRtrInetStaticRouteEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "A particular route to a particular destination,
+        through a particular next hop."
+    INDEX {
+        vRtrID,
+        vRtrInetStaticRouteDestType,
+        vRtrInetStaticRouteDest,
+        vRtrInetStaticRouteDestPfxLen,
+        vRtrInetStaticRouteIndex
+        }
+    ::= { vRtrInetStaticRouteTable 1 }
+
+VRtrInetStaticRouteEntry ::=
+    SEQUENCE {
+        vRtrInetStaticRouteDestType                 InetAddressType,
+        vRtrInetStaticRouteDest                     InetAddress,
+        vRtrInetStaticRouteDestPfxLen               InetAddressPrefixLength,
+        vRtrInetStaticRouteIndex                    INTEGER,
+        vRtrInetStaticRouteRowStatus                RowStatus,
+        vRtrInetStaticRouteLastEnabledTime          TimeStamp,
+        vRtrInetStaticRouteStatus                   INTEGER,
+        vRtrInetStaticRouteStaticType               INTEGER,
+        vRtrInetStaticRoutePreference               Unsigned32,
+        vRtrInetStaticRouteMetric                   Unsigned32,
+        vRtrInetStaticRouteEgressIfIndex            InterfaceIndexOrZero,
+        vRtrInetStaticRouteNextHopType              InetAddressType,
+        vRtrInetStaticRouteNextHop                  InetAddress,
+        vRtrInetStaticRouteNextHopIf                DisplayString,
+        vRtrInetStaticRouteAdminState               XhaulAdminState
+
+    }
+
+vRtrInetStaticRouteDestType  OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The value of vRtrInetStaticRouteDestType indicates
+        the address type of vRtrInetStaticRouteDest address."
+    ::= { vRtrInetStaticRouteEntry 1 }
+
+vRtrInetStaticRouteDest  OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The value of vRtrInetStaticRouteDest indicates the
+        destination IP address of this static route."
+    ::= { vRtrInetStaticRouteEntry 2 }
+
+vRtrInetStaticRouteDestPfxLen  OBJECT-TYPE
+    SYNTAX      InetAddressPrefixLength
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The value of vRtrInetStaticRouteDestPfxLen indicates
+        the prefix length associated with the
+        vRtrInetStaticRouteDest address."
+    ::= { vRtrInetStaticRouteEntry 3 }
+
+vRtrInetStaticRouteIndex  OBJECT-TYPE
+    SYNTAX      INTEGER (1..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The value of vRtrInetStaticRouteIndex indicates the fifth
+        index for the vRtrInetStaticRouteTable.
+
+        The fifth index to vRtrInetStaticRouteTable identifies a
+        specific next-hop route to distinguish it from other
+        routes that share the same destination address."
+    ::= { vRtrInetStaticRouteEntry 4 }
+
+vRtrInetStaticRouteRowStatus  OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "vRtrInetStaticRouteRowStatus controls the creation
+        and deletion of rows in the table."
+    ::= { vRtrInetStaticRouteEntry 5 }
+
+vRtrInetStaticRouteLastEnabledTime  OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRouteLastEnabledTime
+         indicates the sysUpTime value when
+         vRtrInetStaticRouteStatus was last set to active (1) to
+         allow IP forwarding on this static route entry."
+    ::= { vRtrInetStaticRouteEntry 6 }
+
+vRtrInetStaticRouteStatus  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    active   (1),
+                    inactive (2)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRouteStatus indicates
+         whether or not this route entry is active in the system.
+         When an interface transitions to the down state, any
+         associated route entries are marked as 'inactive'
+         and are usually not displayed in a standard route
+         table listing.  When the interface transitions
+         to the up state, the agent marks the associated routes as
+         'active'"
+    ::= { vRtrInetStaticRouteEntry 7 }
+
+vRtrInetStaticRouteStaticType  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    unknown (0),
+                    nextHop (1),
+                    indirect (2),
+                    blackHole (3),
+                    grt (4)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRouteStaticType specifies the
+         type of static route represented by this row entry. The values of
+         vRtrInetStaticRouteNextHopType, vRtrInetStaticRouteNextHop,
+         vRtrInetStaticRouteNextHopIf and vRtrInetStaticRouteNHTunnelName
+         depends on the value of vRtrInetStaticRouteStaticType.
+
+         For details please look at the following chart:
+
+         vRtrInetStaticRouteStaticType  unknown nexthop indirect blackHole grt
+         ---------------------------------------------------------------------
+         vRtrInetStaticRouteNextHopType unknown valid   valid   unknown  unknown
+         vRtrInetStaticRouteNextHop     null    valid   valid   null     null
+         vRtrInetStaticRouteNextHopIf   null    valid   null    null     null
+         vRtrInetStaticRouteNHTunnelName null  valid   null    null      null
+
+         Though all the values of vRtrInetStaticRouteNextHop,
+         vRtrInetStaticRouteNextHopIf and vRtrInetStaticRouteNHTunnelName
+         can be valid when the value of vRtrInetStaticRouteStaticType is
+         'nexthop', please note that at most only one of them can have a non
+         null string."
+    DEFVAL { unknown }
+    ::= { vRtrInetStaticRouteEntry 8 }
+
+vRtrInetStaticRoutePreference  OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..255)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRoutePreference specifies the priority
+         of this static route versus the routes from different sources
+         such as BGP or OSPF etc.
+
+         Default preferences.
+
+
+         Route Type             Preference      Configurable
+         ----------             ----------      ------------
+         Direct attached                 0                no
+         Static-route                    5               yes
+         MPLS (post FCS)                 7
+         OSPF Internal routes           10                no
+         OSPF External                 150               yes
+         BGP                           170               yes
+         "
+    DEFVAL { 5 }
+    ::= { vRtrInetStaticRouteEntry 9 }
+
+vRtrInetStaticRouteMetric  OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRouteMetric specifies
+         the metric for the static route.
+
+         When ipCidrRouteProto has a value of 'netmgmt' to specify that
+         this entry is a static route, the value of vRtrInetStaticRouteMetric
+         associates a metric value with the route. This value is used
+         when importing this static route into other protocols such as
+         OSPF.  When the metric is configured as zero then the metric
+         configured in OSPF, default-import-metric, applies.  This value
+         is also used to determine which static route to install in the
+         forwarding table:
+
+         If there are multiple static routes with the same preference
+         but unequal metric then the lower cost (metric) route will be
+         installed.
+
+         If there are multiple static routes with equal preference and
+         metrics then ecmp rules apply.
+
+         If there are multiple routes with unequal preference then the
+         lower preference route will be installed.
+         "
+    DEFVAL { 1 }
+    ::= { vRtrInetStaticRouteEntry 10 }
+
+vRtrInetStaticRouteEgressIfIndex  OBJECT-TYPE
+    SYNTAX      InterfaceIndexOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRouteEgressIfIndex indicates
+         the outgoing ifIndex for this route as computed by the
+         static-route module. This variable will have a value of 0
+         if vRtrInetStaticRouteStatus is 'inactive'. "
+    ::= { vRtrInetStaticRouteEntry 11 }
+
+vRtrInetStaticRouteNextHopType  OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRouteNextHopType specifies
+         the address type of vRtrInetStaticRouteNextHop address."
+    DEFVAL { unknown }
+    ::= { vRtrInetStaticRouteEntry 12 }
+
+vRtrInetStaticRouteNextHop  OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (0|4|16|20))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRouteNextHop specifies the ip address
+         of the next hop for the static route and it depends on the value
+         of vRtrInetStaticRouteStaticType. "
+    ::= { vRtrInetStaticRouteEntry 13 }
+
+vRtrInetStaticRouteNextHopIf  OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE(0..32))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRouteNextHopIf specifies the name of the
+         interface to be used for the next hop of this static route and it
+         depends on the value of vRtrInetStaticRouteStaticType."
+    ::= { vRtrInetStaticRouteEntry 14 }
+
+vRtrInetStaticRouteAdminState  OBJECT-TYPE
+    SYNTAX      XhaulAdminState
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetStaticRouteAdminState specifies
+          the desired administrative state for this
+         virtual router static route"
+    DEFVAL { inService }
+    ::= { vRtrInetStaticRouteEntry 15 }
+
+
+
+
+--
+--  Augmentation of the IP-FORWARD-MIB inetCidrRouteTable.
+--  Use of AUGMENTS clause implies a one-to-one dependent relationship between
+--  the base table, inetCidrRouteTable, and the augmenting table,
+--  vRtrInetCidrRouteTable.  This in effect extends the inetCidrRouteTable with
+--  additional columns.  Creation (or deletion) of a row in the
+--  inetCidrRouteTable results in the same fate for the row in the
+--  vRtrInetCidrRouteTable.
+--
+
+vRtrInetCidrRouteTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrInetCidrRouteEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrInetCidrRouteTable provides an extension of the
+         inetCidrRouteTable in the IP-FORWARD-MIB."
+    ::= { xhaulVRtrObjs 30 }
+
+vRtrInetCidrRouteEntry  OBJECT-TYPE
+    SYNTAX      VRtrInetCidrRouteEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry in the vRtrInetCidrRouteTable represents additional
+         columns for attributes specific to the Xhaul system 
+         implementation for the IP route table."
+   AUGMENTS { inetCidrRouteEntry }
+   ::= { vRtrInetCidrRouteTable 1 }
+
+VRtrInetCidrRouteEntry ::=
+    SEQUENCE {
+        vRtrInetCidrRouteLastEnabledTime   TimeStamp,
+        vRtrInetCidrRoutePreference        Unsigned32,
+        vRtrInetCidrRouteMetric            Unsigned32,
+        vRtrInetCidrRouteIfVRtrId          XhaulVRtrIDOrZero,
+        vRtrInetCidrRouteNextHopType       XhaulInetCidrNextHopType
+
+    }
+
+vRtrInetCidrRouteLastEnabledTime  OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The vRtrInetCidrRouteLastEnabledTime variable indicates the sysUpTime
+         value when ipCidrRouteStatus was last set to active (1) to
+         allow IP forwarding on this route entry."
+    ::= { vRtrInetCidrRouteEntry 1 }
+
+vRtrInetCidrRoutePreference  OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetCidrRoutePreference specifies the priority
+         of this static route versus the routes from different sources
+         such as BGP or OSPF etc, when ipCidrRouteProto has a value of
+         'netmgmt' to indicate that this entry is a static route.
+
+         Different protocols should not be configured with the same
+         preference, if this occurs the tiebreaker is determined per the
+         default preference value as defined in the table below.
+
+         If multiple routes are learned with an identical preference
+         using the same protocol, the lowest cost is used. If multiple
+         routes are learned with an identical preference using the same
+         protocol and the costs (metrics) are equal, then the decision
+         as to what route to use is determined by the configuration of
+         the ecmp command.
+
+         Default preferences:
+
+         Route Type             Preference      Configurable
+         ----------             ----------      ------------
+         Direct attached                 0                no
+         Static-route                    5               yes
+         MPLS (post FCS)                 7
+         OSPF Internal routes           10                no
+         OSPF External                 150               yes
+         BGP                           170               yes
+         "
+    DEFVAL { 5 }
+    ::= { vRtrInetCidrRouteEntry 2 }
+
+vRtrInetCidrRouteMetric  OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetCidrRouteMetric indicates the primary routing
+         metric  for this route. The semantics of this metric are determined
+         by the routing-protocol specified in the route's ipCidrRouteProto
+         value."
+    ::= { vRtrInetCidrRouteEntry 3 }
+
+vRtrInetCidrRouteIfVRtrId       OBJECT-TYPE
+    SYNTAX      XhaulVRtrIDOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetCidrRouteIfVRtrId indicates the virtual router
+         instance of the egress interface defined by inetCidrRouteIfIndex.
+         For routes of the transport router have vRtrInetCidrRouteIfVRtrId value set to 1, 
+         while routes related to virtual router instances related to VPRN services have 
+         vRtrInetCidrRouteIfVRtrId value set to the vRtrId of the routing instance."
+    ::= { vRtrInetCidrRouteEntry 4 }
+ 
+
+vRtrInetCidrRouteNextHopType      OBJECT-TYPE
+    SYNTAX      XhaulInetCidrNextHopType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrInetCidrRouteNextHopType indicates the type of
+         next hop for this route."
+    ::= { vRtrInetCidrRouteEntry 7 }
+
+
+--
+--  Virtual Router BFD session table
+--
+
+vRtrIfBfdSessionTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF VRtrIfBfdSessionEntry
+    MAX-ACCESS not-accessible
+    STATUS     obsolete
+    DESCRIPTION
+        "The vRtrIfBfdSessionTable table contains per BFD session statistics
+         and operational settings."
+    ::= { xhaulVRtrObjs 34 }
+
+vRtrIfBfdSessionEntry OBJECT-TYPE
+    SYNTAX     VRtrIfBfdSessionEntry
+    MAX-ACCESS not-accessible
+    STATUS     obsolete
+    DESCRIPTION
+        "Each row entry represents a BFD session. Entries are created
+         automatically by the system, or when a static-route is
+         configured to use BFD."
+    INDEX {
+        vRtrID,
+        vRtrIfIndex,
+        vRtrIfBfdSessionLclAddrType,
+        vRtrIfBfdSessionLclAddr,
+        vRtrIfBfdSessionRemAddrType,
+        vRtrIfBfdSessionRemAddr
+        }
+    ::= { vRtrIfBfdSessionTable 1 }
+
+VRtrIfBfdSessionEntry ::=
+    SEQUENCE {
+        vRtrIfBfdSessionLclAddrType     InetAddressType,
+        vRtrIfBfdSessionLclAddr         InetAddress,
+        vRtrIfBfdSessionRemAddrType     InetAddressType,
+        vRtrIfBfdSessionRemAddr         InetAddress,
+        vRtrIfBfdSessionOperState       XhaulOperState,
+        vRtrIfBfdSessionState           INTEGER,
+        vRtrIfBfdSessionOperFlags       BITS,
+        vRtrIfBfdSessionMesgRecv        Counter32,
+        vRtrIfBfdSessionMesgSent        Counter32,
+        vRtrIfBfdSessionLastDownTime    TimeStamp,
+        vRtrIfBfdSessionLastUpTime      TimeStamp,
+        vRtrIfBfdSessionLclDisc         Unsigned32,
+        vRtrIfBfdSessionRemDisc         Unsigned32,
+        vRtrIfBfdSessionProtocols       BITS,
+        vRtrIfBfdSessionTxInterval      Unsigned32,
+        vRtrIfBfdSessionRxInterval      Unsigned32
+    }
+
+vRtrIfBfdSessionLclAddrType     OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionLclAddrType indicates the address
+         type in vRtrIfBfdSessionLclAddr."
+    ::= { vRtrIfBfdSessionEntry 1 }
+
+vRtrIfBfdSessionLclAddr         OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(0|4|16|20))
+    MAX-ACCESS  not-accessible
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionLclAddr indicates the address of the
+         local endpoint of this BFD session. Its type is specified by
+         vRtrIfBfdSessionLclAddrType."
+    ::= { vRtrIfBfdSessionEntry 2 }
+
+vRtrIfBfdSessionRemAddrType     OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionRemAddrType indicates the address
+         type in vRtrIfBfdSessionRemAddr."
+    ::= { vRtrIfBfdSessionEntry 3 }
+
+vRtrIfBfdSessionRemAddr         OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(0|4|16|20))
+    MAX-ACCESS  not-accessible
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionRemAddr indicates the address of the
+         local endpoint of this BFD session. Its type is specified by
+         vRtrIfBfdSessionRemAddrType."
+    ::= { vRtrIfBfdSessionEntry 4 }
+
+vRtrIfBfdSessionOperState       OBJECT-TYPE
+    SYNTAX      XhaulOperState
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionOperState indicates the operational state
+         of BFD on this interface."
+    ::= { vRtrIfBfdSessionEntry 5 }
+
+vRtrIfBfdSessionState   OBJECT-TYPE
+    SYNTAX      INTEGER {
+                   adminDown (0),  --Session is administratively down
+                   down      (1),  --Session is down
+                   init      (2),  --Session is initializing
+                   up        (3)   --Session is up
+                }
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionState indicates the state of the BFD
+         protocol on this interface."
+    ::= { vRtrIfBfdSessionEntry 6 }
+
+vRtrIfBfdSessionOperFlags       OBJECT-TYPE
+    SYNTAX      BITS {
+                    noProtocols    (0),
+                    noHeartBeat    (1),
+                    echoFailed     (2),
+                    nbrSignalDown  (3),
+                    fwdPlaneReset  (4),
+                    pathDown       (5),
+                    nbrAdminDown   (6),
+                    adminClear     (7)
+                }
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionOperFlags indicates the reasons why a BFD
+         session is not up."
+    ::= { vRtrIfBfdSessionEntry 7 }
+
+vRtrIfBfdSessionMesgRecv        OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionMesgRecv indicates the number of messages
+         received in this session.
+
+         This object is applicable if vRtrIfBfdSessionType is 'iom(1)' or
+         'cpm(2)'.  Otherwise, zero is returned."
+    ::= { vRtrIfBfdSessionEntry 8 }
+
+vRtrIfBfdSessionMesgSent        OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionMesgSent indicates the number of messages
+         sent in this session.
+
+         This object is applicable if vRtrIfBfdSessionType is 'iom(1)' or
+         'cpm(2)'.  Otherwise, zero is returned."
+    ::= { vRtrIfBfdSessionEntry 9 }
+
+vRtrIfBfdSessionLastDownTime        OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionLastDownTime indicates the system time
+         when this session last went down."
+    ::= { vRtrIfBfdSessionEntry 10 }
+
+vRtrIfBfdSessionLastUpTime        OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionLastUpTime indicates the system time
+         when this session last came up."
+    ::= { vRtrIfBfdSessionEntry 11 }
+
+vRtrIfBfdSessionLclDisc         OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionLclDisc indicates the unique local
+         discriminator for this session."
+    ::= { vRtrIfBfdSessionEntry 14 }
+
+vRtrIfBfdSessionRemDisc         OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionRemDisc indicates the remote
+         discriminator for this session."
+    ::= { vRtrIfBfdSessionEntry 15 }
+
+vRtrIfBfdSessionProtocols       OBJECT-TYPE
+    SYNTAX      BITS {
+                    ospfv2 (0),
+                    pim (1),
+                    isis (2),
+                    staticRoute (3),
+                    mcRing (4),
+                    rsvp (5),
+                    bgp (6),
+                    vrrp (7),
+                    srrp (8),
+                    mcep (9),
+                    ldp (10),
+                    ipsecTunnel(11),
+                    ospfv3 (12),
+                    mcIpsec (13),
+                    mcMobile (14),
+                    mplsTp (15),
+                    lag (16)                    
+                }
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionProtocols indicates which protocols
+         are using this BFD session."
+    ::= { vRtrIfBfdSessionEntry 16 }
+
+vRtrIfBfdSessionTxInterval      OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionTxInterval indicates the negotiated
+         transmit interval. This value is the minimum of the local node's
+         'vRtrIfBfdExtTransmitInterval' and the remote node's receive interval."
+    ::= { vRtrIfBfdSessionEntry 17 }
+
+vRtrIfBfdSessionRxInterval      OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    DESCRIPTION
+        "The value of vRtrIfBfdSessionRxInterval indicates the negotiated
+         receive interval. This value is the minimum of the local node's
+         'vRtrIfBfdExtReceiveInterval' and the remote node's transmit interval."
+    ::= { vRtrIfBfdSessionEntry 18 }
+
+--
+-- Virtual Router Interface Statistics Table
+--
+
+vRtrIfStatsTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF VRtrIfStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+        "The vRtrIfStatsTable table contains statistics per virtual router
+        interface."
+    ::= { xhaulVRtrObjs 54 }
+
+vRtrIfStatsEntry OBJECT-TYPE
+    SYNTAX     VRtrIfStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+        "Each row entry represents the statistics per virtual router interface.
+        Entries are created and deleted when entries in the vRtrIfEntry are
+        created and deleted."
+    INDEX { vRtrID, vRtrIfIndex }
+    ::= { vRtrIfStatsTable 1 }
+
+VRtrIfStatsEntry ::=
+    SEQUENCE {
+           vRtrIfRxPkts                      Counter64,
+           vRtrIfRxBytes                     Counter64,
+           vRtrIfTxV4Pkts                    Counter64,
+           vRtrIfTxV4Bytes                   Counter64,
+           vRtrIfTxV6Pkts                    Counter64,
+   	   vRtrIfTxV4DiscardPkts             Counter64,
+	   vRtrIfTxV6DiscardPkts             Counter64,
+           vRtrIfTxV6Bytes                   Counter64,
+           vRtrIfSpeed                       Counter64,
+           vRtrIfRxV6Pkts                    Counter64,
+           vRtrIfRxV6Bytes                   Counter64,
+           vRtrIfRxV4Pkts                    Counter64,
+           vRtrIfRxV4Bytes                   Counter64,
+           vRtrIfTxPkts                      Counter64,
+           vRtrIfTxBytes                     Counter64,
+	   vRtrIfRxV4DiscardPkts  	     Counter64,
+	   vRtrIfRxV6DiscardPkts	     Counter64   
+        }
+
+
+vRtrIfRxPkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfRxPkts indicates the number of 
+         IPv4 and IPv6 packets received by this interface."
+    ::= { vRtrIfStatsEntry 40 }
+
+
+vRtrIfRxBytes  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfRxBytes indicates the number of 
+         bytes in IPv4 and IPv6 packets received by this interface."
+    ::= { vRtrIfStatsEntry 43 }
+
+
+vRtrIfTxV4Pkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfTxV4Pkts indicates the number of 
+         total IPv4 packets sent from this interface."
+    ::= { vRtrIfStatsEntry 46 }
+
+
+vRtrIfTxV4Bytes  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfTxV4Bytes indicates the number of 
+         total IPv4 bytes sent from this interface."
+    ::= { vRtrIfStatsEntry 49 }
+
+
+vRtrIfTxV6Pkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfTxV6Pkts indicates the number of 
+         total IPv6 packets sent from this interface."
+    ::= { vRtrIfStatsEntry 52 }
+
+
+vRtrIfTxV6Bytes  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfTxV6Bytes indicates the number of 
+         total IPv6 bytes sent from this interface."
+    ::= { vRtrIfStatsEntry 55 }
+
+
+vRtrIfTxV4DiscardPkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfTxV4DiscardPkts indicates the number of 
+         total IPv4 transmit packets discarded by this interface."
+    ::= { vRtrIfStatsEntry 58 }
+
+
+vRtrIfTxV6DiscardPkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfTxV6DiscardPkts indicates the number of 
+         total IPv6 transmit packets discarded by this interface."
+    ::= { vRtrIfStatsEntry 64 }
+
+
+vRtrIfSpeed OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfSpeed indicates an estimate of the current 
+         bandwidth in bits per second for this interface."
+    ::= { vRtrIfStatsEntry 103 }
+
+vRtrIfRxV6Pkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfRxV6Pkts indicates the number of 
+         IPv6 packets received by this interface."
+    ::= { vRtrIfStatsEntry 110 }
+
+
+vRtrIfRxV6Bytes  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfRxV6Bytes indicates the number of
+         bytes in IPv6 packets received by this interface."
+    ::= { vRtrIfStatsEntry 113 }
+
+
+vRtrIfRxV4Pkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfRxV4Pkts indicates the number of 
+         IPv4 packets received by this interface."
+    ::= { vRtrIfStatsEntry 122 }
+
+vRtrIfRxV4Bytes  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfRxV4Bytes indicates the number of
+         bytes in IPv4 packets received by this interface."
+    ::= { vRtrIfStatsEntry 123 }
+    
+vRtrIfTxPkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfTxPkts indicates the number of 
+         total packets sent by this interface."
+    ::= { vRtrIfStatsEntry 124 }
+
+
+vRtrIfTxBytes  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfTxBytes indicates the number of 
+         total bytes sent by this interface."
+    ::= { vRtrIfStatsEntry 125 }
+
+vRtrIfRxV4DiscardPkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfRxV4DiscardPkts indicates the number of
+         total IPv4 received packets discarded by this interface."
+    ::= { vRtrIfStatsEntry 126 }
+
+
+vRtrIfRxV6DiscardPkts  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfRxV6DiscardPkts indicates the number of
+         total IPv6 received packets discarded by this interface."
+    ::= { vRtrIfStatsEntry 127 }
+
+
+--
+--  Virtual Router Interface Bi-directional Forwarding Detection table
+--
+
+vRtrIfBfdExtTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF VRtrIfBfdExtEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+        "The vRtrIfBfdExtTable table contains the configuration for
+         Bi-directional Forwarding Detection (BFD) on the vRtrIfIndex."
+    ::= { xhaulVRtrObjs 71 }
+
+vRtrIfBfdExtEntry OBJECT-TYPE
+    SYNTAX     VRtrIfBfdExtEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+        "Each row entry represents the BFD configuration for the vRtrIfIndex."
+    INDEX { vRtrID, vRtrIfIndex, vRtrIfBfdExtAddressType }
+    ::= { vRtrIfBfdExtTable 1 }
+
+VRtrIfBfdExtEntry ::=
+    SEQUENCE {
+        vRtrIfBfdExtAddressType            InetAddressType,
+        vRtrIfBfdExtAdminState             XhaulAdminState,
+        vRtrIfBfdExtTransmitInterval       Unsigned32,
+        vRtrIfBfdExtReceiveInterval        Unsigned32,
+        vRtrIfBfdExtMultiplier             Unsigned32
+    }
+
+vRtrIfBfdExtAddressType  OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfBfdExtAddressType indicates the IP address
+         type of the BFD configuration of this interface.
+
+         vRtrIfBfdExtAddressType supports only InetAddressType values 
+         'ipv4 (1)' and 'ipv6 (2)'."
+    ::= { vRtrIfBfdExtEntry 1 }
+
+vRtrIfBfdExtAdminState     OBJECT-TYPE
+    SYNTAX      XhaulAdminState
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfBfdExtAdminState specifies the admin state of
+         BFD on this interface.
+         
+         When the value of vRtrIfBfdExtAdminState is 'inService', BFD sessions
+         can be established on this interface. When it is 'outOfService', they
+         cannot."
+    ::= { vRtrIfBfdExtEntry 2 }
+
+vRtrIfBfdExtTransmitInterval       OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..100000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfBfdExtTransmitInterval specifies the BFD transmit
+         interval over this interface. 
+
+         The minimum accepted value depends on the value of vRtrIfBfdExtType, 
+         as follows:
+             'cpmNp(1)' :   10 milliseconds
+             'auto(2)'  :  100 milliseconds."
+    DEFVAL { 100 }
+    ::= { vRtrIfBfdExtEntry 3 }
+
+vRtrIfBfdExtReceiveInterval        OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..100000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfBfdExtReceiveInterval specifies the BFD receive
+         interval over this interface. 
+
+         The minimum accepted value depends on the value of vRtrIfBfdExtType, 
+         as follows:
+             'cpmNp(1)' :   10 milliseconds
+             'auto(2)'  :  100 milliseconds."
+    DEFVAL { 100 }
+    ::= { vRtrIfBfdExtEntry 4 }
+
+vRtrIfBfdExtMultiplier     OBJECT-TYPE
+    SYNTAX      Unsigned32 (3..20)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfBfdExtMultiplier specifies the the number of
+         consecutive BFD messages that must be missed from the peer before
+         the BFD session state is changed to down and the upper level
+         protocols (OSPF, IS-IS or PIM) are notified of the fault."
+    DEFVAL { 3 }
+    ::= { vRtrIfBfdExtEntry 5 }
+
+
+--
+-- Extension to  Virtual Router Interfaces Table
+--
+
+vRtrIfQosTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrIfQosEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrIfQosTable has an entry for each router interface configured in
+         the system. This table contains objects managing QoS on the interface.
+         This table augments the vRtrIfTable."
+    ::= { xhaulVRtrObjs 78 }
+
+vRtrIfQosEntry  OBJECT-TYPE
+    SYNTAX      VRtrIfQosEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents a virtual router interface QoS management
+         objects in the system. Entries can be created and deleted via SNMP SET
+         operations along with the associated row entry in vRtrIfTable using the
+         vRtrIfRowStatus variable."
+    AUGMENTS { vRtrIfEntry }
+    ::= { vRtrIfQosTable 1 }
+
+VRtrIfQosEntry ::=
+    SEQUENCE {
+        vRtrIfQosNetworkPolicyId         XNetworkPolicyID
+ 
+}
+
+vRtrIfQosNetworkPolicyId  OBJECT-TYPE
+    SYNTAX      XNetworkPolicyID
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrIfQosNetworkPolicyId associates a pre-existing
+         network-policy-id to a network interface. Packets are marked
+         using qos policies on edge switches; invoking a qos policy on
+         a network port allows for the packets that match the policy
+         criteria to be remarked.
+
+         If this entry indicates a service virtual router interface or
+         the special out-of-band management interface, this object is
+         meaningless and is not applied to the interface."
+    DEFVAL { 1 }
+    ::= { vRtrIfQosEntry 1 }
+
+--
+--
+-- Notification Information
+
+xhaulVRtrNotificationObjects     OBJECT IDENTIFIER ::= { xhaulVRtrObjs 21 }
+
+vRtrFailureDescription OBJECT-TYPE
+    SYNTAX          DisplayString
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION     "The value of the object vRtrFailureDescription is a
+                     printable character string which contains information
+                     about the reason why the notification is sent."
+    ::= { xhaulVRtrNotificationObjects 36 }
+
+vRtrNotifInetAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION     "The value of vRtrNotifInetAddrType indicates
+                     the address type of vRtrNotifInetAddr."
+    ::= { xhaulVRtrNotificationObjects 39 }
+
+vRtrNotifInetAddr OBJECT-TYPE
+    SYNTAX          InetAddress (SIZE(0|4|16))
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION     "The value of vRtrNotifInetAddr indicates
+                     an IP address."
+    ::= { xhaulVRtrNotificationObjects 40 }
+
+
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--      XHAUL-VRTR-MIB Notifications
+--
+
+xhaulVRtrBfdSessionDown  NOTIFICATION-TYPE
+    OBJECTS {
+        vRtrIfBfdSessionLclDisc,
+        vRtrIfBfdSessionOperFlags
+    }
+    STATUS          obsolete
+    DESCRIPTION     "The xhaulVRtrBfdSessionDown notification is generated when
+                     a BFD session goes down."
+    ::= {xhaulVRtrNotifications 17}
+
+xhaulVRtrBfdSessionUp  NOTIFICATION-TYPE
+    OBJECTS {
+        vRtrIfBfdSessionLclDisc
+    }
+    STATUS          obsolete
+    DESCRIPTION     "The xhaulVRtrBfdSessionUp notification is generated when
+                     a BFD session goes up."
+    ::= {xhaulVRtrNotifications 28}
+
+xhaulVRtrInetAddressAttachFailed NOTIFICATION-TYPE
+    OBJECTS {
+        vRtrID,
+        vRtrIfIndex,
+        vRtrNotifInetAddrType,
+        vRtrNotifInetAddr,
+        vRtrFailureDescription
+    }
+    STATUS          current
+    DESCRIPTION     "The xhaulVRtrInetAddressAttachFailed notification
+                     is generated when an IP address could not be attached
+                     to an interface.
+
+                     The reason is indicated in the failure description.
+
+                     A possible cause is that a duplicate address is detected.
+
+                     If the IP address is a link-local address, the
+                     vRtrIfLinkLocalAddressState of the corresponding entry in
+                     the vRtrIfTable does not reach the state 'preferred'.
+
+                     If the IP address was configured by the user, the
+                     vRiaInetAddrState of the corresponding entry in
+                     the vRtrIpAddrTable does not reach the state 'preferred'.
+
+                     The IP address can also be a subnet router anycast address
+                     related to an IP address configured by the user (refer to
+                     RFC 4291 IPv6 Addressing Architecture, section 2.6.1
+                     Anycast Addresses)."
+    ::= { xhaulVRtrNotifications 37 }
+
+
+xhaulVRtrStaticRouteStatusChanged  NOTIFICATION-TYPE
+    OBJECTS {
+        vRtrInetStaticRouteStatus,
+        vRtrInetStaticRouteStaticType,
+        vRtrInetStaticRouteNextHopType,
+        vRtrInetStaticRouteNextHop,
+        vRtrInetStaticRouteNextHopIf   
+    }
+    STATUS  current
+    DESCRIPTION
+        "[CAUSE] A XhaulVRtrStaticRouteStatusChanged notification is generated 
+         when the status of a static route, vRtrInetStaticRouteStatus changes 
+         from active to inactive or from inactive to active.
+
+         [EFFECT] There is no effect of this notification.
+
+         [RECOVERY] There is no recovery required for this notification."
+    ::= { xhaulVRtrNotifications 46 }
+
+
+--
+-- Conformance Information
+--
+xhaulVRtrCompliances OBJECT IDENTIFIER ::= { xhaulVRtrConformance 1 }
+xhaulVRtrGroups      OBJECT IDENTIFIER ::= { xhaulVRtrConformance 2 }
+-- xhaulVRtrMobGatewayCompliances OBJECT IDENTIFIER ::= { xhaulVRtrConformance 3 }
+-- xhaulVRtrMobGatewayGroups      OBJECT IDENTIFIER ::= { xhaulVRtrConformance 4 }
+-- xhaulDCVRtrCompliances OBJECT IDENTIFIER ::= { xhaulVRtrConformance 5 }
+-- xhaulDCVRtrGroups      OBJECT IDENTIFIER ::= { xhaulVRtrConformance 6 }
+
+-- compliance statements
+
+-- xhaulVRtrCompliance  MODULE-COMPLIANCE
+--    ::= { xhaulVRtrCompliances 1 }
+
+-- xhaulVRtrR2r1Compliance  MODULE-COMPLIANCE
+--    ::= { xhaulVRtrCompliances 2 }
+
+-- xhaulVRtrV3v0Compliance  MODULE-COMPLIANCE
+--    ::= { xhaulVRtrCompliances 3 }
+
+
+END

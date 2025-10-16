@@ -1,0 +1,489 @@
+OPTICSIM-TRS-PDH-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, 
+       Integer32, Unsigned32 FROM SNMPv2-SMI
+       DisplayString FROM SNMPv2-TC
+       ifIndex FROM IF-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP FROM SNMPv2-CONF
+       opticsimSdhPdhMib, opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB
+       TsdimOperationalState FROM TSDIM-SNMP-TC;
+
+opticsIMTrsPdhMib MODULE-IDENTITY
+       LAST-UPDATED "0602160000Z"
+       ORGANIZATION "Alcatel TND"
+       CONTACT-INFO "Alcatel TND"
+       DESCRIPTION
+                "Added new value thirtytwoDS1 (19) to FrameStructureConfiguration"
+       REVISION "0510270000Z"
+       DESCRIPTION
+                "Added new object(LinkExpectedMode,  LinkExpectedValue, LinkSentValue) 
+                 to opticsIMFrameTTPTable. 
+                 Updated the description of opticsIMFrameStructureConfiguration, 
+                 opticsIMLinkIdExpectedMode, opticsIMLinkIdExpectedValue  and 
+                 opticsIMLinkIdSentValue  objects."
+       REVISION "0606160000Z"
+       DESCRIPTION
+                "Added new value thirtytwoE1 (18) to FrameStructureConfiguration. "
+       REVISION "0409300000Z"
+       DESCRIPTION
+                "Added new scalar objects opticsIMEWBERThr, opticsIMEWBERMinThr,
+                 opticsIMEWBERMaxThr to opticsIMBERThresholdMngt. "
+       REVISION "0406150000Z"
+       DESCRIPTION
+                "Added new scalar object opticsIMInterleaving.
+                 Added enumerated value (threeE3) to opticsIMFrameStructureConfiguration "
+       REVISION "0404300000Z"
+       DESCRIPTION
+                "Added new values to opticsIMFrameStructureConfiguration. "
+       REVISION "0310100000Z"
+       DESCRIPTION
+                "Removal of opticsIMAllowedDataVoivceMixTable. "
+       REVISION "0303140000Z"
+       DESCRIPTION
+                "Deletion of unidirectional TPs objects, renaming of Frame and Coder TPs. "
+       REVISION "0211050000Z"
+       DESCRIPTION
+                "Addition of Frame unidirectional TPs objects. "
+       REVISION "0207240000Z"
+       DESCRIPTION
+                "Added the BERThresholdMngt scalar objects. "
+       REVISION "0205100000Z"
+       DESCRIPTION
+                "Added the table coderTTPBid, the scalar object frameStructureConfiguration, deleted the 
+                  table allowedOutputBitRate. Updated some of the already existing tables."
+       REVISION "0201250000Z"
+       DESCRIPTION
+                "Initial Release of PDH TRS MIB."
+ ::= {  opticsimSdhPdhMib 2}
+
+
+opticsIMTrsPdhMibObject      OBJECT IDENTIFIER ::= { opticsIMTrsPdhMib 1 }
+
+
+
+-- opticsIMFrameTTPTable
+
+opticsIMFrameTTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMFrameTTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of the aggregate PDH frame. "
+::= { opticsIMTrsPdhMibObject 1 }
+
+opticsIMFrameTTPEntry OBJECT-TYPE
+     SYNTAX						OpticsIMFrameTTPEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the frameTTPTable. "
+     INDEX  { ifIndex }
+::= { opticsIMFrameTTPTable 1 } 
+
+OpticsIMFrameTTPEntry ::= SEQUENCE {
+   frameTTPOperationalState		TsdimOperationalState,
+   frameTTPAsapIndex		      Integer32,
+   frameTTPLinkIdExpectedMode       INTEGER,
+   frameTTPLinkIdExpectedValue      Unsigned32 ,
+   frameTTPLinkIdSentValue          Unsigned32 
+   }
+
+frameTTPOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMFrameTTPEntry 2 }
+
+frameTTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMFrameTTPEntry 3 }
+
+
+frameTTPLinkIdExpectedMode OBJECT-TYPE
+     SYNTAX INTEGER {
+          enabled  (1),
+          disabled  (2)
+          }
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the mode of the expected link identifier associated to this entry. 
+          If the disabled mode is selected the mismatch detection is disabled. If the enabled mode is 
+          selected the expected value is contained in the associated linkIdExpectedValue object."
+::= { opticsIMFrameTTPEntry 4 }
+
+
+frameTTPLinkIdExpectedValue OBJECT-TYPE
+     SYNTAX					Unsigned32 (0..63)
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object specifies the value of the expected link identifier.
+          It is used only if the functionality is enabled (enabled mode is selected in the associated  
+          linkIdExpectedMode object."
+::= { opticsIMFrameTTPEntry 5 }
+
+
+frameTTPLinkIdSentValue OBJECT-TYPE
+     SYNTAX					Unsigned32 (0..63)
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object specifies the value of the outgoing link identifier that has to be sent."
+::= { opticsIMFrameTTPEntry 6 }
+
+
+
+opticsIMFrameStructureConfiguration OBJECT-TYPE
+     SYNTAX INTEGER {
+          twoE1  (1),
+          fourE1  (2),
+          eightE1  (3),
+          sixteenE1  (4),
+          oneE3  (5),
+          fourDS1  (6),
+          eightDS1  (7), 
+          sixteenDS1  (8),
+          oneDS3  (9),
+          twelveDS1  (10),
+          twoDS3  (11),
+          threeDS3  (12),
+          oneOC3  (13),
+          oneSTS1  (14),
+          twoSTS1  (15),
+          threeSTS1  (16),
+          threeE3  (17),
+          thirtytwoE1 (18),
+          thirtytwoDS1 (19)
+          }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the PDH frame structure on NE based."
+::= { opticsIMTrsPdhMibObject 2 }
+
+
+
+
+
+
+opticsIMLinkIdMngt OBJECT IDENTIFIER ::= { opticsIMTrsPdhMibObject 4 }
+
+
+opticsIMLinkIdExpectedMode OBJECT-TYPE
+     SYNTAX INTEGER {
+          enabled  (1),
+          disabled  (2)
+          }
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the mode of the expected link identifier (on NE base). 
+          If the disabled mode is selected the mismatch detection is disabled. If the enabled mode is 
+          selected the expected value is contained in the associated linkIdExpectedValue object."
+::= { opticsIMLinkIdMngt 1 }
+
+
+opticsIMLinkIdExpectedValue OBJECT-TYPE
+     SYNTAX					Unsigned32 (0..63)
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object specifies the value (on NE base) of the expected link identifier.
+          It is used only if the functionality is enabled (enabled mode is selected in the associated  
+          linkIdExpectedMode object."
+::= { opticsIMLinkIdMngt 2 }
+
+
+opticsIMLinkIdSentValue OBJECT-TYPE
+     SYNTAX					Unsigned32 (0..63)
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+       " This object specifies the value (on NE base) of the outgoing link identifier that has to be sent."
+::= { opticsIMLinkIdMngt 3 }
+
+
+
+opticsIMCoderTTPTable OBJECT-TYPE
+     SYNTAX SEQUENCE OF	OpticsIMCoderTTPEntry
+     MAX-ACCESS					not-accessible
+     STATUS							current
+     DESCRIPTION
+          "This table contains the information related to the termination of the cable interface, 
+           frame recovery and IDU-ODU communication channel extraction. "
+::= { opticsIMTrsPdhMibObject 5 }
+
+opticsIMCoderTTPEntry OBJECT-TYPE
+     SYNTAX						OpticsIMCoderTTPEntry
+     MAX-ACCESS				not-accessible
+     STATUS						current
+     DESCRIPTION
+          " An entry of the coderTTPTable. "
+     INDEX  { ifIndex }
+::= { opticsIMCoderTTPTable 1 } 
+
+OpticsIMCoderTTPEntry ::= SEQUENCE {
+   coderTTPOperationalState			TsdimOperationalState,
+   coderTTPAsapIndex				Integer32
+   }
+
+coderTTPOperationalState OBJECT-TYPE
+     SYNTAX					TsdimOperationalState 
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+       " See Textual Conventions."
+::= { opticsIMCoderTTPEntry 1 }
+
+coderTTPAsapIndex OBJECT-TYPE
+     SYNTAX					Integer32 
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+       "This object defines the ASAP object associated to this entry."
+::= { opticsIMCoderTTPEntry 2 }
+
+
+
+
+opticsIMBERThresholdMngt OBJECT IDENTIFIER ::= { opticsIMTrsPdhMibObject 6 }
+
+
+opticsIMHighBERThr OBJECT-TYPE
+     SYNTAX					DisplayString
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the threshold used to raise a highBER alarm. The format of the string is the
+          following: Mx10E-N, where M and N are integer. "
+::= { opticsIMBERThresholdMngt 1 }
+
+
+
+opticsIMHighBERMinThr OBJECT-TYPE
+     SYNTAX					DisplayString
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the minimum value allowed for highBER alarm threshold. The format of the 
+          string is the following: Mx10E-N, where M and N are integer. "
+::= { opticsIMBERThresholdMngt 2 }
+
+
+
+opticsIMHighBERMaxThr OBJECT-TYPE
+     SYNTAX					DisplayString
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the maximum value allowed for highBER alarm threshold. The format of the 
+          string is the following: Mx10E-N, where M and N are integer. "
+::= { opticsIMBERThresholdMngt 3 }
+
+
+
+opticsIMLowBERThr OBJECT-TYPE
+     SYNTAX					DisplayString
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the threshold used to raise a lowBER alarm. The format of the string is the
+          following: Mx10E-N, where M and N are integer. "
+::= { opticsIMBERThresholdMngt 4 }
+
+
+
+opticsIMLowBERMinThr OBJECT-TYPE
+     SYNTAX					DisplayString
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the minimum value allowed for lowBER alarm threshold. The format of the 
+          string is the following: Mx10E-N, where M and N are integer. "
+::= { opticsIMBERThresholdMngt 5 }
+
+
+opticsIMLowBERMaxThr OBJECT-TYPE
+     SYNTAX					DisplayString
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+        " This object specifies the maximum value allowed for lowBER alarm threshold. The format of the 
+          string is the following: Mx10E-N, where M and N are integer. "
+::= { opticsIMBERThresholdMngt 6 }
+
+
+
+opticsIMEWBERThr OBJECT-TYPE
+     SYNTAX					DisplayString
+     MAX-ACCESS			read-write 
+     STATUS					current
+     DESCRIPTION
+     " This object specifies the BER threshold used to raise a EW alarm. 
+      The format of the string is the
+          following: Mx10E-N, where M and N are integer. "
+::= { opticsIMBERThresholdMngt 7}
+
+
+opticsIMEWBERMinThr OBJECT-TYPE
+     SYNTAX					DisplayString
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+     " This object specifies the minimum value allowed for BER threshold used to raise an EW alarm.
+          The format of the string is the following: Mx10E-N, where M and N are integer. "
+::= { opticsIMBERThresholdMngt 8 }
+
+
+
+opticsIMEWBERMaxThr OBJECT-TYPE
+     SYNTAX					DisplayString
+     MAX-ACCESS			read-only
+     STATUS					current
+     DESCRIPTION
+     " This object specifies the maximum value allowed for BER threshold used to raise an EW alarm.
+          The format of the string is the following: Mx10E-N, where M and N are integer. "
+::= { opticsIMBERThresholdMngt 9 }
+
+
+
+opticsIMInterleaving OBJECT-TYPE
+     SYNTAX INTEGER {
+          enabled  (1),
+          disabled  (2)
+          }
+     MAX-ACCESS			read-write
+     STATUS					current
+     DESCRIPTION
+        " This object enables or disables the interleaving functionality."
+::= { opticsIMTrsPdhMibObject 7 }
+
+
+
+-- OPTICSIM-TRS-PDH-MC DEFINITIONS ::= BEGIN
+--       IMPORTS
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB;
+
+
+-- opticsIMTrsPdhMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0207240000Z"
+--       DESCRIPTION
+--       ORGANIZATION "Alcatel TND"
+--       CONTACT-INFO "Alcatel TND"
+--       DESCRIPTION
+--           "Added the BERThresholdMngt scalar objects. "
+--       REVISION "0205100000Z"
+--       DESCRIPTION
+--           "Added the table coderTTPBid, the scalar object frameStructureConfiguration, deleted the 
+--             table allowedOutputBitRate. Updated some of the already existing groups."
+--       REVISION "0201250000Z"
+--       DESCRIPTION 
+--           "Initial Release of PDH Transmission Module Compliance."
+    
+-- ::= { opticsIMTrsPdhMCConf 1 }
+
+opticsIMTrsPdhMCConf         OBJECT IDENTIFIER ::= { opticsimSdhPdhMC 2 }
+opticsIMTrsPdhMCCompl      OBJECT IDENTIFIER ::= { opticsIMTrsPdhMCConf 1 }
+opticsIMTrsPdhMCGroup      OBJECT IDENTIFIER ::= { opticsIMTrsPdhMCConf 2 }
+
+opticsIMTrsPdhMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMTrsPdhMib. "
+
+       MODULE -- opticsIMTrsPdhMib  
+
+MANDATORY-GROUPS { opticsIMFrameGroup }
+-- Optional Group Objects
+
+GROUP opticsIMFrameTTPGroup 
+      DESCRIPTION
+          " This group describes the objects related to the management of Frame TTP. "
+
+GROUP opticsIMCoderTTPGroup 
+      DESCRIPTION
+          " This group describes the objects related to the management of Coder TTP. "
+
+GROUP opticsIMBERThresholdsGroup 
+      DESCRIPTION
+          " This group describes the objects related to the management of BER alarm thresholds. "
+
+GROUP opticsIMInterleaveGroup 
+      DESCRIPTION
+          " This group describes the objects related to the management of Interleave functionality. "
+
+::= { opticsIMTrsPdhMCCompl 1 }
+
+
+opticsIMFrameTTPGroup OBJECT-GROUP
+      OBJECTS { frameTTPOperationalState,
+                frameTTPAsapIndex,
+                frameTTPLinkIdExpectedMode,
+                frameTTPLinkIdExpectedValue,
+                frameTTPLinkIdSentValue       
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of the frame TTP." 
+::= { opticsIMTrsPdhMCGroup 1 }
+
+opticsIMFrameGroup OBJECT-GROUP
+      OBJECTS { opticsIMFrameStructureConfiguration,
+                          opticsIMLinkIdExpectedMode,
+                          opticsIMLinkIdExpectedValue,
+                          opticsIMLinkIdSentValue
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of the PDH frame." 
+::= { opticsIMTrsPdhMCGroup 2 }
+
+
+opticsIMCoderTTPGroup OBJECT-GROUP
+      OBJECTS { coderTTPOperationalState,
+                          coderTTPAsapIndex
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of Coder TTP." 
+::= { opticsIMTrsPdhMCGroup 3 }
+
+
+opticsIMBERThresholdsGroup OBJECT-GROUP
+      OBJECTS { opticsIMHighBERThr,
+                          opticsIMHighBERMinThr,
+                          opticsIMHighBERMaxThr,
+                          opticsIMLowBERThr,
+                          opticsIMLowBERMinThr,
+                          opticsIMLowBERMaxThr,
+                          opticsIMEWBERThr,
+                          opticsIMEWBERMinThr,
+                          opticsIMEWBERMaxThr
+                          }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of BER alarms thresholds." 
+::= { opticsIMTrsPdhMCGroup 4 }
+
+
+
+opticsIMInterleaveGroup OBJECT-GROUP
+      OBJECTS { opticsIMInterleaving
+                        }
+      STATUS current 
+      DESCRIPTION 
+          " This group describes the objects related to the management of interleave functionality." 
+::= { opticsIMTrsPdhMCGroup 5 }
+
+
+END

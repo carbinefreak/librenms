@@ -1,0 +1,253 @@
+OPTICSIM-CONNECTION-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, 
+       Unsigned32, Integer32                 FROM SNMPv2-SMI
+       TEXTUAL-CONVENTION, RowStatus         FROM SNMPv2-TC
+
+       MODULE-COMPLIANCE, OBJECT-GROUP       FROM SNMPv2-CONF
+       opticsimSdhPdhMib, opticsimSdhPdhMC   FROM OPTICSIM-RADIOREG-MIB;
+
+opticsIMConnectionMib MODULE-IDENTITY
+       LAST-UPDATED "0510270000Z"
+       ORGANIZATION "Alcatel TND"
+       CONTACT-INFO "Alcatel TND"
+       DESCRIPTION
+                "New values on OpticsIMCrossConnectTPType have been added:
+                 -- e1Signal (4)
+                 -- e3Signal (5)
+                 -- ds1Signal (6)
+                 -- ds3Signal (7)
+                 -- radioFrame (8)"
+       REVISION "0406150000Z"
+       DESCRIPTION
+                "Initial Release of SDH/PDH Connection MIB."
+ ::= {  opticsimSdhPdhMib 8}
+
+
+opticsIMConnectionMibObject      OBJECT IDENTIFIER ::= { opticsIMConnectionMib 1 }
+
+
+
+ OpticsIMCrossConnectTPType ::= TEXTUAL-CONVENTION
+     STATUS current
+     DESCRIPTION
+        "This object is used to specify the resource type in order to identify the associated table."
+     SYNTAX INTEGER {
+          rsohByte (1),
+          rfcohByte (2),
+          auxiliaryPort (3),
+          e1Signal (4),
+          e3Signal (5),
+          ds1Signal (6),
+          ds3Signal (7),
+          radioFrame (8)
+          }
+
+
+
+ opticsIMCrossConnectIndexNext OBJECT-TYPE
+        SYNTAX Unsigned32 (0..2147483647)
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "This object contains an appropriate value to be used for opticsIMCrossConnectIndex when 
+             creating entries in the opticsIMCrossConnectTable. The value 0 indicates that
+             no unassigned entries are available. To obtain the opticsIMCrossConnectIndex value for a new 
+             entry, the manager issues a management protocol retrieval operation  to obtain the current value 
+             of this object. After each retrieval, the agent should modify the value to the next unassigned 
+             index.
+             After a manager retrieves a value, the agent will determine through its local policy when this 
+             index value will be made available for reuse."
+::= { opticsIMConnectionMibObject 1 }
+
+
+
+ opticsIMCrossConnectTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF OpticsIMCrossConnectEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The Cross Connect table. 
+            An entry in this table models two cross-connected Termination Points (e.g. OH byte, 
+            auxiliary port)."
+::= { opticsIMConnectionMibObject 2 }
+
+ opticsIMCrossConnectEntry OBJECT-TYPE
+       SYNTAX OpticsIMCrossConnectEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "An entry in the Cross Connect table.
+            This entry is used to model a cross-connection which cross-connects two Termination Points 
+            (e.g. OH byte, auxiliary port).
+
+            Cross-Connection Establishment:
+
+            once the entries in the TPs tables are created (by manager or by agent, dependent on TP's kind 
+            and on system behaviour), the following procedures are used to cross-connect the TPs together.
+           (1) The manager obtains a unique opticsIMCrossConnectIndex by reading the
+               opticsIMCrossConnectIndexNext object.
+
+           (2) Next, the manager creates a set of one or more rows in the opticsIMCrossConnectTable,
+               one for each cross-connection between two TPs. 
+               This set of rows specifies the topology of the cross-connection (a point-to-point or point-to-
+               multipoint) and is identified by a single value of opticsIMCrossConnectIndex.
+               For point-to-point cross-connection only one row is created.
+
+          (3) The manager creates a row in this table by setting opticsIMCrossConnectRowStatus to
+               createAndWait(5) or to createAndGo(4).
+               In the first case the agent can be perform same checks 
+               (e.g. about requested topology or for internal errors in building the cross-connection) 
+               and the row creation can fail.
+               If there aren't errors, the appropriate columnar object values in the
+               corresponding TPs tables (e.g. opticsIMRSOHBytesCrossConnectIdentifier in
+               opticsIMRSOHBytesTable) rows are filled in by the agent at this point.
+               The manager promotes the row in the opticsIMCrossConnectTable by setting
+               opticsIMCrossConnectRowStatus to active(1).
+               A TP cross-connect may also be established in one step by a set-request with all necessary
+               parameter values and opticsIMCrossConnectRowStatus set to createAndGo(4).
+               Also in this case the appropriate columnar object values in the
+               corresponding TPs tables (e.g. opticsIMRSOHBytesCrossConnectIdentifier in
+               opticsIMRSOHBytesTable) rows are filled in by the agent at this point.
+
+               Cross-Connection Retirement:
+
+               A TP cross-connection identified by a particular value of opticsIMCrossConnectIndex is 
+               released by:
+          (1) Setting opticsIMCrossConnectRowStatus of all rows identified by this value of
+               opticsIMCrossConnectIndex to destroy(6).
+               The agent may release all associated resources, and the appropriate columnar object 
+               values in the corresponding TPs tables (e.g. opticsIMRSOHBytesCrossConnectIdentifier in
+               opticsIMRSOHBytesTable) rows are set to 0 value.
+               Note that a situation when only a subset of the associated rows are deleted corresponds
+               to a Cross-connection topology change.
+
+              Cross-connect Reconfiguration:
+
+              A TP cross-connect may be reconfigured by adding and/or deleting leafs to/from the TP 
+              topology as per the TP cross-connect establishment/retirement procedures."
+       INDEX { opticsIMCrossConnectIndex, 
+                    opticsIMCrossConnectTP1Type, 
+                    opticsIMCrossConnectTP1Id, 
+                    opticsIMCrossConnectTP2Type, 
+                    opticsIMCrossConnectTP2Id }
+::= { opticsIMCrossConnectTable 1 }
+
+ OpticsIMCrossConnectEntry ::= SEQUENCE { 
+              opticsIMCrossConnectIndex             Integer32,
+              opticsIMCrossConnectTP1Type       OpticsIMCrossConnectTPType,
+              opticsIMCrossConnectTP1Id            Integer32,
+              opticsIMCrossConnectTP2Type       OpticsIMCrossConnectTPType,
+              opticsIMCrossConnectTP2Id            Integer32,
+              opticsIMCrossConnectRowStatus    RowStatus
+}
+
+ opticsIMCrossConnectIndex OBJECT-TYPE
+       SYNTAX Integer32 (1..2147483647)
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+           "A unique value to identify this cross-connection. For each TP associated with this cross-connect,
+            the agent reports this cross-connect index value in the appropriate columnar object of the
+            corresponding TPs tables (e.g. opticsIMRSOHBytesCrossConnectIdentifier in
+            opticsIMRSOHBytesTable) entries."
+::= { opticsIMCrossConnectEntry 1 }
+
+ opticsIMCrossConnectTP1Type OBJECT-TYPE
+       SYNTAX OpticsIMCrossConnectTPType
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+          "The value of this object indicates the TP table (or resource table) of the first TP involved in the 
+           cross-connection."
+::= { opticsIMCrossConnectEntry 2 }
+
+opticsIMCrossConnectTP1Id OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+       " This object contains the index value of the table where the first TP involved
+         in the cross-connection is described.
+         If the opticsIMCrossConnectTP1Type is equal to 'rsohByte', this object is used to specify the
+         opticsIMRSOHBytesIndex of the opticsIMRSOHBytesTable.
+         If the opticsIMCrossConnectTP1Type is equal to 'rfcohByte', this object is used to specify the
+         opticsIMRFCOHBytesIndex of the opticsIMRFCOHBytesTable.
+         If the opticsIMCrossConnectTP1Type is equal to 'auxiliaryPort', this object is used to specify the
+         opticsIMAuxiliaryPITTPBidIndex of the opticsIMAuxiliaryPITTPBidTable."
+::= { opticsIMCrossConnectEntry 3 }
+
+opticsIMCrossConnectTP2Type OBJECT-TYPE
+       SYNTAX OpticsIMCrossConnectTPType
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+          "The value of this object indicates the TP table (or resource table) of the second TP involved in the 
+           cross-connection."
+::= { opticsIMCrossConnectEntry 4 }
+
+opticsIMCrossConnectTP2Id OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS not-accessible
+       STATUS current
+       DESCRIPTION
+          " This object contains the index value of the table where the second TP involved
+             in the cross-connection is described (see opticsIMCrossConnectTP1Id)."
+::= { opticsIMCrossConnectEntry 5 }
+
+ opticsIMCrossConnectRowStatus OBJECT-TYPE
+       SYNTAX RowStatus
+       MAX-ACCESS read-create
+       STATUS current
+       DESCRIPTION
+       "For creating, modifying, and deleting this row."
+::= { opticsIMCrossConnectEntry 6 }
+
+
+
+
+-- OPTICSIM-CONNECTION-MC DEFINITIONS ::= BEGIN
+--       IMPORTS
+--       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY FROM SNMPv2-SMI
+--       MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP FROM SNMPv2-CONF
+--       opticsimSdhPdhMC FROM OPTICSIM-RADIOREG-MIB;
+
+
+
+-- opticsIMConnectionMCCompl MODULE-IDENTITY
+--       LAST-UPDATED "0406150000Z"
+--       ORGANIZATION "Alcatel TND"
+--       CONTACT-INFO "Alcatel TND"
+--       DESCRIPTION 
+--           "Initial Release of Connection Module Compliance."
+    
+-- ::= { opticsIMConnectionMCConf 1 }
+
+opticsIMConnectionMCConf         OBJECT IDENTIFIER ::= { opticsimSdhPdhMC 8 }
+opticsIMConnectionMCCompl      OBJECT IDENTIFIER ::= { opticsIMConnectionMCConf 1 }
+opticsIMConnectionMCGroup      OBJECT IDENTIFIER ::= { opticsIMConnectionMCConf 2 }
+
+opticsIMConnectionMc MODULE-COMPLIANCE
+      STATUS current
+      DESCRIPTION 
+          "This module compliance describes a set of objects required for Optics-IM Agent 
+            implementation. These objects are defined inside opticsIMConnectionMib. "
+
+       MODULE -- opticsIMConnectionMib  
+
+
+MANDATORY-GROUPS { opticsIMCrossConnectGroup }
+
+::= { opticsIMConnectionMCCompl 1 }
+
+
+
+opticsIMCrossConnectGroup OBJECT-GROUP
+      OBJECTS { opticsIMCrossConnectIndexNext, 
+                          opticsIMCrossConnectRowStatus }
+      STATUS current
+      DESCRIPTION 
+          "This group describes the cross-connection objects."
+::= { opticsIMConnectionMCGroup 1 }
+
+END

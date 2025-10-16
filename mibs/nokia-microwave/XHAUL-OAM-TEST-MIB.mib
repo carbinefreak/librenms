@@ -1,0 +1,2487 @@
+XHAUL-OAM-TEST-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE, IpAddress,
+        Integer32, Unsigned32, Gauge32, Counter32, Counter64
+            FROM SNMPv2-SMI
+
+        MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+            FROM SNMPv2-CONF
+
+        TEXTUAL-CONVENTION, RowStatus, StorageType, TruthValue,
+        DateAndTime, MacAddress, TimeStamp, DisplayString
+            FROM SNMPv2-TC
+
+        SnmpAdminString
+            FROM SNMP-FRAMEWORK-MIB
+
+        InetAddressType, InetAddress, InetAddressPrefixLength, InetPortNumber
+            FROM INET-ADDRESS-MIB
+
+        InterfaceIndex, InterfaceIndexOrZero
+            FROM IF-MIB
+
+        -- Alphasort
+        IpAddressPrefixLength, SdpBindId, TFCName, TItemDescription,
+        TLNamedItemOrEmpty, TNamedItem, TNamedItemOrEmpty,
+        TPolicyStatementNameOrEmpty, TProfile, XhaulAdminState,
+        XhaulBgpRouteTarget, XhaulEncapVal, XhaulMplsTpGlobalID,
+        XhaulMplsTpNodeID, XhaulPortID, XhaulPwGlobalIdOrZero, XhaulServId,
+        XhaulSpokeSdpIdOrZero, XhaulStrSapId, XhaulTunnelID, XhaulTunnelType,
+        XhaulVPNRouteDistinguisher, XhaulVRtrID, XhaulVcId, XhaulVcIdOrNone,
+        XhaulVcType
+            FROM XHAUL-TC-MIB
+
+         SdpId, SdpBindVcType
+            FROM XHAUL-SERV-MIB
+
+        vRtrID
+            FROM XHAUL-VRTR-MIB
+
+        Dot1agCfmMepIdOrZero, Dot1agCfmRelayActionFieldValue
+            FROM IEEE8021-CFM-MIB
+
+        xhaulim, xhaulBasicMib 	FROM XHAUL-BASICREG-MIB
+        ;
+
+xhaulOamTestMIBModule MODULE-IDENTITY
+        LAST-UPDATED "201910030000Z"
+        ORGANIZATION "Nokia"
+        CONTACT-INFO
+            "Nokia Xhaul Support "
+
+        DESCRIPTION
+        "This document is the SNMP MIB module to manage and provision the
+        Nokia XHAUL OAM tests."
+
+--
+--  Revision History
+--
+        REVISION        "201910030000Z"
+        DESCRIPTION     "Rev 0.4              3 October 2019 00:00
+           - added xhaulOamTrResultsTestRunIndex to 					xhaulOamTrResultsTable.
+				"
+
+        REVISION        "201909040000Z"
+        DESCRIPTION     "Rev 0.3              4 September 2019 00:00
+           - added xhaulOamPingCtlFcName on xhaulOamPingCtlTable,
+		- added xhaulOamLspPingCtlTable, 
+		  xhaulOamTrCtlTable, xhaulOamLspTrCtlTable,
+		  xhaulOamTrResultsTable, xhaulOamTrHopsTable tables
+			and xhaulOamTrTestCompleted  NOTIFICATION-TYPE 		"
+
+        REVISION        "201904150000Z"
+        DESCRIPTION     "Rev 0.2                15 Apr 2019 00:00
+        	Added xhaulOamIcmpPingCtlEgrIfName to xhaulOamIcmpPingCtlTable."
+
+        REVISION        "201902010000Z"
+        DESCRIPTION     "Rev 0.1                1 Feb 2019 00:00
+         	Initial version of the XHAUL-OAM-TEST-MIB."
+
+        ::= { xhaulBasicMib 13 }
+
+   xhaulOamTestMIB OBJECT IDENTIFIER ::= { xhaulim 9 }
+
+-- tables, scalars
+    xhaulOamTestObjs         OBJECT IDENTIFIER ::= { xhaulOamTestMIB 1 }
+
+    xhaulOamPingObjs                     OBJECT IDENTIFIER
+        ::= { xhaulOamTestObjs 1 }
+
+    xhaulOamTraceRouteObjs               OBJECT IDENTIFIER
+        ::= { xhaulOamTestObjs 2 }
+-- traps
+    xhaulOamTestNotifications        OBJECT IDENTIFIER ::= { xhaulOamTestMIB 2 }
+    xhaulOamPingNotifications        OBJECT IDENTIFIER
+           ::= { xhaulOamTestNotifications 1}
+
+    xhaulOamTraceRouteNotifications      OBJECT IDENTIFIER
+            ::= { xhaulOamTestNotifications 2}
+
+-- conformance
+    xhaulOamTestConformance          OBJECT IDENTIFIER ::= { xhaulOamTestMIB  3 }
+    xhaulOamPingConformance          OBJECT IDENTIFIER
+        ::= { xhaulOamTestConformance 1 }
+--
+-- Textual Conventions
+--
+
+XhaulOamTestMode ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulOamTestMode is an enumerated integer
+         that indicates the type of OAM test."
+    SYNTAX      INTEGER {
+                    notConfigured (0),
+                    ping (1),
+                    traceroute (2)
+                }
+
+XhaulOamAddressType ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+        "The value of XhaulOamAddressType is an enumerated integer that
+         indicates the type of address used in OAM test requests and
+         responses."
+    SYNTAX  INTEGER {
+                unknown (0),
+                ipv4Address (1),
+                ipv6Address (2),
+                macAddress (3),
+                sapId (4),
+                sdpId (5),
+                localCpu (6),
+                ipv4Unnumbered (7),
+                ipv6Unnumbered (8),
+                sdpBindId (9),
+                nonIp (10)
+            }
+
+XhaulOamTestResult                ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The value of XhaulOamTestResult is an enumerated integer that describes
+         the result of a ping or trace test run.
+             undetermined      (0) The result is, as yet, unknown.
+             success           (1) The test was successful.
+             failed            (2) The test failed.
+             aborted           (3) The test was terminated before completion.
+             txResourcesUnavail(4) The test did not start because transmit
+                                   resources are unavailable."
+    SYNTAX INTEGER {
+                undetermined      (0),
+                success           (1),
+                failed            (2),
+                aborted           (3),
+                txResourcesUnavail(4)
+            }
+
+XhaulOamLspTestSubMode            ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "A value of type XhaulOamLspTestSubMode specifies the type of LSP ping or
+         LSP trace route test to perform.
+
+         LSP test types:
+             static(2)
+                 Perform an LSP ping or LSP trace route test using the RFC 6426
+                 'Target FEC Stack' code point 'Static LSP'.
+             bgpLabeledPrefix(3)
+                 Perform an LSP ping or LSP trace route test using the RFC 4379
+                 'Target FEC Stack' code point 'BGP labeled IPv4 prefix'.  In
+                 future, 'bgpLabeledPrefix(3)' will also be used for the RFC
+                 4379 'Target FEC Stack' code point 'BGP labeled IPv6 prefix'.
+             unspecified(1)
+                 Perform any other supported type of LSP ping or trace route
+                 test.  Examples:  an LSP ping or trace route test using the RFC
+                 4379 'Target FEC Stack' code point 'LDP IPv4 prefix'; an LSP
+                 ping or trace route test using the RFC 4379 'Target FEC Stack'
+                 code point 'RSVP IPv4 LSP'."
+    REFERENCE
+        "RFC 4379, 'Detecting Multi-Protocol Label Switched (MPLS) Data Plane
+         Failures', Section 3.2 ('Target FEC Stack').
+         RFC 6426, 'MPLS On-Demand Connectivity Verification and Route Tracing',
+         Section 2.3.1 ('Static LSP Sub-TLV')."
+    SYNTAX      INTEGER {
+                    unspecified(1),
+                    static(2),
+                    bgpLabeledPrefix(3)
+    }
+
+XhaulOamMplsEchoDownMapTlvOrNone  ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "An object of type XhaulOamMplsEchoDownMapTlvOrNone specifies the type of
+         downstream mapping TLV in an MPLS echo request PDU (or no downstream
+         mapping TLV).
+
+         'dsmap(1)' specifies the Downstream Mapping TLV, as described in RFC
+         4379, Section 3.3.
+
+         'ddmap(2)' specifies the Downstream Detailed Mapping TLV, as described
+         in RFC 6424, Section 3.3.
+         'none(3)'  specifies none of the above TLVs."
+    REFERENCE
+        "RFC 4379, 'Detecting Multi-Protocol Label Switched (MPLS) Data Plane
+         Failures', Section 3.3 ('Downstream Mapping').
+         RFC 6424, 'Mechanism for Performing Label Switched Path Ping (LSP Ping)
+         over MPLS Tunnels', Section 3.3 ('Downstream Detailed Mapping TLV').
+        "
+    SYNTAX      INTEGER {
+                    dsmap(1),
+                    ddmap(2),
+                    none(3)
+                }
+
+
+--
+--  Nokia XHAUL devices OAM Ping Control Table
+--
+
+xhaulOamPingCtlTable     OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPingCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines the Alcatel-Lucent SROS OAM ping Control Table for providing,
+         via SNMP, the capability of performing Alcatel-Lucent SROS OAM ping 
+         test operations.  The results of these tests are stored in the
+         xhaulOamPingResultsTable and the xhaulOamPingHistoryTable."
+    ::= { xhaulOamPingObjs 3 }
+
+xhaulOamPingCtlEntry OBJECT-TYPE
+    SYNTAX      XhaulOamPingCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines an entry in the xhaulOamPingCtlTable.  The first index
+         element, xhaulOamPingCtlOwnerIndex, is of type SnmpAdminString,
+         a textual convention that allows for use of the SNMPv3
+         View-Based Access Control Model (RFC 2575 [11], VACM)
+         and allows a management application to identify its entries.
+         The second index, xhaulOamPingCtlTestIndex, enables the same
+         management application to have multiple outstanding requests."
+    INDEX {
+             xhaulOamPingCtlOwnerIndex,
+             xhaulOamPingCtlTestIndex
+          }
+    ::= { xhaulOamPingCtlTable 1 }
+
+XhaulOamPingCtlEntry ::=
+    SEQUENCE {
+        xhaulOamPingCtlOwnerIndex             SnmpAdminString,
+        xhaulOamPingCtlTestIndex              SnmpAdminString,
+        xhaulOamPingCtlRowStatus              RowStatus,
+        xhaulOamPingCtlStorageType            StorageType,
+        xhaulOamPingCtlDescr                  SnmpAdminString,
+        xhaulOamPingCtlTestMode               INTEGER,
+        xhaulOamPingCtlAdminStatus            INTEGER,
+	   xhaulOamPingCtlFcName			  TFCName,
+        xhaulOamPingCtlServiceId              XhaulServId,
+        xhaulOamPingCtlSize                   Unsigned32,
+        xhaulOamPingCtlTimeOut                Unsigned32,
+        xhaulOamPingCtlProbeCount             Unsigned32,
+        xhaulOamPingCtlInterval               Unsigned32,
+        xhaulOamPingCtlTrapGeneration         BITS,
+        xhaulOamPingCtlRuns                   Counter32,
+        xhaulOamPingCtlFailures               Counter32,
+        xhaulOamPingCtlLastRunResult       XhaulOamTestResult,
+        xhaulOamPingCtlLastChanged            TimeStamp,
+        xhaulOamPingCtlTgtAddrType            InetAddressType,
+        xhaulOamPingCtlTgtAddress             InetAddress,
+        xhaulOamPingCtlSrcAddrType            InetAddressType,
+        xhaulOamPingCtlSrcAddress             InetAddress,
+        xhaulOamPingCtlIntervalUnits          INTEGER
+    }
+
+xhaulOamPingCtlOwnerIndex OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "To facilitate the provisioning of access control by a
+        security administrator using the View-Based Access
+        Control Model (RFC 2575, VACM) for tables in which
+        multiple users may need to independently create or
+        modify entries, the initial index is used as an 'owner
+        index'.  Such an initial index has a syntax of
+        SnmpAdminString, and can thus be trivially mapped to a
+        security name or group name as defined in VACM, in
+        accordance with a security policy.
+
+        When used in conjunction with such a security policy all
+        entries in the table belonging to a particular user (or
+        group) will have the same value for this initial index.
+        For a given user's entries in a particular table, the
+        object identifiers for the information in these entries
+        will have the same sub identifiers (except for the 'column'
+        sub identifier) up to the end of the encoded owner index.
+        To configure VACM to permit access to this portion of the
+        table, one would create vacmViewTreeFamilyTable entries
+        with the value of vacmViewTreeFamilySubtree including
+        the owner index portion, and vacmViewTreeFamilyMask
+        'wildcarding' the column sub identifier.  More elaborate
+        configurations are possible."
+    ::= { xhaulOamPingCtlEntry 1 }
+
+xhaulOamPingCtlTestIndex OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The test name index of the Nokia Xhaul device OAM ping test.
+         This is locally unique, within the scope of an
+         xhaulOamPingCtlOwnerIndex."
+    ::= { xhaulOamPingCtlEntry 2 }
+
+xhaulOamPingCtlRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object allows entries to be created and deleted
+         in the xhaulOamPingCtlTable.  Deletion of an entry in this
+         table results in all corresponding (same
+         xhaulOamPingCtlOwnerIndex and xhaulOamPingCtlTestIndex index
+         values) xhaulOamPingResultsTable entries being deleted.
+
+         Activation of a Nokia Xhaul device OAM ping operation is controlled
+         via xhaulOamPingCtlAdminStatus and not by changing
+         this object's value to active(1).
+
+         The values for configuration objects required for the type of
+         test specified in xhaulOamPingCtlTestMode MUST be specified
+         prior to a transition to active(1) state being
+         accepted.
+
+         Transitions in and out of active(1) state are not allowed while
+         an entry's xhaulOamPingResultsOperStatus is active(1) with the
+         exception that deletion of an entry in this table by setting
+         its RowStatus object to destroy(6) will stop an active Nokia Xhaul device
+         OAM ping operation.
+
+         The operational state of an Nokia Xhaul device OAM ping operation
+         can be determined by examination of its
+         xhaulOamPingResultsOperStatus object."
+    REFERENCE
+        "See definition of RowStatus in RFC 2579, 'Textual
+        Conventions for SMIv2.'"
+    ::= { xhaulOamPingCtlEntry 3 }
+
+xhaulOamPingCtlStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The storage type for this conceptual row."
+    DEFVAL { volatile }
+    ::= { xhaulOamPingCtlEntry 4 }
+
+xhaulOamPingCtlDescr OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The purpose of this object is to provide a
+         descriptive name of the OAM ping test."
+    DEFVAL      { ''H }   -- the empty string
+    ::= { xhaulOamPingCtlEntry 5 }
+
+xhaulOamPingCtlTestMode     OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    none (0),
+                    sdpPing (1),
+                    mtuPing (2),
+                    svcPing (3),
+                    -- macQuery (4),  obsolete
+                    macPing (5),
+                    macPopulate (6),
+                    macPurge (7),
+                    lspPing (8),
+                    vprnPing (9),
+                    atmPing (10),
+                    mfibPing (11),
+                    cpePing (12),
+                    mrInfo (13),
+                    vccvPing (14),
+                    icmpPing (15),
+                    dnsPing (16),
+                    ancpLoopback (17),
+                    p2mpLspPing (18),
+                    ethCfmLoopback (19),
+                    ethCfmTwoWayDelay (20),
+                    mobGtpPing (21),
+                    ethCfmTwoWaySlm (22)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlTestMode specifies the type of OAM ping test
+         defined by this row.
+
+         none    -  the test type is unspecified.
+
+         sdpPing -  tests SDP connectivity and round trip time.
+
+         mtuPing -  tests MTU path size.
+
+         svcPing -  determines the existence and operative state of the service
+                    ID on the far end ESR.  NOTE: This is a one-shot test.
+
+         macQuery - obsolete.  Originally specified functionality is as follows.
+                  - determines a specific address mapping for the service ID.
+                    See xhaulOamMacPingCtlTable for additional parameters.  NOTE:
+                    This is a one-shot test.
+
+         macPing -  determines address mappings for the service ID.  See
+                    xhaulOamMacPingCtlTable for additional parameters.
+
+         macPopulate - populates an OAM MAC address into the FIBs.  See
+                    xhaulOamMacPingCtlTable for additional parameters.  NOTE:
+                    This is a one-shot test.
+
+         macPurge - deletes an OAM MAC address from the FIBs.  See
+                    xhaulOamMacPingCtlTable for additional parameters.  NOTE:
+                    This is a one-shot test.
+
+         lspPing -  tests Label Switched Path (LSP) path connectivity and round
+                    trip time.  See xhaulOamLspPingCtlTable for additional
+                    parameters.
+
+         vprnPing - tests IP path connectivity and round trip time within a
+                    specified VPRN service.  See xhaulOamVprnPingCtlTable for
+                    additional parameters.
+
+         atmPing  - tests ATM path connectivity and round trip time on an ATM
+                    VCC.  See xhaulOamAtmPingCtlTable for additional parameters.
+
+         mfibPing - tests IP multicast connectivity and round trip time within a
+                    specified VPLS service.  See xhaulOamMfibPingCtlTable for
+                    additional parameters.
+
+         cpePing  - determines IP connectivity to a CPE within a specified VPLS
+                    service.  See xhaulOamCpePingCtlTable for additional
+                    parameters.
+
+         mrInfo   - Get multicast router's capabilities and the list of
+                    interfaces with neighbors.
+
+         vccvPing - Virtual Circuit Connectivity Verification, testing
+                    pseudowire connectivity and round trip time.  See
+                    xhaulOamVccvPingCtlTable for additional parameters.
+
+         icmpPing - tests IP connectivity and round trip time.  See
+                    xhaulOamIcmpPingCtlTable for additional parameters.
+
+         dnsPing  - tests DNS name resolution connectivity and round trip time.
+
+         ancpLoopback - send an OAM loopback test request to the access node.
+                    See xhaulOamAncpTestCtlTable for additional parameters.
+
+         p2mpLspPing - tests P2MP LSP path connectivity and round trip time.
+                    Test mode cannot be p2mpLspPing if SAA is enabled.  See
+                    xhaulOamP2mpLspPingCtlTable for additional parameters.
+
+         ethCfmLoopback - performs Ethernet Connectivity Fault Management (CFM)
+                    loopback tests.  This MIB supports the SAA form of this
+                    test only (the OAM form uses a separate set of objects - see
+                    IEEE8021-CFM-MIB).  Additional parameters for the SAA
+                    ethCfmLoopback test are in xhaulOamEthCfmPingCtlTable.
+
+         ethCfmTwoWayDelay - performs Ethernet Connectivity Fault Management
+                    (CFM) two way delay tests.  This MIB supports the SAA form
+                    of this test only (the OAM form uses a separate set of
+                    objects - see IEEE8021-CFM-MIB).  Additional parameters for
+                    the SAA ethCfmTwoWayDelay test are in
+                    xhaulOamEthCfmPingCtlTable.
+
+         mobGtpPing - tests GTP (GPRS Tunnelling Protocol) path connectivity. 
+
+         ethCfmTwoWaySlm - performs Ethernet Connectivity Fault Management
+                    (CFM) two way Synthetic Loss Measurement (SLM) tests. This
+                    MIB supports the SAA form of this test only (the OAM form
+                    uses a separate set of objects - see
+                    XHAUL-IEEE8021-CFM-MIB). Additional parameters for the SAA
+                    ethCfmTwoWaySlm test are in xhaulOamEthCfmPingCtlTable."
+    DEFVAL { none }
+    ::= { xhaulOamPingCtlEntry 6 }
+
+xhaulOamPingCtlAdminStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          enabled(1), -- test should be started
+                          disabled(2) -- test should be stopped
+                        }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Reflects the desired state that a xhaulOamPingCtlEntry should be
+         in:
+
+           enabled(1)  - Attempt to activate the test as defined by
+                         this xhaulOamPingCtlEntry.
+           disabled(2) - Deactivate the test as defined by this
+                         xhaulOamPingCtlEntry.
+
+         An attempt to set xhaulOamPingCtlAdminStatus to 'enabled' will fail
+         if the parameters required by a particular OAM ping test mode have
+         not been previously set.  Upon completion of an OAM ping test,
+         the agent will reset the value of this object to 'disabled'.
+         When this object has the value 'enabled' an attempt to modify
+         any of the test parameters will fail with an inconsistentValue
+         error.
+
+         If xhaulOamPingCtlTestMode equals either
+         'sdpPing' or 'mtuPing', xhaulOamPingCtlOrigSdpId must have already
+         been set.
+
+         If xhaulOamPingCtlTestMode equals 'mtuPing',
+         xhaulOamPingCtlMtuStartSize and xhaulOamPingCtlMtuEndSize must also
+         have already been set.
+
+         If xhaulOamPingCtlTestMode equals 'svcPing',
+         xhaulOamPingCtlTgtAddress and xhaulOamPingCtlServiceId must have
+         already been set.
+
+         If xhaulOamPingCtlTestMode equals 'cpePing',
+         xhaulOamPingCtlTgtAddress, and xhaulOamCpePingCtlSourceIpAddr
+         are required.
+
+         If xhaulOamPingCtlTestMode equals 'icmpPing', xhaulOamPingCtlTgtAddress
+         must have already been set.
+
+         If xhaulOamPingCtlTestMode equals 'dnsPing', xhaulOamPingCtlTgtAddress
+         must have already been set.
+
+         If xhaulOamPingCtlSAA has the value 'true' and xhaulOamSaaCtlAdminStatus
+         has a value 'outOfService', an attempt to set this object to 'enabled'
+         will fail with an inconsistentValue error.
+
+         Refer to the corresponding xhaulOamPingResultsOperStatus to determine
+         the operational state of the test defined by this entry."
+    DEFVAL { disabled }
+    ::= { xhaulOamPingCtlEntry 7 }
+
+
+xhaulOamPingCtlFcName       OBJECT-TYPE
+    SYNTAX      TFCName
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlFcName specifies the forwarding class to be
+         used when launching the probe(s).  The forwarding class name must be
+         present in the index column of XHAUL-QOS-MIB::tFCNameTable.  This
+         object is optional.
+
+         As shown in the following table
+         a) this object is applicable to a subset of the test types, and
+         b) this object is configurable for a subset of the test types, and
+         c) the default forwarding class depends on the test type.
+
+         xhaulOamPingCtlTestMode   Applicable?   Configurable?   Default
+         ----------------------   -----------   -------------   -------
+         'cpePing'                yes           yes             'be'
+         'ethCfmLoopback'         yes           yes             'nc'
+         'ethCfmTwoWayDelay'      yes           yes             'nc'
+          ethCfmTwoWaySlm'        yes           yes             'nc'
+         'icmpPing'               yes           yes             'nc'
+         'lspPing'                yes           yes             'be'
+         'macPing'                yes           yes             'be'
+         'p2mpLspPing'            yes           yes             'be'
+         'sdpPing'                yes           yes             'be'
+         'svcPing'                yes           no              'nc'
+         'vccvPing'               yes           yes             'be'
+         'vprnPing'               yes           yes             'be'
+         otherwise                no            N/A             N/A
+
+         For 'ethCfmLoopback','ethCfmTwoWayDelay', and 'ethCfmTwoWaySlm', the
+         forwarding class depends on whether the request is configured to egress
+         on a network port or an access port.  In the network port case, the
+         forwarding class is the forwarding class of the pseudowire.  In the
+         access port case, the forwarding class is that of the SAP's egress
+         encapsulation policy.
+
+         For 'lspPing' this is the forwarding class of the LSP tunnel.
+
+         For 'macPing' or 'sdpPing' this is the forwarding class of the SDP
+         encapsulation.
+
+         For 'p2mpLspPing' this is the forwarding class of the P2MP LSP tree.
+
+         For 'vccvPing' this is the forwarding class of the pseudowire.
+
+         If forwarding classes are mapped by the applicable QoS policy, the
+         probe(s) may be launched using a different forwarding class than the
+         forwarding class specified by this object."
+    DEFVAL { "be" }
+    ::= { xhaulOamPingCtlEntry 10 }
+
+
+xhaulOamPingCtlServiceId          OBJECT-TYPE
+    SYNTAX      XhaulServId (0..2147483647)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlServiceId specifies the service ID of the
+         service being tested.
+
+         The applicability of xhaulOamPingCtlServiceId varies with the test type,
+         as shown in the following table.
+
+         xhaulOamPingCtlTestMode   Applicability    Related Virtual Router Object
+         ----------------------   -------------    -----------------------------
+         'cpePing'                mandatory        none
+         'icmpPing'               optional         xhaulOamPingCtlVRtrID
+         'macPing'                mandatory        none
+         'macPopulate'            mandatory        none
+         'macPurge'               mandatory        none
+         'mfibPing'               mandatory        none
+         'mrInfo'                 optional         xhaulOamPingCtlVRtrID
+         'svcPing'                mandatory        none
+         'vprnPing'               mandatory        none
+         otherwise                not applicable   none
+
+         When xhaulOamPingCtlServiceId is mandatory, a non-zero value must be
+         provided.
+
+         When xhaulOamPingCtlServiceId is optional, it is used to specify a VPRN
+         service.  The test must use the VPRN service's virtual router.
+
+         When a related virtual router object is shown, the interaction is
+         described in the DESCRIPTION clause of the listed object.
+
+         Service IDs larger than 2147483647 are internal, so they are excluded
+         from the range.
+
+         The default value is the null service ID."
+    DEFVAL { 0 }
+    ::= { xhaulOamPingCtlEntry 17 }
+
+
+xhaulOamPingCtlSize               OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..2048)
+    UNITS       "octets"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlSize specifies the size of the OAM echo
+         request PDU.
+
+         The supported ranges, etc, for each test type are specified in the
+         following table.
+
+         xhaulOamPingCtlTestMode  Minimum  Maximum  Default  Auto Adjust
+         ----------------------  -------  -------  -------  -----------
+         'ethCfmLoopback'              0     1500        0           No
+         'ethCfmTwoWaySlm'             0     1500        0           No
+         'icmpPing'                    0    16384       56           No
+         'lspPing'                     1     9198        1          Yes
+         'macPing'                     1     9198       72          Yes
+         'mfibPing'                    1     9198       72          Yes
+         'p2mpLspPing'                 1     9198        1          Yes
+         'sdpPing'                    72     9198       72           No
+         'vccvPing'                    1     9198        1          Yes
+         'vprnPing'                    1     9198       72          Yes
+         otherwise                xhaulOamPingCtlSize is not significant
+
+         For a test type supporting Auto Adjust, if the xhaulOamPingCtlSize value
+         is too small, Nokia Xhaul device automatically chooses the next highest supported PDU
+         size.  For example, if xhaulOamPingCtlSize is 1 when a 'vccvPing' test
+         is started on a FEC 128 pseudowire, an 88 octet echo request PDU is
+         sent.
+
+         For a test type which does not support Auto Adjust, the
+         xhaulOamPingCtlSize value must lead to a valid echo request PDU size.
+
+         When xhaulOamPingCtlTestMode has a value of 'ethCfmLoopback' or
+         'ethCfmTwoWaySlm', xhaulOamPingCtlSize specifies the number of octets in
+         the Value field of the Data TLV of the applicable Y.1731 PDU.  If zero
+         is specified, the packet has no Data TLV.
+
+         When xhaulOamPingCtlTestMode has a value of 'icmpPing',
+         xhaulOamPingCtlSize specifies the payload size following the ICMP
+         header.
+
+         When the echo request PDU is encapsulated in an IP/GRE SDP, the IP 'DF'
+         (Don't Fragment) bit is set.  If any segment of the path between the
+         sender and receiver cannot handle the PDU size, the PDU is discarded.
+         MPLS LSPs are not expected to fragment the PDU either, as the message
+         contained in the LSP is not an IP packet."
+    REFERENCE
+        "RFC 4379, 'Detecting Multi-Protocol Label Switched (MPLS) Data Plane
+         Failures', Section 3.4, 'Pad TLV'.
+         ITU-T G.8013/Y.1731, 'OAM functions and mechanisms for Ethernet
+         based networks', 07/2011, Section 9, 'OAM PDU types'."
+    DEFVAL { 72 }
+    ::= { xhaulOamPingCtlEntry 20 }
+
+xhaulOamPingCtlTimeOut            OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..100)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlTimeOut specifies the time-out value,
+         in seconds, to be used during a test run.
+
+         Timers (with duration configured using the xhaulOamPingCtlTimeOut value)
+         are used in one of two ways during a test run.
+         1.  Per Probe:  a timer is started each time a probe is sent.  If the
+             timer expires before the probe response arrives, the probe is
+             declared failed.  This is the traditional time-out method for a
+             sequence of probes.
+             OR
+         2.  Per Test:  a timer is started once per test run, when the last
+             probe of the test run is sent.  ANY probe which does not have a
+             response when the timer expires is declared failed.
+
+         Xhaul device chooses 'Per Probe' or 'Per Test' based on the
+         xhaulOamPingCtlTestMode value.  The choice is not configurable.
+
+         The accepted minimum, maximum, and default values for
+         xhaulOamPingCtlTimeOut depend on xhaulOamPingCtlTestMode, as shown in the
+         following table.  The table also shows the timer usage for the test
+         mode.
+
+         xhaulOamPingCtlTestMode  Min  Max  Def   Timer Usage
+         ----------------------  ---  ---  ---   -----------
+         'atmPing'                 1   10    5   Per Probe
+         'dnsPing'                 1  120    5   Per Probe
+         'ethCfmLoopback'          1   10    5   Per Probe
+         'ethCfmTwoWayDelay'       1   10    5   Per Test
+         'ethCfmTwoWaySlm'         1   10    5   Per Test
+         'icmpPing'                1   10    5   Per Test
+         'lspPing'                 1   10    5   Per Probe
+         'macPing'                 1   10    5   Per Probe
+         'mfibPing'                1  100    5   Per Probe
+         'mtuPing'                 1   10    5   Per Probe
+         'p2mpLspPing'             1  120   10   Per Probe
+         'sdpPing'                 1   10    5   Per Probe
+         'vccvPing'                1   10    5   Per Probe
+         'vprnPing'                1  100    5   Per Probe
+         otherwise  .........  the value of xhaulOamPingCtlTimeOut is irrelevant"
+    DEFVAL { 5 }
+    ::= { xhaulOamPingCtlEntry 21 }
+
+xhaulOamPingCtlProbeCount OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..10)
+    UNITS       "probes"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlProbeCount specifies the number of probes to
+         send during the test.
+
+         The maximum probe count depends on the value of xhaulOamPingCtlTestMode,
+         as follows:
+           'macPopulate', 'macPurge','p2mpLspPing', 'svcPing' :      1
+           'ethCfmTwoWayDelay', 'ethCfmTwoWaySlm'             :   1000
+           'icmpPing'                                         : 100000
+           otherwise                                          :    100
+
+         For the following xhaulOamPingCtlTestMode values, the value of
+         xhaulOamPingCtlProbeCount does not affect the behavior of the test:
+         'mrInfo', 'mtuPing'.
+
+         If xhaulOamPingCtlTestMode is 'icmpPing', the default probe count value
+         is 5.  Otherwise, the DEFVAL applies."
+    DEFVAL { 1 }
+    ::= { xhaulOamPingCtlEntry 22 }
+
+xhaulOamPingCtlInterval           OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..10000)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlInterval specifies the time to wait between
+         the transmission of one OAM Echo request and the next.  The UNITS are
+         specified by xhaulOamPingCtlIntervalUnits.  For example, if
+         xhaulOamPingCtlInterval has the value 1, and xhaulOamPingCtlIntervalUnits
+         has the value 'centiseconds(2)', the interval between OAM Echo requests
+         is 0.01 seconds.
+
+         The applicability, range, and default value of the interval specified
+         using the xhaulOamPingCtlInterval and xhaulOamPingCtlIntervalUnits pair
+         vary with xhaulOamPingCtlTestMode , as shown
+         in the following table.
+
+         xhaulOamPingCtlTestMode   Supported Values (sec)           Default (sec)
+         'ethCfmLoopback'         1, 2, .. 10                           5
+         'ethCfmTwoWayDelay'      0.1, 0.2, .. 0.9;  1, 2, .. 10        5
+         'ethCfmTwoWaySlm'        0.1, 0.2, .. 0.9;  1, 2, .. 10        5
+         'icmpPing' with RAPID    0.01, 0.02, .. 100.00                 0.01
+         'icmpPing' without RAPID 1, 2, .. 10000                        1
+         'p2mpLspPing'            not applicable
+         otherwise                1, 2, .. 10                           1"
+    DEFVAL { 1 }
+    ::= { xhaulOamPingCtlEntry 23 }
+
+xhaulOamPingCtlTrapGeneration OBJECT-TYPE
+    SYNTAX      BITS {
+                   probeFailure(0),
+                   testFailure(1),
+                   testCompletion(2)
+                  }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlTrapGeneration specifies the
+         notification(s) to send for a test run.
+
+         Each bit enables the transmission of one notification, as follows.
+         'probeFailure(0)':  send one xhaulOamPingProbeFailedV3 notification if
+            at least M successive probes failed during the test run.  M is
+            configured using xhaulOamPingCtlTrapProbeFailureFilter.  
+         'testFailure(1)':  send one xhaulOamPingTestFailedV3 notification if at
+            least N probes failed during the test run.  N is configured using
+            xhaulOamPingCtlTrapTestFailureFilter.
+         'testCompletion(2)':  send one xhaulOamPingTestCompletedV3 notification
+            when the test run is complete."
+    DEFVAL { {} }
+    ::= { xhaulOamPingCtlEntry 25 }
+
+xhaulOamPingCtlRuns      OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlRuns indicates the number of times
+         this OAM ping test has been executed."
+    ::= { xhaulOamPingCtlEntry 29 }
+
+xhaulOamPingCtlFailures  OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlFailures indicates the number of times
+         this OAM ping test has failed."
+    ::= { xhaulOamPingCtlEntry 30 }
+
+xhaulOamPingCtlLastRunResult  OBJECT-TYPE
+    SYNTAX      XhaulOamTestResult
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlLastRunResult indicates the completion
+         status the last time this test was executed.  If this OAM test is
+         currently in progress, this object indicates the result of the
+         previous test run, if any."
+    ::= { xhaulOamPingCtlEntry 31 }
+
+xhaulOamPingCtlLastChanged   OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlLastChanged indicates the time the
+         value of a settable object in this row was last changed."
+    ::= { xhaulOamPingCtlEntry 32 }
+
+
+xhaulOamPingCtlTgtAddrType   OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlTgtAddrType specifies the address type of
+         xhaulOamPingCtlTgtAddress.
+
+         Values supported depend on xhaulOamPingCtlTestMode, as follows.
+           'cpePing ':              'ipv4(1)'
+           'dnsPing' :              'ipv4(1)' 'ipv6(2)'
+           'icmpPing':              'ipv4(1)' 'ipv6(2)' 'ipv6z(4)' 'dns(16)'
+           'mfibPing':              'ipv4(1)' 'ipv6(2)'
+           'mrInfo  ':              'ipv4(1)'                      'dns(16)'
+           'svcPing' :              'ipv4(1)'
+           'vccvPing': 'unknown(0)' 'ipv4(1)'
+           'vprnPing':              'ipv4(1)' 'ipv6(2)'
+           otherwise : 'unknown(0)'                                          "
+    DEFVAL { unknown }
+    ::= { xhaulOamPingCtlEntry 34 }
+
+xhaulOamPingCtlTgtAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlTgtAddress specifies the destination IP host
+         address to be used when performing an OAM ping operation.  The 
+         corresponding address type is configured using
+         xhaulOamPingCtlTgtAddrType.
+
+         For 'dnsPing' this is the address of the DNS server host that will be
+         asked to resolve a dns name specified by xhaulOamPingCtlDnsName."
+    DEFVAL { ''H }
+    ::= { xhaulOamPingCtlEntry 35 }
+
+xhaulOamPingCtlSrcAddrType   OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlSrcAddrType specifies the address type of
+         xhaulOamPingCtlSrcAddress.
+
+         Only 'ipv4' and 'ipv6' address types are supported."
+    DEFVAL { unknown }
+    ::= { xhaulOamPingCtlEntry 36 }
+
+xhaulOamPingCtlSrcAddress OBJECT-TYPE
+    SYNTAX      InetAddress  (SIZE(0|4|16))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlSrcAddress specifies the source IP host
+         address to be used when performing an OAM ping operation.  The 
+         corresponding address type is configured using 
+         xhaulOamPingCtlSrcAddrType.
+
+         This is an optional parameter.  It is used when xhaulOamPingCtlTestMode
+         is 'icmpPing', 'dnsPing', 'lspPing', 'p2mpLspPing' (LDP), or
+         'vccvPing'."
+    DEFVAL { ''H }
+    ::= { xhaulOamPingCtlEntry 37 }
+
+xhaulOamPingCtlIntervalUnits      OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    seconds(1),
+                    centiseconds(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingCtlIntervalUnits specifies the units for
+         xhaulOamPingCtlInterval.  For example, if xhaulOamPingCtlIntervalUnits
+         has the value 'centiseconds(2)', and xhaulOamPingCtlInterval has the
+         value 10, the test's interval is 0.1 seconds.
+
+         The supported combinations of xhaulOamPingCtlIntervalUnits,
+         xhaulOamPingCtlInterval, xhaulOamPingCtlTestMode are specified in the 
+         xhaulOamPingCtlInterval DESCRIPTION clause."
+    DEFVAL { seconds }
+    ::= { xhaulOamPingCtlEntry 40 }
+
+
+--
+-- Nokia XHAUL devices OAM Ping Results Table
+--
+
+xhaulOamPingResultsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamPingResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines the OAM Ping Results Table for providing
+         the capability of performing OAM ping operations.  The
+         results of these operations are stored in the
+         xhaulOamPingResultsTable.
+
+         An entry is added to the xhaulOamPingResultsTable when an
+         xhaulOamPingCtlEntry is started by successful transition
+         of its xhaulOamPingCtlAdminStatus object to enabled(1).
+
+         An entry is removed from the xhaulOamPingResultsTable when
+         its corresponding xhaulOamPingCtlEntry is deleted."
+    ::= { xhaulOamPingObjs 4 }
+
+xhaulOamPingResultsEntry OBJECT-TYPE
+    SYNTAX      XhaulOamPingResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines an entry in the xhaulOamPingResultsTable.  The
+         xhaulOamPingResultsTable has the same indexing as the
+         xhaulOamPingCtlTable in order for a xhaulOamPingResultsEntry to
+         correspond to the xhaulOamPingCtlEntry that caused it to
+         be created.
+
+         An entry in this table summarizes results from multiple
+         invocations of the test configured by the corresponding
+         entry in xhaulOamPingCtlTable."
+    INDEX {
+             xhaulOamPingCtlOwnerIndex,
+             xhaulOamPingCtlTestIndex,
+             xhaulOamPingResultsTestRunIndex
+          }
+    ::= { xhaulOamPingResultsTable 1 }
+
+XhaulOamPingResultsEntry ::=
+    SEQUENCE {
+        xhaulOamPingResultsOperStatus          INTEGER,
+        xhaulOamPingResultsMinRtt              Unsigned32,
+        xhaulOamPingResultsMaxRtt              Unsigned32,
+        xhaulOamPingResultsAverageRtt          Unsigned32,
+        xhaulOamPingResultsProbeResponses      Unsigned32,
+        xhaulOamPingResultsSentProbes          Unsigned32,
+        xhaulOamPingResultsLastGoodProbe       DateAndTime,
+        xhaulOamPingResultsProbeTimeouts       Unsigned32,
+        xhaulOamPingResultsProbeFailures       Unsigned32,
+        xhaulOamPingResultsTestRunIndex        Unsigned32,
+        xhaulOamPingResultsTestRunResult       XhaulOamTestResult
+    }
+
+xhaulOamPingResultsOperStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          enabled(1),  -- test is in progress
+                          disabled(2)  -- test has stopped
+                        }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Reflects the operational state of a xhaulOamPingCtlEntry:
+           enabled(1)   - Test is active.
+           disabled(2)  - Test has stopped."
+    ::= { xhaulOamPingResultsEntry 1 }
+
+xhaulOamPingResultsMinRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The minimum OAM ping round-trip-time (RTT) received."
+    ::= { xhaulOamPingResultsEntry 4 }
+
+xhaulOamPingResultsMaxRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The maximum OAM ping round-trip-time (RTT) received.
+         A value of 0 for this object implies that no RTT has been received."
+    ::= { xhaulOamPingResultsEntry 5 }
+
+xhaulOamPingResultsAverageRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current average OAM ping round-trip-time (RTT)."
+    ::= { xhaulOamPingResultsEntry 6 }
+
+
+xhaulOamPingResultsProbeResponses OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "responses"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Number of responses received for the corresponding
+         xhaulOamPingCtlEntry and xhaulOamPingResultsEntry.  The value of
+         this object MUST be reported as 0 when no probe responses have
+         been received."
+    ::= { xhaulOamPingResultsEntry 10 }
+
+xhaulOamPingResultsSentProbes OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "probes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of this object reflects the number of probes sent
+         for the corresponding xhaulOamPingCtlEntry and xhaulOamPingResultsEntry.
+         The value of this object MUST be reported as 0 when no probes
+         have been sent."
+    ::= { xhaulOamPingResultsEntry 11 }
+
+xhaulOamPingResultsLastGoodProbe OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Date and time when the last response was received for
+         an OAM probe.  If a response has not been received,
+         '1970-1-1,0:0:0.0,+0:0' is returned."
+    ::= { xhaulOamPingResultsEntry 12 }
+
+xhaulOamPingResultsProbeTimeouts     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingResultsProbeTimeouts indicates the number
+         of probes timed out without receiving a response."
+    ::= { xhaulOamPingResultsEntry 25 }
+
+xhaulOamPingResultsProbeFailures     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingResultsProbeFailures indicates the total
+         number of probes that failed to be transmitted plus the number of
+         probes that timed out without receiving a response."
+    ::= { xhaulOamPingResultsEntry 26 }
+
+xhaulOamPingResultsTestRunIndex      OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamPingResultsTestRunIndex identifies the
+         row entry that reports results for a single OAM test run.
+
+         The agent starts assigning xhaulOamPingResultsTestRunIndex values
+         at 1 and wraps after exceeding the maximum possible value as
+         defined by the limit of this object."
+    ::= { xhaulOamPingResultsEntry 27 }
+
+xhaulOamPingResultsTestRunResult  OBJECT-TYPE
+    SYNTAX      XhaulOamTestResult
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The object contains the overall state of the ping test."
+    ::= { xhaulOamPingResultsEntry 34 }
+
+
+--
+--  Nokia XHAUL devices OAM Label Switched Path (LSP) Ping 
+--  Control Table
+--
+
+xhaulOamLspPingCtlTable           OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamLspPingCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row in xhaulOamLspPingCtlTable contains the LSP-specific
+         configuration information needed to launch an LSP (Label Switched Path)
+         ping test.  The rest of the configuration information needed to launch
+         the test resides in the corresponding row of xhaulOamPingCtlTable.
+
+         Results of LSP ping tests are stored in xhaulOamPingResultsTable and
+         xhaulOamPingHistoryTable.
+
+         Four types of LSP ping tests are supported:  BGP Labeled Prefix, LDP
+         Prefix, RSVP LSP, and Transport Profile Static.  Abbreviated LSP ping
+         test type names are used in the table below.  In the BGP Labeled Prefix
+         and Transport Profile Static cases, the test type is configured (using
+         xhaulOamLspPingCtlTestSubMode).  In the other two cases, the test type
+         is not configured (i.e. the default xhaulOamLspPingCtlTestSubMode value
+         'unspecified(1)' is used).
+
+         The following table has a row for each LSP ping test type, showing the
+         mandatory and optional objects applicable to the test type.
+
+         Test
+         Type   Mandatory Objects               Optional Objects
+         ---- -------------------------------- ---------------------------------
+         BGP  xhaulOamLspPingCtlLdpPrefixType   *xhaulOamLspPingCtlNhAddressType
+              xhaulOamLspPingCtlLdpPrefix       *xhaulOamLspPingCtlNhAddress
+              xhaulOamLspPingCtlLdpPrefixLen     xhaulOamLspPingCtlNhIntfName
+              xhaulOamLspPingCtlTestSubMode     #xhaulOamLspPingCtlPathDestType
+                                               #xhaulOamLspPingCtlPathDest
+
+         LDP  xhaulOamLspPingCtlLdpPrefixType   *xhaulOamLspPingCtlNhAddressType
+              xhaulOamLspPingCtlLdpPrefix       *xhaulOamLspPingCtlNhAddress
+              xhaulOamLspPingCtlLdpPrefixLen     xhaulOamLspPingCtlNhIntfName
+                                               #xhaulOamLspPingCtlPathDestType
+                                               #xhaulOamLspPingCtlPathDest
+
+         RSVP xhaulOamLspPingCtlLspName          xhaulOamLspPingCtlPathName
+
+         TPST xhaulOamLspPingCtlLspName          xhaulOamLspPingCtlForce
+              xhaulOamLspPingCtlTestSubMode      xhaulOamLspPingCtlAssocChannel
+                                               *xhaulOamLspPingCtlMplsTpGlobalId
+                                               *xhaulOamLspPingCtlMplsTpNodeId
+                                                xhaulOamLspPingCtlMplsTpPathType
+
+         ALL  N/A                               xhaulOamLspPingCtlTtl
+                                                xhaulOamPingCtlFcName
+                                                xhaulOamPingCtlInterval
+                                                xhaulOamPingCtlProbeCount
+                                                xhaulOamPingCtlProfile
+                                                xhaulOamPingCtlSize
+                                               *xhaulOamPingCtlSrcAddrType
+                                               *xhaulOamPingCtlSrcAddress
+                                                xhaulOamPingCtlTimeOut
+         ---- -------------------------------- ---------------------------------
+
+         In the table above,
+         1.  The optional objects in the ALL row apply to all four LSP ping test
+             types.
+         2.  Asterisks (*) mark a set of optional objects which must all be
+             specified, or must all be unspecified.
+         3.  Octothorpes (#) mark a separate set of optional objects which must
+             all be specified, or must all be unspecified.
+         4.  There are four supported combinations of
+             xhaulOamLspPingCtlNhAddressType, xhaulOamLspPingCtlNhAddress,
+             xhaulOamLspPingCtlNhIntfName, xhaulOamLspPingCtlPathDestType, and
+             xhaulOamLspPingCtlPathDest, as follows:
+             a) all unspecified
+             b) xhaulOamLspPingCtlPathDestType and xhaulOamLspPingCtlPathDest
+             c) xhaulOamLspPingCtlPathDestType, xhaulOamLspPingCtlPathDest, and
+                xhaulOamLspPingCtlNhIntfName
+             d) xhaulOamLspPingCtlPathDestType, xhaulOamLspPingCtlPathDest,
+                xhaulOamLspPingCtlNhAddressType, and xhaulOamLspPingCtlNhAddress
+
+         When an object combination other than a combination listed above is
+         specified, values will be rejected or ignored, or the test will fail."
+    REFERENCE
+        "RFC 4379, 'Detecting Multi-Protocol Label Switched (MPLS) Data Plane
+         Failures'.
+         RFC 6426, 'MPLS On-Demand Connectivity Verification and Route Tracing'"
+    ::= { xhaulOamPingObjs 9 }
+
+xhaulOamLspPingCtlEntry           OBJECT-TYPE
+    SYNTAX      XhaulOamLspPingCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The system creates a row in xhaulOamLspPingCtlTable when a row is
+         created in xhaulOamPingCtlTable with xhaulOamPingCtlTestMode set to
+         'lspPing'.
+
+         The system deletes a row in xhaulOamLspPingCtlTable when the
+         corresponding row in xhaulOamPingCtlTable is deleted."
+    INDEX {
+        xhaulOamPingCtlOwnerIndex,
+        xhaulOamPingCtlTestIndex
+    }
+    ::= { xhaulOamLspPingCtlTable 1 }
+
+XhaulOamLspPingCtlEntry ::=
+    SEQUENCE {
+        xhaulOamLspPingCtlLspName         TLNamedItemOrEmpty,
+        xhaulOamLspPingCtlLdpPrefixType   InetAddressType,
+        xhaulOamLspPingCtlLdpPrefix       InetAddress,
+        xhaulOamLspPingCtlLdpPrefixLen    InetAddressPrefixLength,
+        xhaulOamLspPingCtlTestSubMode     XhaulOamLspTestSubMode
+    }
+
+xhaulOamLspPingCtlLspName         OBJECT-TYPE
+    SYNTAX      TLNamedItemOrEmpty
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspPingCtlLspName specifies the name of the LSP for
+         this LSP ping test.
+
+         When the test is started, if this name is not empty, there must be a
+         XHAUL-MPLS-MIB::vRtrMplsLspTable row with:
+         1.  xhaulOamLspPingCtlLspName equal to
+             XHAUL-MPLS-MIB::vRtrMplsLspName, AND
+         2.  XHAUL-VRTR-MIB::vRtrID equal to 1.
+         Otherwise, the test will fail.
+
+         The supported object combinations for LSP ping tests are listed in the
+         xhaulOamLspPingCtlTable DESCRIPTION clause."
+    DEFVAL { ''H }
+    ::= { xhaulOamLspPingCtlEntry 2 }
+
+xhaulOamLspPingCtlLdpPrefixType   OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspPingCtlLdpPrefixType specifies the type of
+         Internet address stored in xhaulOamLspPingCtlLdpPrefix.
+
+         The supported object combinations for LSP ping tests are listed in the
+         xhaulOamLspPingCtlTable DESCRIPTION clause."
+    DEFVAL { unknown }
+    ::= { xhaulOamLspPingCtlEntry 8 }
+
+xhaulOamLspPingCtlLdpPrefix       OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (0|4|16))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspPingCtlLdpPrefix, along with
+         xhaulOamLspPingCtlLdpPrefixType and xhaulOamLspPingCtlLdpPrefixLen,
+         specifies the destination prefix for this LSP ping test.
+
+         The supported object combinations for LSP ping tests are listed in the
+         xhaulOamLspPingCtlTable DESCRIPTION clause."
+    DEFVAL { ''H }
+    ::= { xhaulOamLspPingCtlEntry 9 }
+
+xhaulOamLspPingCtlLdpPrefixLen    OBJECT-TYPE
+    SYNTAX      InetAddressPrefixLength
+    UNITS       "bits"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspPingCtlLdpPrefixLen specifies the Internet
+         address prefix length of xhaulOamLspPingCtlLdpPrefix.
+
+         The supported object combinations for LSP ping tests are listed in the
+         xhaulOamLspPingCtlTable DESCRIPTION clause."
+    DEFVAL { 32 }
+    ::= { xhaulOamLspPingCtlEntry 10 }
+
+xhaulOamLspPingCtlTestSubMode     OBJECT-TYPE
+    SYNTAX      XhaulOamLspTestSubMode
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspPingCtlTestSubMode specifies the type of LSP
+         ping test to perform.
+
+         When this object is 'unspecified(1)', the type of LSP ping test to be
+         performed is determined when the test is started, from the set of
+         xhaulOamLspPingCtlTable objects configured with non-default values.
+
+         If there is a mismatch between xhaulOamLspPingCtlTestSubMode and the
+         type of the LSP to be tested, the test will fail.  For example, if
+         xhaulOamLspPingCtlTestSubMode is 'static(2)', and
+         xhaulOamLspPingCtlLspName refers to an LSP with
+         XHAUL-MPLS-MIB::vRtrMplsLspType not equal to 'mplsTp(7)', the test
+         will fail.
+
+         The supported object combinations for LSP ping tests are listed in the
+         xhaulOamLspPingCtlTable DESCRIPTION clause."
+    DEFVAL { unspecified }
+    ::= { xhaulOamLspPingCtlEntry 16 }
+
+
+--
+--  Nokia XHAUL devices OAM ICMP Ping Control Table
+--
+--  Sparse Dependent Extension of the xhaulOamPingCtlTable.
+--
+--  The same indexes are used for both the base table, xhaulOamPingCtlTable,
+--  and the sparse dependent table, xhaulOamIcmpPingCtlTable.
+--
+--  This in effect extends the xhaulOamPingCtlTable with additional columns.
+--  Rows are created in the xhaulOamIcmpPingCtlTable only for those entries
+--  in the xhaulOamPingCtlTable where xhaulOamPingCtlTestMode has a value of
+--  'icmpPing'.
+--
+--  Deletion of a row in the xhaulOamPingCtlTable results in the
+--  deletion of the row in the xhaulOamIcmpPingCtlTable.
+--
+xhaulOamIcmpPingCtlTable     OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamIcmpPingCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines the Nokia Xhaul device OAM ICMP Ping Control Table for 
+         providing, via SNMP, the capability of performing Nokia Xhaul device
+         OAM 'icmpPing' test operations.
+
+         The results of these tests are stored in the xhaulOamPingResultsTable
+         and the xhaulOamPingHistoryTable."
+    ::= { xhaulOamPingObjs 18 }
+
+xhaulOamIcmpPingCtlEntry OBJECT-TYPE
+    SYNTAX      XhaulOamIcmpPingCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines an entry in the xhaulOamIcmpPingCtlTable.  The first index
+         element, xhaulOamPingCtlOwnerIndex, is of type SnmpAdminString,
+         a textual convention that allows for use of the SNMPv3
+         View-Based Access Control Model (RFC 2575 [11], VACM)
+         and allows a management application to identify its entries.
+         The second index, xhaulOamPingCtlTestIndex, enables the same
+         management application to have multiple outstanding requests."
+    INDEX {
+             xhaulOamPingCtlOwnerIndex,
+             xhaulOamPingCtlTestIndex
+          }
+    ::= { xhaulOamIcmpPingCtlTable 1 }
+
+XhaulOamIcmpPingCtlEntry ::=
+    SEQUENCE {
+        xhaulOamIcmpPingCtlDoNotFragment     TruthValue,
+        xhaulOamIcmpPingCtlEgrIfName         TNamedItemOrEmpty
+    }
+
+xhaulOamIcmpPingCtlDoNotFragment     OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamIcmpPingCtlDoNotFragment specifies whether or
+         not the 'DF' (Don't Fragment) bit is set in the ICMP ping packet.
+
+         When xhaulOamIcmpPingCtlDoNotFragment has the value 'false',
+         the 'DF' bit is not set."
+    DEFVAL { false }
+    ::= { xhaulOamIcmpPingCtlEntry 9 }
+
+xhaulOamIcmpPingCtlEgrIfName    OBJECT-TYPE
+    SYNTAX     TNamedItemOrEmpty
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamIcmpPingCtlEgrIfName specifies the name of the
+         interface to use to transmit the ICMP ping packets.  The value
+         provided is accepted whether or not it is a known interface name
+         (validation is done as part of executing the test).
+
+         When xhaulOamIcmpPingCtlEgrIfName is Set, the given interface name
+         string is stored.  When xhaulOamIcmpPingCtlEgrIfName is read, the
+         interface name string is returned."
+    DEFVAL { ''H }  -- empty string
+    ::= { xhaulOamIcmpPingCtlEntry 10 }
+
+
+--
+-- Nokia Xhaul devices OAM Traceroute Control Table
+--
+
+xhaulOamTrCtlTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamTrCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines the Alcatel-Lucent SROS OAM Trace Route Control Table for
+         providing the capability of invoking OAM trace route tests from
+         SNMP.  The results of trace route operations can be stored in
+         the xhaulOamTrResultsTable, xhaulOamTrProbeHistoryTable, and
+         the xhaulOamTrHopsTable."
+    ::= { xhaulOamTraceRouteObjs 3 }
+
+xhaulOamTrCtlEntry OBJECT-TYPE
+    SYNTAX      XhaulOamTrCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines an entry in the xhaulOamTrCtlTable.  The first
+         index element, xhaulOamTrCtlOwnerIndex, is of type
+         SnmpAdminString, a textual convention that allows for
+         use of the SNMPv3 View-Based Access Control Model
+         (RFC 2575 [11], VACM) and allows an management
+         application to identify its entries.  The second index,
+         xhaulOamTrCtlTestIndex (also an SnmpAdminString),
+         enables the same management application to have
+         multiple requests outstanding."
+    INDEX {
+           xhaulOamTrCtlOwnerIndex,
+           xhaulOamTrCtlTestIndex
+          }
+    ::= { xhaulOamTrCtlTable 1 }
+
+XhaulOamTrCtlEntry ::=
+    SEQUENCE {
+     xhaulOamTrCtlOwnerIndex         SnmpAdminString,
+     xhaulOamTrCtlTestIndex          SnmpAdminString,
+     xhaulOamTrCtlRowStatus          RowStatus,
+     xhaulOamTrCtlStorageType        StorageType,
+     xhaulOamTrCtlDescr              SnmpAdminString,
+     xhaulOamTrCtlTestMode           INTEGER,
+     xhaulOamTrCtlAdminStatus        INTEGER,
+     xhaulOamTrCtlFcName             TFCName,
+     xhaulOamTrCtlServiceId          XhaulServId,
+     xhaulOamTrCtlDataSize           Unsigned32,
+     xhaulOamTrCtlTimeOut            Unsigned32,
+     xhaulOamTrCtlProbesPerHop       Unsigned32,
+     xhaulOamTrCtlMaxTtl             Unsigned32,
+     xhaulOamTrCtlInterval           Unsigned32,
+     xhaulOamTrCtlTrapGeneration     BITS,
+     xhaulOamTrCtlRuns               Counter32,
+     xhaulOamTrCtlFailures           Counter32,
+     xhaulOamTrCtlLastRunResult      XhaulOamTestResult,
+     xhaulOamTrCtlLastChanged        TimeStamp,
+     xhaulOamTrCtlTgtAddrType        InetAddressType,
+     xhaulOamTrCtlTgtAddress         InetAddress,
+     xhaulOamTrCtlSrcAddrType        InetAddressType,
+     xhaulOamTrCtlSrcAddress         InetAddress
+    }
+
+xhaulOamTrCtlOwnerIndex OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "To facilitate the provisioning of access control by a
+        security administrator using the View-Based Access
+        Control Model (RFC 2575, VACM) for tables in which
+        multiple users may need to independently create or
+        modify entries, the initial index is used as an 'owner
+        index'.  Such an initial index has a syntax of
+        SnmpAdminString, and can thus be trivially mapped to a
+        security name or group name as defined in VACM, in
+        accordance with a security policy.
+
+        When used in conjunction with such a security policy
+        all entries in the table belonging to a particular user
+        (or group) will have the same value for this initial
+        index.  For a given user's entries in a particular
+        table, the object identifiers for the information in
+        these entries will have the same subidentifiers (except
+        for the 'column' subidentifier) up to the end of the
+        encoded owner index. To configure VACM to permit access
+        to this portion of the table, one would create
+        vacmViewTreeFamilyTable entries with the value of
+        vacmViewTreeFamilySubtree including the owner index
+        portion, and vacmViewTreeFamilyMask 'wildcarding' the
+        column subidentifier.  More elaborate configurations
+        are possible."
+    ::= { xhaulOamTrCtlEntry 1 }
+
+xhaulOamTrCtlTestIndex OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The test name index of a Alcatel-Lucent SROS OAM Trace Route test.
+         This is locally unique, within the scope of a xhaulOamTrCtlOwnerIndex."
+    ::= { xhaulOamTrCtlEntry 2 }
+
+xhaulOamTrCtlRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object allows entries to be created and deleted
+         in the xhaulOamTrCtlTable.  Deletion of an entry in
+         this table results in all corresponding (same
+         xhaulOamTrCtlOwnerIndex and xhaulOamTrCtlTestIndex
+         index values) xhaulOamTrResultsTable,
+         xhaulOamTrProbeHistoryTable, and xhaulOamTrHopsTable
+         entries being deleted.
+
+         The values for configuration objects required for the type of
+         test specified in xhaulOamTrCtlTestMode MUST be specified
+         prior to a transition to active(1) state being
+         accepted.
+
+         Activation of an Alcatel-Lucent SROS OAM Trace Route operation is
+         controlled via xhaulOamTrCtlAdminStatus and not
+         by transitioning of this object's value to active(1).
+
+         Transitions in and out of active(1) state are not
+         allowed while an entry's xhaulOamTrResultsOperStatus
+         is active(1) with the exception that deletion of
+         an entry in this table by setting its RowStatus
+         object to destroy(6) will stop an active Nokia Xhaul device OAM Trace Route operation.
+
+         The operational state of an Nokia Xhaul device OAM Trace Route
+         operation can be determined by examination of the corresponding
+         xhaulOamTrResultsOperStatus object."
+    REFERENCE
+        "See definition of RowStatus in RFC 2579, 'Textual
+        Conventions for SMIv2.'"
+    ::= { xhaulOamTrCtlEntry 3 }
+
+xhaulOamTrCtlStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The storage type for this conceptual row.
+         Conceptual rows having the value 'permanent' need not
+         allow write-access to any columnar objects in the row."
+    DEFVAL { volatile }
+    ::= { xhaulOamTrCtlEntry 4 }
+
+xhaulOamTrCtlDescr OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The purpose of this object is to provide a descriptive name of
+         the Alcatel-Lucent SROS OAM Trace Route test."
+    DEFVAL { '00'H }
+    ::= { xhaulOamTrCtlEntry 5 }
+
+xhaulOamTrCtlTestMode     OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    none (0),
+                    macTraceRoute (1),
+                    lspTraceRoute (2),
+                    vprnTraceRoute (3),
+                    mcastTraceRoute (4),
+                    icmpTraceRoute (5),
+                    ldpTreeTrace (6),
+                    vccvTraceRoute (7),
+                    p2mpLspTrace (8),
+                    ethCfmLinkTrace (9)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlTestMode specifies the type of trace route
+         test defined by this row.  The configuration parameters unique to a
+         specific test type are to be found in a sparsely dependent extension
+         table for that test type.
+
+         'ldpTreeTrace', 'mcastTraceRoute', and 'p2mpLspTrace' are supported for
+         non-SAA tests only.
+
+         'ethCfmLinkTrace' is supported for SAA tests only.
+
+         This is a required parameter."
+    DEFVAL { none }
+    ::= { xhaulOamTrCtlEntry 6 }
+
+xhaulOamTrCtlAdminStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          enabled(1), -- operation should be started
+                          disabled(2) -- operation should be stopped
+                        }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Reflects the desired state that a xhaulOamTrCtlEntry
+         should be in:
+           enabled(1)  - Attempt to activate the test as defined by
+                         this xhaulOamTrCtlEntry.
+           disabled(2) - Deactivate the test as defined by this
+                         xhaulOamTrCtlEntry.
+
+         If xhaulOamTrCtlSAA has the value 'true' and xhaulOamSaaCtlAdminStatus
+         has the value 'outOfService', an attempt to set this object to
+         'enabled' will fail with an inconsistentValue error.
+
+         Refer to the corresponding xhaulOamTrResultsOperStatus to
+         determine the operational state of the test defined by
+         this entry."
+    DEFVAL { disabled }
+    ::= { xhaulOamTrCtlEntry 7 }
+
+xhaulOamTrCtlFcName       OBJECT-TYPE
+    SYNTAX      TFCName
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlFcName specifies the forwarding class to be
+         used when launching the probe(s).  The forwarding class name must be
+         present in the index column of XHAUL-QOS-MIB::tFCNameTable.  This
+         object is optional.
+
+         As shown in the following table
+         a) this object is applicable to a subset of the test types, and
+         b) the default forwarding class depends on the test type.
+
+         xhaulOamTrCtlTestMode   Applicable?   Default
+         --------------------   -----------   -------
+         ethCfmLinkTrace        yes           'nc'
+         ldpTreeTrace           yes           'be'
+         lspTraceRoute          yes           'be'
+         macTraceRoute          yes           'be'
+         p2mpLspTrace           yes           'be'
+         vccvTraceRoute         yes           'be'
+         vprnTraceRoute         yes           'be'
+         otherwise              no            N/A
+
+         For 'ethCfmLinkTrace', the forwarding class depends on whether the
+         request is configured to egress on a network port or an access port.
+         In the network port case, the forwarding class is the forwarding class
+         of the pseudowire.  In the access port case, the forwarding class is
+         that of the SAP's egress encapsulation policy.
+
+         For 'lspTraceRoute' this is the forwarding class of the LSP tunnel.
+
+         For 'macTraceRoute' this is the forwarding class of the SDP
+         encapsulation.
+
+         For 'p2mpLspTrace' this is the forwarding class of the P2MP LSP tree.
+
+         If forwarding classes are mapped by the applicable QoS policy, the
+         probe(s) may be launched using a different forwarding class than the
+         forwarding class specified by this object."
+    DEFVAL { "be" }
+    ::= { xhaulOamTrCtlEntry 8 }
+
+
+xhaulOamTrCtlServiceId            OBJECT-TYPE
+    SYNTAX      XhaulServId (0..2147483647)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlServiceId specifies the service ID of the
+         service being tested.
+
+         The applicability of xhaulOamTrCtlServiceId varies with the test type,
+         as shown in the following table.
+
+         xhaulOamTrCtlTestMode   Applicability    Related Virtual Router Object
+         --------------------   -------------    -----------------------------
+         'icmpTraceRoute'       optional         xhaulOamTrCtlVRtrID
+         'macTraceRoute'        mandatory        none
+         'mcastTraceRoute'      optional         xhaulOamMcastTrCtlVRtrID
+         'vprnTraceRoute'       mandatory        none
+         otherwise              not applicable   none
+
+         When xhaulOamTrCtlServiceId is mandatory, a non-zero value must be
+         provided.
+
+         When xhaulOamTrCtlServiceId is optional, it is used to specify a VPRN
+         service.  The test must use the VPRN service's virtual router.
+
+         When a related virtual router object is shown, the interaction is
+         described in the DESCRIPTION clause of the listed object.
+
+         Service IDs larger than 2147483647 are internal, so they are excluded
+         from the range.
+
+         The default value is the null service ID."
+    DEFVAL { 0 }
+    ::= { xhaulOamTrCtlEntry 11 }
+
+xhaulOamTrCtlDataSize             OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..9198)
+    UNITS       "octets"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlDataSize specifies the size of the data
+         portion of the Trace Route request, in octets.  The size of the request
+         does not include the SDP encapsulation, VC-Label (if applied) or any
+         DLC headers or trailers.  This parameter is optional.
+
+         The value of xhaulOamTrCtlDataSize is significant if the test type
+         (i.e. xhaulOamTrCtlTestMode) is 'lspTraceRoute', 'macTraceRoute',
+         'p2mpLspTrace', 'vccvTraceRoute', or 'vprnTraceRoute'.
+
+         If the request PDU required for the specified test is larger than the
+         PDU size indicated by xhaulOamTrCtlDataSize, SROS sends the smallest
+         valid PDU larger than the size indicated.  For example, if
+         xhaulOamTrCtlDataSize is 1 when a 'vccvTraceRoute' test is started on a
+         FEC 128 pseudowire, an 88 octet request PDU is sent.
+
+         When the OAM message is encapsulated in an IP/GRE SDP, the IP 'DF'
+         (Don't Fragment) bit is set.  If any segment of the path between the
+         sender and receiver cannot handle the message size, the message is
+         discarded.  MPLS LSPs are not expected to fragment the message either,
+         as the message contained in the LSP is not an IP packet."
+    DEFVAL { 1 }
+    ::= { xhaulOamTrCtlEntry 12 }
+
+xhaulOamTrCtlTimeOut OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..60)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Specifies the time-out value, in seconds, for an Alcatel-Lucent SROS
+         OAM Trace Route request.  This parameter is optional.
+
+         For 'ethCfmLinkTrace', this is the time out for the whole test.
+
+         The minimum, maximum, and default values of this object vary with
+         xhaulOamTrCtlTestMode, as follows:
+           'icmpTraceRoute' :  N/A N/A N/A
+           'ethCfmLinkTrace':    1  10   5
+            otherwise       :    1  60   3
+
+        If xhaulOamTrCtlTestMode is 'ethCfmLinkTrace', the value of
+        xhaulOamTrCtlTimeOut must be less than or equal to the value of
+        xhaulOamTrCtlInterval."
+    DEFVAL { 3 }
+    ::= { xhaulOamTrCtlEntry 13 }
+
+xhaulOamTrCtlProbesPerHop OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..10)
+    UNITS       "probes"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Specifies the number of times to reissue an Alcatel-Lucent SROS OAM
+         Trace Route request with the same time-to-live (TTL) value.
+         This parameter is optional.
+
+         This parameter is not configurable for 'icmpTraceRoute';
+         a default value of 3 is used."
+    DEFVAL { 1 }
+    ::= { xhaulOamTrCtlEntry 14 }
+
+xhaulOamTrCtlMaxTtl OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..255)
+    UNITS       "time-to-live value"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlMaxTtl specifies the maximum time-to-live
+        value.  This parameter is optional.
+
+        When xhaulOamTrCtlMaxTtl is not explicitly specified, the agent
+        defaults the value based on the 'xhaulOamTrCtlTestMode'.
+
+        In the case of 'lspTraceRoute' the default is set to 30.
+        In the case of 'icmpTraceRoute' the default is set to 30.
+        In the case of 'ldpTreeTrace' the default is set to 30.
+        In the case of 'vccvTraceRoute' the default is set to 8.
+        In the case of 'p2mplspTrace' the default is set to 30.
+        In the case of 'ethCfmLinkTrace' the default is set to 64.
+        Otherwise the default is set to 4."
+    DEFVAL { 4 }
+    ::= { xhaulOamTrCtlEntry 15 }
+
+
+
+xhaulOamTrCtlInterval  OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlInterval specifies the number of seconds
+         to wait before repeating an Alcatel-Lucent SROS OAM Trace Route test as
+         defined by the value of the various objects in the corresponding row.
+         This parameter is optional.
+
+         The number of hops in a single Alcatel-Lucent SROS OAM Trace Route test
+         is determined by the value of the corresponding
+         xhaulOamTrCtlProbesPerHop object.  After a single test completes,
+         the number of seconds as defined by the value of xhaulOamTrCtlInterval
+         MUST elapse before the next Alcatel-Lucent SROS OAM Trace Route test is
+         started.
+
+         The applicability, range, and default value of this object vary with
+         xhaulOamTrCtlTestMode, as shown in the following table.
+
+           xhaulOamTrCtlTestMode   Min Max Default
+           'ethCfmLinkTrace'        1  10       5
+           'icmpTraceRoute'        not applicable
+           'vccvTraceRoute'         1 255       1
+           otherwise                1  10       1"
+    DEFVAL { 1 }
+    ::= { xhaulOamTrCtlEntry 19 }
+
+xhaulOamTrCtlTrapGeneration OBJECT-TYPE
+    SYNTAX      BITS {
+                  pathChange(0),
+                  testFailure(1),
+                  testCompletion(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlTrapGeneration specifies when and if to
+         generate a notification for this entry:
+         pathChange(0)     - Generate a xhaulOamTrPathChange
+             notification when the current path varies from a previously
+             determined path.
+         testFailure(1)    - Generate a xhaulOamTrTestFailed notification when
+             the full path to a target can't be determined.
+         testCompletion(2) - Generate a xhaulOamTrTestCompleted notification
+             when the test is completed."
+    DEFVAL { {} }
+    ::= { xhaulOamTrCtlEntry 21 }
+
+xhaulOamTrCtlRuns      OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlRuns indicates the number of times
+         this OAM trace route test has been executed."
+    ::= { xhaulOamTrCtlEntry 24 }
+
+xhaulOamTrCtlFailures  OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlFailures indicates the number of times
+         this OAM trace route test has failed."
+    ::= { xhaulOamTrCtlEntry 25 }
+
+xhaulOamTrCtlLastRunResult  OBJECT-TYPE
+    SYNTAX      XhaulOamTestResult
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlLastRunResult indicates the completion
+         status the last time this test was executed.  If this OAM test is
+         currently in progress, this object indicates the result of the
+         previous test run, if any."
+    ::= { xhaulOamTrCtlEntry 26 }
+
+xhaulOamTrCtlLastChanged   OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlLastChanged indicates the time the
+         value of a settable object in this row was last changed."
+    ::= { xhaulOamTrCtlEntry 27 }
+
+
+xhaulOamTrCtlTgtAddrType   OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlTgtAddrType specifies the type of host
+         address to be used as the destination for performing a OAM Trace
+         Route operation. Only 'ipv4', 'ipv6' and 'dns' address types are
+         supported.
+
+         This object indicates the type of address stored in the
+         corresponding xhaulOamTrCtlTgtAddress object.
+
+         The 'dns' address type is valid only for 'icmpTraceRoute'."
+    DEFVAL { unknown }
+    ::= { xhaulOamTrCtlEntry 29 }
+
+xhaulOamTrCtlTgtAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlTgtAddress specifies the IP host address to
+         be used as the destination for performing an OAM Trace Route
+         operation. The host address type is determined by the value of the
+         corresponding xhaulOamTrCtlTgtAddrType object.
+
+         This parameter is required by 'vprnTraceRoute' and 'icmpTraceRoute'.
+         This parameter is not used by 'macTraceRoute', 'lspTraceRoute',
+         'mcastTraceRoute', 'vccvTraceRoute', 'p2mpLspPing', or
+         'ethCfmLinkTrace'. "
+    DEFVAL { ''H }
+    ::= { xhaulOamTrCtlEntry 30 }
+
+xhaulOamTrCtlSrcAddrType          OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlSrcAddrType specifies the type of Internet
+         address stored in xhaulOamTrCtlSrcAddress."
+    DEFVAL { unknown }
+    ::= { xhaulOamTrCtlEntry 31 }
+
+xhaulOamTrCtlSrcAddress           OBJECT-TYPE
+    SYNTAX      InetAddress  (SIZE(0|4|16))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrCtlSrcAddress specifies the IP host address to
+         be used as the source when performing an OAM Trace Route operation.
+
+         This object is valid only when the xhaulOamTrCtlTestMode has a
+         value of 'icmpTraceRoute', 'lspTraceRoute', or 'vccvTraceRoute'."
+    DEFVAL { ''H }
+    ::= { xhaulOamTrCtlEntry 32 }
+
+
+--
+--  OAM Label Switched Path (LSP) Trace Route Control Table
+--
+
+xhaulOamLspTrCtlTable             OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamLspTrCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row in xhaulOamLspTrCtlTable contains the LSP-specific
+         configuration information needed to launch an LSP (Label Switched Path)
+         trace route test.  The rest of the configuration information needed to
+         launch the test resides in the corresponding row of xhaulOamTrCtlTable.
+
+         Results of LSP trace route tests are stored in xhaulOamTrResultsTable,
+         xhaulOamTrProbeHistoryTable, xhaulOamTrHopsTable, xhaulOamLspTrMapTable,
+         and xhaulOamLspTrDSLabelTable.
+
+         Four types of LSP trace route tests are supported:  BGP Labeled Prefix,
+         LDP Prefix, RSVP LSP, and Transport Profile Static.  Abbreviated LSP
+         trace route test type names are used in the table below.  In the BGP
+         Labeled Prefix and Transport Profile Static cases, the test type is
+         configured (using xhaulOamLspTrCtlTestSubMode).  In the other two cases,
+         the test type is not configured (i.e. the default
+         xhaulOamLspTrCtlTestSubMode value 'unspecified(1)' is used).
+
+         The following table has a row for each LSP trace route test type,
+         showing the mandatory and optional objects applicable to the test type.
+
+         Test
+         Type   Mandatory Objects               Optional Objects
+         ---- -------------------------------- ---------------------------------
+         BGP  xhaulOamLspTrCtlLdpPrefixType     *xhaulOamLspTrCtlNhAddressType
+              xhaulOamLspTrCtlLdpPrefix         *xhaulOamLspTrCtlNhAddress
+              xhaulOamLspTrCtlLdpPrefixLen       xhaulOamLspTrCtlNhIntfName
+              xhaulOamLspTrCtlTestSubMode       #xhaulOamLspTrCtlPathDestType
+                                               #xhaulOamLspTrCtlPathDest
+
+         LDP  xhaulOamLspTrCtlLdpPrefixType     *xhaulOamLspTrCtlNhAddressType
+              xhaulOamLspTrCtlLdpPrefix         *xhaulOamLspTrCtlNhAddress
+              xhaulOamLspTrCtlLdpPrefixLen       xhaulOamLspTrCtlNhIntfName
+                                               #xhaulOamLspTrCtlPathDestType
+                                               #xhaulOamLspTrCtlPathDest
+
+         RSVP xhaulOamLspTrCtlLspName            xhaulOamLspTrCtlPathName
+
+         TPST xhaulOamLspTrCtlLspName            xhaulOamLspTrCtlForce
+              xhaulOamLspTrCtlTestSubMode        xhaulOamLspTrCtlAssocChannel
+                                                xhaulOamLspTrCtlMplsTpPathType
+
+         ALL  N/A                               xhaulOamLspTrCtlDownstreamMapTlv
+                                                xhaulOamTrCtlDataSize
+                                                xhaulOamTrCtlFcName
+                                                xhaulOamTrCtlInitialTtl
+                                                xhaulOamTrCtlInterval
+                                                xhaulOamTrCtlMaxFailures
+                                                xhaulOamTrCtlMaxTtl
+                                                xhaulOamTrCtlProbesPerHop
+                                                xhaulOamTrCtlProfile
+                                               *xhaulOamTrCtlSrcAddrType
+                                               *xhaulOamTrCtlSrcAddress
+                                                xhaulOamTrCtlTimeOut
+         ---- -------------------------------- ---------------------------------
+
+         In the table above,
+         1.  The optional objects in the ALL row apply to all four LSP trace
+             route test types.
+         2.  Asterisks (*) mark a set of optional objects which must all be
+             specified, or must all be unspecified.
+         3.  Octothorpes (#) mark a separate set of optional objects which must
+             all be specified, or must all be unspecified.
+         4.  There are four supported combinations of
+             xhaulOamLspTrCtlNhAddressType, xhaulOamLspTrCtlNhAddress,
+             xhaulOamLspTrCtlNhIntfName, xhaulOamLspTrCtlPathDestType, and
+             xhaulOamLspTrCtlPathDest, as follows:
+             a) all unspecified
+             b) xhaulOamLspTrCtlPathDestType and xhaulOamLspTrCtlPathDest
+             c) xhaulOamLspTrCtlPathDestType, xhaulOamLspTrCtlPathDest, and
+                xhaulOamLspTrCtlNhIntfName
+             d) xhaulOamLspTrCtlPathDestType, xhaulOamLspTrCtlPathDest,
+                xhaulOamLspTrCtlNhAddressType, and xhaulOamLspTrCtlNhAddress
+
+         When an object combination other than a combination listed above is
+         specified, values will be rejected or ignored, or the test will fail."
+    REFERENCE
+        "RFC 4379, 'Detecting Multi-Protocol Label Switched (MPLS) Data Plane
+         Failures'.
+         RFC 6426, 'MPLS On-Demand Connectivity Verification and Route Tracing'"
+    ::= { xhaulOamTraceRouteObjs 9 }
+
+xhaulOamLspTrCtlEntry             OBJECT-TYPE
+    SYNTAX      XhaulOamLspTrCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The system creates a row in xhaulOamLspTrCtlTable when a row is created
+         in xhaulOamTrCtlTable with xhaulOamTrCtlTestMode set to 'lspTraceRoute'.
+
+         The system deletes a row in xhaulOamLspTrCtlTable when the corresponding
+         row in xhaulOamTrCtlTable is deleted."
+    INDEX {
+        xhaulOamTrCtlOwnerIndex,
+        xhaulOamTrCtlTestIndex
+    }
+    ::= { xhaulOamLspTrCtlTable 1 }
+
+XhaulOamLspTrCtlEntry ::=
+    SEQUENCE {
+        xhaulOamLspTrCtlLspName           TLNamedItemOrEmpty,
+        xhaulOamLspTrCtlLdpPrefixType     InetAddressType,
+        xhaulOamLspTrCtlLdpPrefix         InetAddress,
+        xhaulOamLspTrCtlLdpPrefixLen      InetAddressPrefixLength,
+        xhaulOamLspTrCtlDownstreamMapTlv  XhaulOamMplsEchoDownMapTlvOrNone,
+        xhaulOamLspTrCtlTestSubMode       XhaulOamLspTestSubMode
+    }
+
+xhaulOamLspTrCtlLspName           OBJECT-TYPE
+    SYNTAX      TLNamedItemOrEmpty
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspTrCtlLspName specifies the name of the LSP for
+         this LSP trace route test.
+
+         When the test is started, if this name is not empty, there must be a
+         XHAUL-MPLS-MIB::vRtrMplsLspTable row with:
+         1.  xhaulOamLspTrCtlLspName equal to
+             XHAUL-MPLS-MIB::vRtrMplsLspName, AND
+         2.  XHAUL-VRTR-MIB::vRtrID equal to 1.     		Otherwise, the test will fail.
+
+         The supported object combinations for LSP trace route tests are listed
+         in the xhaulOamLspTrCtlTable DESCRIPTION clause."
+    DEFVAL { ''H }
+    ::= { xhaulOamLspTrCtlEntry 2 }
+
+xhaulOamLspTrCtlLdpPrefixType     OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspTrCtlLdpPrefixType specifies the type of
+         Internet address stored in xhaulOamLspTrCtlLdpPrefix.
+
+         The supported object combinations for LSP trace route tests are listed
+         in the xhaulOamLspTrCtlTable DESCRIPTION clause."
+    DEFVAL { unknown }
+    ::= { xhaulOamLspTrCtlEntry 6 }
+
+xhaulOamLspTrCtlLdpPrefix         OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (0|4|16))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspTrCtlLdpPrefix, along with
+         xhaulOamLspTrCtlLdpPrefixType and xhaulOamLspTrCtlLdpPrefixLen, specifies
+         the destination prefix for this LSP trace route test.
+
+         The supported object combinations for LSP trace route tests are listed
+         in the xhaulOamLspTrCtlTable DESCRIPTION clause."
+    DEFVAL { ''H }
+    ::= { xhaulOamLspTrCtlEntry 7 }
+
+xhaulOamLspTrCtlLdpPrefixLen      OBJECT-TYPE
+    SYNTAX      InetAddressPrefixLength
+    UNITS       "bits"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspTrCtlLdpPrefixLen specifies the Internet
+         address prefix length of xhaulOamLspTrCtlLdpPrefix.
+
+         The supported object combinations for LSP trace route tests are listed
+         in the xhaulOamLspTrCtlTable DESCRIPTION clause."
+    DEFVAL { 32 }
+    ::= { xhaulOamLspTrCtlEntry 8 }
+
+
+xhaulOamLspTrCtlDownstreamMapTlv  OBJECT-TYPE
+    SYNTAX      XhaulOamMplsEchoDownMapTlvOrNone
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspTrCtlDownstreamMapTlv specifies the type of
+         downstream mapping TLV to insert in the MPLS echo request PDU when
+         launching the test.
+
+         When an LSP trace route test is created, the value of this object
+         defaults to the value of the global configuration object
+         xhaulOamMplsEchoDownstreamMapTlv.
+
+         The supported object combinations for LSP trace route tests are listed
+         in the xhaulOamLspTrCtlTable DESCRIPTION clause."
+    ::= { xhaulOamLspTrCtlEntry 14 }
+
+xhaulOamLspTrCtlTestSubMode       OBJECT-TYPE
+    SYNTAX      XhaulOamLspTestSubMode
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamLspTrCtlTestSubMode specifies the type of LSP
+         trace route test to perform.
+
+         When this object is 'unspecified(1)', the type of LSP trace route test
+         to be performed is determined when the test is started, from the set of
+         xhaulOamLspTrCtlTable objects configured with non-default values.
+
+         If there is a mismatch between xhaulOamLspTrCtlTestSubMode and the
+         type of the LSP to be tested, the test will fail.  For example, if
+         xhaulOamLspTrCtlTestSubMode is 'static(2)', and
+         xhaulOamLspTrCtlLspName refers to an LSP with
+         XHAUL-MPLS-MIB::vRtrMplsLspType not equal to 'mplsTp(7)', the test
+         will fail.
+
+         The supported object combinations for LSP trace route tests are listed
+         in the xhaulOamLspTrCtlTable DESCRIPTION clause."
+    DEFVAL { unspecified }
+    ::= { xhaulOamLspTrCtlEntry 15 }
+
+
+--
+-- Nokia Xhaul devices OAM Trace Route Test Results Table
+--
+xhaulOamTrResultsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamTrResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines the Nokia Xhaul devices OAM Trace Route Test Results
+         Table for keeping track of the status of a xhaulOamTrCtlEntry.
+
+         An entry is added to the xhaulOamTrResultsTable when an
+         xhaulOamTrCtlEntry is started by successful transition
+         of its xhaulOamTrCtlAdminStatus object to enabled(1).
+         An entry is removed from the xhaulOamTrResultsTable when
+         its corresponding xhaulOamTrCtlEntry is deleted."
+    ::= { xhaulOamTraceRouteObjs 4 }
+
+xhaulOamTrResultsEntry OBJECT-TYPE
+    SYNTAX      XhaulOamTrResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines an entry in the xhaulOamTrResultsTable.  The
+         first two indexes of the xhaulOamTrResultsTable are the
+         same as the xhaulOamTrCtlTable in order for a xhaulOamTrResultsEntry
+         to correspond to the xhaulOamTrCtlEntry that caused it to
+         be created.  The third index allows a history of test runs
+         to be stored."
+    INDEX {
+           xhaulOamTrCtlOwnerIndex,
+           xhaulOamTrCtlTestIndex,
+           xhaulOamTrResultsTestRunIndex
+          }
+    ::= { xhaulOamTrResultsTable 1 }
+
+ XhaulOamTrResultsEntry ::=
+    SEQUENCE {
+     xhaulOamTrResultsOperStatus       INTEGER,
+     xhaulOamTrResultsCurHopCount      Gauge32,
+     xhaulOamTrResultsCurProbeCount    Gauge32,
+     xhaulOamTrResultsLastGoodPath     DateAndTime,
+     xhaulOamTrResultsTestRunIndex     Unsigned32,
+     xhaulOamTrResultsTestRunResult    XhaulOamTestResult
+    }
+
+xhaulOamTrResultsOperStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          enabled(1), -- test is in progress
+                          disabled(2) -- test has stopped
+                        }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Reflects the operational state of a xhaulOamTrCtlEntry:
+
+           enabled(1)  - Test is active.
+           disabled(2) - Test has stopped."
+    ::= { xhaulOamTrResultsEntry 1 }
+
+xhaulOamTrResultsCurHopCount OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS       "hops"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Reflects the current TTL value (range from 0 to
+         255) for an Alcatel-Lucent SROS OAM Trace Route operation.
+         Maximum TTL value is determined by xhaulOamTrCtlMaxTtl.
+
+         Zero is returned only in the case of an aborted 'ethCfmLinkTrace'
+         test."
+    ::= { xhaulOamTrResultsEntry 2 }
+
+xhaulOamTrResultsCurProbeCount OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS       "probes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Reflects the current probe count (1..10) for an Alcatel-Lucent
+         SROS OAM Trace Route operation. The maximum probe count is
+         determined by xhaulOamTrCtlProbesPerHop."
+    ::= { xhaulOamTrResultsEntry 3 }
+
+xhaulOamTrResultsLastGoodPath OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The date and time when the last complete path
+         was determined."
+    ::= { xhaulOamTrResultsEntry 7 }
+
+xhaulOamTrResultsTestRunIndex      OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrResultsTestRunIndex identifies the
+         row entry that reports results for a single OAM trace
+         route test run.
+
+         The agent starts assigning xhaulOamTrResultsTestRunIndex values
+         at 1 and wraps after exceeding the maximum possible value as
+         defined by the limit of this object."
+    ::= { xhaulOamTrResultsEntry 8 }
+
+xhaulOamTrResultsTestRunResult  OBJECT-TYPE
+    SYNTAX      XhaulOamTestResult
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The object contains the overall state of the trace test."
+    ::= { xhaulOamTrResultsEntry 11 }
+
+--
+-- Nokia Xhaul devices OAM Trace Route Test Hop Results Table
+--
+-- NOTE: This table provides a current path topology based on the results
+--       of the OAM Trace Route tests.
+--
+xhaulOamTrHopsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF XhaulOamTrHopsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines the Alcatel-Lucent SROS OAM Trace Route Hop Table for keeping
+         track of the results of an Alcatel-Lucent SROS OAM Trace Route test
+         on a per hop basis."
+    ::= { xhaulOamTraceRouteObjs 6 }
+
+xhaulOamTrHopsEntry OBJECT-TYPE
+    SYNTAX      XhaulOamTrHopsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Defines an entry in the xhaulOamTrHopsTable.
+         The first two index elements identify the xhaulOamTrCtlEntry
+         that a xhaulOamTrHopsEntry belongs to.  The third index element
+         identifies a OAM trace route test run.  The fourth index element,
+         xhaulOamTrHopsHopIndex, selects a hop in an Alcatel-Lucent SROS OAM
+         Trace Route path."
+    INDEX {
+           xhaulOamTrCtlOwnerIndex,
+           xhaulOamTrCtlTestIndex,
+           xhaulOamTrResultsTestRunIndex,
+           xhaulOamTrHopsHopIndex
+          }
+    ::= { xhaulOamTrHopsTable 1 }
+
+ XhaulOamTrHopsEntry ::=
+    SEQUENCE {
+       xhaulOamTrHopsHopIndex         Unsigned32,
+       xhaulOamTrHopsMinRtt           Unsigned32,
+       xhaulOamTrHopsMaxRtt           Unsigned32,
+       xhaulOamTrHopsAverageRtt       Unsigned32,
+       xhaulOamTrHopsSentProbes       Unsigned32,
+       xhaulOamTrHopsProbeResponses   Unsigned32,
+       xhaulOamTrHopsLastGoodProbe    DateAndTime,
+       xhaulOamTrHopsProbeTimeouts    Unsigned32,
+       xhaulOamTrHopsProbeFailures    Unsigned32,
+       xhaulOamTrHopsTgtAddrType      InetAddressType,
+       xhaulOamTrHopsTgtAddress       InetAddress
+      }
+
+xhaulOamTrHopsHopIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Specifies the hop index for an Alcatel-Lucent SROS OAM Trace Route
+         hop.  Values for this object with respect to the same
+         xhaulOamTrCtlOwnerIndex and xhaulOamTrCtlTestIndex MUST start at 1
+         and increase monotonically.
+
+         The xhaulOamTrHopsTable keeps the current Alcatel-Lucent SROS OAM Trace
+         Route path per xhaulOamTrCtlEntry.
+
+         All hops (xhaulOamTrHopsTable entries) in an Alcatel-Lucent SROS OAM
+         Trace Route path MUST be updated at the same time when an 
+         Alcatel-Lucent SROS OAM Trace Route operation completes.  Care needs 
+         to be applied when either a path changes or can't be determined.  
+         The initial portion of the path, up to the first hop change, MUST
+         retain the same xhaulOamTrHopsHopIndex values.  The remaining portion
+         of the path SHOULD be assigned new xhaulOamTrHopsHopIndex values."
+    ::= { xhaulOamTrHopsEntry 1 }
+
+xhaulOamTrHopsMinRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The minimum Alcatel-Lucent SROS OAM Trace Route round-trip-time (RTT)
+         received for this hop.  A value of 0 for this object implies that no
+         RTT has been received."
+    ::= { xhaulOamTrHopsEntry 3 }
+
+xhaulOamTrHopsMaxRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The maximum Alcatel-Lucent SROS OAM Trace Route round-trip-time (RTT)
+         received for this hop.  A value of 0 for this object implies that no
+         RTT has been received."
+    ::= { xhaulOamTrHopsEntry 4 }
+
+xhaulOamTrHopsAverageRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current average Alcatel-Lucent SROS OAM Trace Route round-trip-time
+        (RTT) for this hop."
+    ::= { xhaulOamTrHopsEntry 5 }
+
+xhaulOamTrHopsSentProbes OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of this object reflects the number of probes sent
+         for this hop during this Alcatel-Lucent SROS OAM Trace Route test.
+         The value of this object should start at 0."
+    ::= { xhaulOamTrHopsEntry 11 }
+
+xhaulOamTrHopsProbeResponses OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Number of responses received for this hop during this Alcatel-Lucent
+         SROS OAM Trace Route test.  This value of this object should
+         start at 0."
+    ::= { xhaulOamTrHopsEntry 12 }
+
+xhaulOamTrHopsLastGoodProbe OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Date and time when the last response was received for a probe
+         for this hop during this Alcatel-Lucent SROS OAM Trace Route test."
+    ::= { xhaulOamTrHopsEntry 13 }
+
+xhaulOamTrHopsProbeTimeouts     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrHopsProbeTimeouts indicates the number
+         of probes that timed out without receiving a response."
+    ::= { xhaulOamTrHopsEntry 25 }
+
+xhaulOamTrHopsProbeFailures     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrHopsProbeFailures indicates the total
+         number of probes that failed to be transmitted plus the number of
+         probes that timed out without receiving a response."
+    ::= { xhaulOamTrHopsEntry 26 }
+
+xhaulOamTrHopsTgtAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrHopsTgtAddrType indicates the Internet
+         address type stored in xhaulOamTrHopsTgtAddress."
+    ::= { xhaulOamTrHopsEntry 27 }
+
+xhaulOamTrHopsTgtAddress OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE (0|4|16))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of xhaulOamTrHopsTgtAddress indicates the Internet
+         address associated with the hop.  A value for this object should
+         be reported as a numeric IP address and not as a DNS name.
+
+         This value of this object is not significant when
+         xhaulOamTrCtlTestMode has a value of 'macTraceRoute' or
+         'ethCfmLinkTrace'."
+    ::= { xhaulOamTrHopsEntry 28 }
+
+
+ --
+ -- Notification Definition section
+ --
+xhaulOamPingTestCompleted NOTIFICATION-TYPE
+    OBJECTS {
+        xhaulOamPingCtlTgtAddrType,
+        xhaulOamPingCtlTgtAddress,
+        xhaulOamPingResultsOperStatus,
+        xhaulOamPingResultsMinRtt,
+        xhaulOamPingResultsMaxRtt,
+        xhaulOamPingResultsAverageRtt,
+        xhaulOamPingResultsProbeResponses,
+        xhaulOamPingResultsSentProbes,
+        xhaulOamPingResultsLastGoodProbe
+    }
+    STATUS  current
+    DESCRIPTION
+        "Generated at the completion of a ping test when the
+         corresponding xhaukOamPingCtlTrapGeneration object is set to
+         testCompletion(2)."
+    ::= { xhaulOamPingNotifications 1 }
+
+xhaulOamTrTestCompleted NOTIFICATION-TYPE
+      OBJECTS {
+          xhaulOamTrCtlTestMode,
+          xhaulOamTrCtlLastRunResult,
+          xhaulOamTrResultsOperStatus
+      }
+      STATUS  current
+      DESCRIPTION
+          "The OAM trace route test has just been completed."
+      ::= { xhaulOamTraceRouteNotifications 3 }
+   
+--
+-- Conformance Information
+--
+xhaulOamPingCompliances  OBJECT IDENTIFIER ::= { xhaulOamPingConformance 1 }
+xhaulOamPingGroups       OBJECT IDENTIFIER ::= { xhaulOamPingConformance 2 }
+
+END

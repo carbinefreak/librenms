@@ -1,0 +1,965 @@
+XHAUL-MPLS-MIB DEFINITIONS ::= BEGIN
+                                                                        
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE,
+        NOTIFICATION-TYPE, 
+        Unsigned32, IpAddress, Counter64,
+        Counter32, Integer32, Gauge32                   FROM SNMPv2-SMI
+ 
+        MODULE-COMPLIANCE, OBJECT-GROUP, 
+        NOTIFICATION-GROUP                              FROM SNMPv2-CONF
+
+        RowStatus, RowPointer,
+        TruthValue, TimeStamp,
+        TimeInterval, TestAndIncr,
+        TEXTUAL-CONVENTION                              FROM SNMPv2-TC
+
+        InterfaceIndexOrZero                            FROM IF-MIB
+
+        InetAddressIPv6                                 FROM INET-ADDRESS-MIB
+
+        --MplsLabel, MplsLSPID				FROM XHAUL-MPLS-TC-MIB
+
+        --mplsXCLspId, mplsInSegmentEntry,
+        --mplsOutSegmentEntry                             FROM XHAUL-MPLS-LSR-MIB
+
+        mplsTunnelIndex, mplsTunnelInstance, mplsTunnelIngressLSRId
+        -- mplsTunnelARHopEntry,
+        			                         FROM XHAUL-MPLS-TE-MIB
+
+        XhaulAdminState, XhaulOperState, 
+        TNamedItem, TNamedItemOrEmpty, 
+        XhaulActionType, XhaulVRtrMplsLspID,
+        XhaulRsvpDSTEClassType, TLNamedItemOrEmpty,       
+        XhaulMplsTpGlobalID, XhaulMplsTpNodeID,
+        XhaulEnabledDisabled, 
+        TPolicyStatementNameOrEmpty, TLNamedItem        FROM XHAUL-TC-MIB
+       
+        vRtrID, vRtrIfIndex                             FROM XHAUL-VRTR-MIB
+
+        InetAddressType, InetAddress                    FROM INET-ADDRESS-MIB
+        
+        xhaulim, xhaulBasicMib				FROM XHAUL-BASICREG-MIB
+        ;
+
+xhaulMplsMIBModule MODULE-IDENTITY
+        LAST-UPDATED "201805040000Z"
+        ORGANIZATION "Alcatel-Lucent"
+        CONTACT-INFO
+            "Nokia Xhaul Support "
+        DESCRIPTION
+        "This document is the SNMP MIB module to manage and provision the 
+        MPLS extensions for the NOKIA X-HAUL device."
+--
+--  Revision History
+--
+
+
+        REVISION        "201805040000Z"
+        DESCRIPTION     "                4 May 2018 00:00
+                         Added 'srTe' enum to vRtrMplsLspType object.
+                         Added vRtrMplsLspPathTable. "
+
+        REVISION        "201801290000Z"
+        DESCRIPTION     "                29 Jan 2018 00:00
+                         Added vRtrMplsSegRouteIPv6NodeSid scalar object."
+
+        REVISION        "201710060000Z"
+        DESCRIPTION     "                6 Oct 2017 00:00
+                         Changed import from MPLS-TC-STD-MIB to XHAUL-MPLS-TC-MIB and from MPLS-LSR-STD-MIB to XHUL-MPLS-LSR-MIB."
+
+        REVISION        "201707200000Z"
+        DESCRIPTION     "                20 Jul 2017 00:00
+                         Removed vRtrMplsLspToAddrType.    
+                         Changed  vRtrMplsLspToAddrType object from XhaulMplsLspAddrType to InetAddressType."
+     
+        REVISION        "201704300000Z"
+        DESCRIPTION     "Rev 0.1                30 Apr 2017 00:00
+                         Initial version of the XHAUL-MPLS-MIB."
+
+        ::= { xhaulBasicMib 4 }
+        
+xhaulMplsMib            OBJECT IDENTIFIER ::= { xhaulim 3 }
+
+xhaulMplsObjs            OBJECT IDENTIFIER ::= { xhaulMplsMib            1 }
+xhaulMplsNotifications   OBJECT IDENTIFIER ::= { xhaulMplsMib            2 }
+xhaulMplsConformance     OBJECT IDENTIFIER ::= { xhaulMplsMib            99 }
+xhaulMplsGlobalObjs      OBJECT IDENTIFIER ::= { xhaulMplsObjs           15 }
+
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--  MPLS extensions
+--
+
+
+--  Textual Conventions
+
+XhaulMplsLspFailCode ::= TEXTUAL-CONVENTION
+    STATUS    current
+    DESCRIPTION
+        "XhaulMplsLspFailCode is an enumerated integer that defines the  
+         reason for LSP Path and LSP Crossconnect failure."
+    SYNTAX    INTEGER {
+                  noError (0),
+                  admissionControlError (1),
+                  noRouteToDestination (2),
+                  trafficControlSystemError (3),
+                  routingError (4), 
+                  noResourcesAvailable (5),
+                  badNode (6),
+                  routingLoop (7),
+                  labelAllocationError (8),
+                  badL3PID (9),
+                  tunnelLocallyRepaired (10),
+                  unknownObjectClass (11),
+                  unknownCType (12),
+                  noEgressMplsInterface (13),
+                  noEgressRsvpInterface (14),
+                  looseHopsInFRRLsp (15),
+                  unknown (16),
+                  retryExceeded (17),
+                  noCspfRouteOwner (18),
+                  noCspfRouteToDestination (19),
+                  hopLimitExceeded (20),
+                  looseHopsInManualBypassLsp (21),
+                  emptyPathInManualBypassLsp (22),
+                  lspFlowControlled (23),
+                  srlgSecondaryNotDisjoint (24),
+                  srlgPrimaryCspfDisabled (25),
+                  srlgPrimaryPathDown (26),
+                  localLinkMaintenance (27),
+                  unexpectedCtObject (28),
+                  unsupportedCt (29),
+                  invalidCt (30),
+                  invCtAndSetupPri (31),
+                  invCtAndHoldPri (32),
+                  invCtAndSetupAndHoldPri (33),
+                  localNodeMaintenance (34),
+                  softPreemption (35),
+                  p2mpNotSupported (36),
+                  badXro (37),
+                  localNodeInXro (38),
+                  routeBlockedByXro (39),
+                  xroTooComplex (40),
+                  rsvpNotSupported (41),
+                  conflictingAdminGroups (42),
+                  nodeInIgpOverload (43)
+                  }
+
+XhaulMplsLabelOwner ::= TEXTUAL-CONVENTION
+    STATUS    current
+    DESCRIPTION
+        "XhaulMplsLabelOwner is an enumerated integer that specifies
+        the module that owns a particular MPLS label."
+    SYNTAX    INTEGER {       
+                  none (0),
+                  rsvp (1),
+                  tldp (2),
+                  ildp (3),
+                  svcmgr (4),
+                  bgp (5),
+                  mirror (6),
+                  static (7),
+                  vprn (8)
+              }  
+
+XhaulMplsOperDownReasonCode ::= TEXTUAL-CONVENTION
+    STATUS    current
+    DESCRIPTION
+        "XhaulMplsOperDownReasonCode is an enumerated integer that specifies 
+         the reason that the MPLS instance is operationally down."
+    SYNTAX    INTEGER {
+                  operUp (0),             -- Operationally up
+                  adminDown (1),          -- Administratively down
+                  noResources (2),        -- No resources available
+                  systemIpDown (3),       -- System IP interface is 
+                                          -- operationally down
+                  iomFailure (4),         -- Iom failure
+                  clearDown (5)           -- Clear command in progress  
+              } 
+
+XhaulMplsMBBType ::= TEXTUAL-CONVENTION
+    STATUS    current
+    DESCRIPTION
+        "XhaulMplsMBBType is an enumerated integer that specifies 
+         the type of make-before-break (MBB)."
+    SYNTAX    INTEGER {
+                  none (0), --no MBB in progress or no last MBB
+                  configChange (1),
+                  timerBasedResignal (2),             
+                  manualResignal (3),
+                  globalRevert (4),
+                  delayedRetry (5),
+                  gracefulShutdown (6),
+                  softPreemption (7),
+                  pathChange (8),
+                  autoBandwidth (9)
+                 }           
+                 
+XhaulMplsP2mpInstFailCode ::= TEXTUAL-CONVENTION
+    STATUS    current
+    DESCRIPTION
+        "XhaulMplsP2mpInstFailCode is an enumerated integer that defines the  
+         reason for P2MP instance going down."
+    SYNTAX    INTEGER {
+                  noError (0),
+                  noS2LOperational (1)
+                 }                        
+
+XhaulMplsRouterId ::= TEXTUAL-CONVENTION 
+    DISPLAY-HINT "d" 
+    STATUS      current 
+    DESCRIPTION 
+        "The value of XhaulMplsRouterId provides a 32-bit, unsigned integer 
+         uniquely identifying the router in the Autonomous System. To ensure 
+         uniqueness, this may default to the value of one of the router's 
+         IPv4 host addresses if IPv4 is configured on the router." 
+    SYNTAX      Unsigned32 (0..'FFFFFFFF'h)         
+
+XhaulMplsLspAutoBWLastAdjCause ::= TEXTUAL-CONVENTION
+    STATUS    current
+    DESCRIPTION
+        "XhaulMplsLspAutoBWLastAdjCause is an enumerated integer that specifies 
+         cause of auto-bandwidth last adjustment."
+    SYNTAX    INTEGER {
+                  none (0),
+                  manual (1),
+                  normal (2),
+                  overflow (3),             
+                  vllCAC (4),
+                  reserved5 (5)
+                 }   
+  
+XhaulMplsLspBgpRSVPLSPTunState ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+        "XhaulMplsLspBgpRSVPLSPTunState is an enumerated integer that specifies 
+         whether an RSVP LSP is allowed or blocked in its usage as a transport 
+         LSP for BGP tunnel routes. 
+
+         In 'include(1)' mode, an RSVP LSPs is allowed to be used as transport 
+         LSP for BGP tunnel routes.
+
+         In 'exclude(2)' mode, an RSVP LSP is not allowed to be used as a
+         transport LSP for BGP tunnel routes."
+    SYNTAX INTEGER {
+                include (1),
+                exclude (2)
+            }
+        
+XhaulMplsLspAddrType ::= TEXTUAL-CONVENTION
+    STATUS    current
+    DESCRIPTION
+        "XhaulMplsLspAddrType is an enumerated integer that specifies
+        the address type for an MPLS LSP."
+    SYNTAX    INTEGER {       
+                  ipv4   (1),
+                  nodeId (2)
+              }  
+
+
+vRtrMplsSegRouteNodeSid OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsSegRouteNodeSid specifies the Node SID to be used along with Segment Routing Global Block to define label values to be assigned to static LSPs. "
+    ::= { xhaulMplsGlobalObjs 1 }
+
+vRtrMplsLabelSegRouteStartLabel     OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 32..524287)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsLabelSegRouteStartLabel specifies the start value  
+         label available for Segment Routing on the system.
+         Applicable values are 0 for undefined value, and from 32 to 524287.
+
+         vRtrMplsLabelSegRouteStartLabel must be set along with 
+         vRtrMplsLabelSegRouteEndLabel."
+    DEFVAL { 0 }
+    ::= { xhaulMplsGlobalObjs 2 }
+
+vRtrMplsLabelSegRouteEndLabel     OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 32..524287)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsLabelSegRouteEndLabel specifies the end value  
+         label available for Segment Routing on the system.
+         Applicable values are 0 for undefined value, and from 32 to 524287.
+
+         vRtrMplsLabelSegRouteStartLabel must be set along with 
+         vRtrMplsLabelSegRouteEndLabel."
+    DEFVAL { 0 }
+    ::= { xhaulMplsGlobalObjs 3 }
+
+vRtrMplsSegRouteIPv6NodeSid OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsSegRouteIpv6NodeSid specifies the Node SID for IpV6 prefixes to be used along with Segment Routing Global Block to define label values to be assigned to static LSPs.
+        "
+    ::= { xhaulMplsGlobalObjs 4 }
+
+--  The Virtual Router MPLS Labeled Switch Path (LSP) Table
+--
+vRtrMplsLspTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrMplsLspEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrMplsLspTable has an entry for each Labeled Switch
+         Path (LSP) configured for a virtual router in the system."
+    ::= { xhaulMplsObjs 1 }
+
+vRtrMplsLspEntry    OBJECT-TYPE
+    SYNTAX      VRtrMplsLspEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents a Labeled Switch Path (LSP) configured
+         for a virtual router in the system.  Entries can be created and
+         deleted via SNMP SET operations.  Setting RowStatus to 'active'
+         requires vRtrMplsLspName to have been assigned a valid value."
+    INDEX { vRtrID, vRtrMplsLspIndex }
+    ::= { vRtrMplsLspTable 1 }
+
+VRtrMplsLspEntry ::= SEQUENCE {
+    vRtrMplsLspIndex                    XhaulVRtrMplsLspID,
+    vRtrMplsLspRowStatus                RowStatus,
+    vRtrMplsLspLastChange               TimeStamp,
+    vRtrMplsLspName                     TLNamedItemOrEmpty,
+    vRtrMplsLspAdminState               XhaulAdminState,
+    vRtrMplsLspOperState                XhaulOperState,
+    vRtrMplsLspToAddr                   InetAddress,
+    vRtrMplsLspType                     INTEGER,
+    vRtrMplsLspOutSegIndx               Integer32,
+    vRtrMplsLspToAddrType               InetAddressType
+  
+}
+
+vRtrMplsLspIndex OBJECT-TYPE
+    SYNTAX      XhaulVRtrMplsLspID
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The unique value which identifies this Labeled Switch
+         Path (LSP) for this virtual router in the Alcatel-Lucent 
+         SROS system.  It is a unique value among entries with the 
+         same value of vRtrID."
+    ::= { vRtrMplsLspEntry 1 }
+
+vRtrMplsLspRowStatus   OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The row status used for creation, deletion, or control
+         of vRtrMplsLspTable entries.  Before the row can be
+         placed into the 'active' state vRtrMplsLspName must
+         have been assigned a valid value."
+    ::= { vRtrMplsLspEntry 2 }
+
+vRtrMplsLspLastChange       OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The sysUpTime when this row was last modified."
+    ::= { vRtrMplsLspEntry 3 }
+
+vRtrMplsLspName     OBJECT-TYPE
+    SYNTAX      TLNamedItemOrEmpty
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "vRtrMplsLspName Administrative name for this Labeled Switch Path. 
+         The vRtrMplsLspName must be unique within a virtual router instance.
+         If vRtrMplsLspType is not 'p2mpAuto', 'meshP2p' or 'oneHopP2p', 
+         vRtrMplsLspName can have a maximum of 32 characters "
+    ::= { vRtrMplsLspEntry 4 }
+
+vRtrMplsLspAdminState       OBJECT-TYPE
+    SYNTAX      XhaulAdminState
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The desired administrative state for this LSP."
+    DEFVAL { inService }
+    ::= { vRtrMplsLspEntry 5 }
+
+vRtrMplsLspOperState        OBJECT-TYPE
+    SYNTAX      XhaulOperState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current operational state of this LSP."
+    ::= { vRtrMplsLspEntry 6 }
+
+vRtrMplsLspToAddr OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(0|4|16))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The type of this address is determined by the value of the vRtrMplsLspToAddrType object.
+         The vRtrMplsLspToAddr specifies the IPv4/IPv6 destination address of this LSP. 
+         "
+    ::= { vRtrMplsLspEntry 8 }
+       
+vRtrMplsLspType     OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    unknown    (1),
+                    dynamic    (2),
+                    static     (3),
+                    srTe       (10)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The vRtrMplsLspType object is an enumerated value that indicates
+         whether the label value is statically or dynamically assigned or
+         whether the LSP will be used exclusively for bypass protection. "
+    DEFVAL { dynamic }
+    ::= { vRtrMplsLspEntry 9 }
+
+vRtrMplsLspOutSegIndx   OBJECT-TYPE
+    SYNTAX      Integer32 (0..2147483647)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The vRtrMplsLspOutSegIndx is the index value of the entry in 
+         the mplsOutSegmentTable associated with this vRtrMplsLspEntry
+         when vRtrMplsLspType is 'static'.  If vRtrMplsLspType is
+         'dynamic', the value of this object will be zero (0)."
+    DEFVAL { 0 }
+    ::= { vRtrMplsLspEntry 10 }
+        
+vRtrMplsLspToAddrType     OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The vRtrMplsLspToAddrType specifies the type of the
+         vRtrMplsLspToAddr destination address of this LS. "
+    DEFVAL { ipv4 }
+    ::= { vRtrMplsLspEntry 61 }
+
+
+-----------------------------------
+--- Mpls Lsp Path Table
+--------------------------------------
+
+vRtrMplsLspPathTable             OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrMplsLspPathEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrMplsLspPathTable provides an association between an
+         LSP and a path.  An LSP can have more than one path association,
+         but only one of those paths can be specified as the primary
+         path type.  Paths are defined in as Tunnel entries in the
+         mplsTunnelTable in the MPLS-TE-MIB."
+    ::= { xhaulMplsObjs 4 }
+
+vRtrMplsLspPathEntry             OBJECT-TYPE
+    SYNTAX      VRtrMplsLspPathEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents an association between a Labeled Switch
+         Path (LSP) in the vRtrMplsLspTable and a path (or tunnel) entry in
+         the mplsTunnelTable.  Entries in this table can be created and
+         deleted via SNMP SET operations.  Setting RowStatus to 'active'
+         requires vRtrMplsLspPathType to have been assigned a valid value."
+    INDEX       {
+        vRtrID,
+        vRtrMplsLspIndex,
+        mplsTunnelIndex,
+        mplsTunnelInstance,
+        mplsTunnelIngressLSRId
+    }
+    ::= { vRtrMplsLspPathTable 1 }
+
+VRtrMplsLspPathEntry             ::= SEQUENCE
+{
+    vRtrMplsLspPathRowStatus         RowStatus,
+    vRtrMplsLspPathLastChange        TimeStamp,
+    vRtrMplsLspPathType              INTEGER,
+    vRtrMplsLspPathAdminState        XhaulAdminState,
+    vRtrMplsLspPathOperState         XhaulOperState
+ 
+}
+
+vRtrMplsLspPathRowStatus         OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The row status used for creation, deletion, or control
+         of vRtrMplsLspPathTable entries.  Before the row can be
+         placed into the 'active' state vRtrMplsLspPathType must
+         have been assigned a valid value."
+    ::= { vRtrMplsLspPathEntry 1 }
+
+vRtrMplsLspPathLastChange        OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The sysUpTime when this row was last modified."
+    ::= { vRtrMplsLspPathEntry 2 }
+
+vRtrMplsLspPathType              OBJECT-TYPE
+    SYNTAX      INTEGER {
+        other     (1),
+        primary   (2),
+        standby   (3),
+        secondary (4)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This variable is an enum that represents the role this path is taking
+         within this LSP."
+    ::= { vRtrMplsLspPathEntry 3 }
+
+vRtrMplsLspPathAdminState        OBJECT-TYPE
+    SYNTAX      XhaulAdminState
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The desired administrative state for this LSP path."
+    DEFVAL      { inService }
+    ::= { vRtrMplsLspPathEntry 17 }
+
+vRtrMplsLspPathOperState         OBJECT-TYPE
+    SYNTAX      XhaulOperState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current operational state of this LSP path."
+    ::= { vRtrMplsLspPathEntry 18 }
+
+
+--
+--  Virtual Router MPLS General Table
+--
+
+vRtrMplsGeneralTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrMplsGeneralEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrMplsGeneralTable contains objects for general control and
+         management of an MPLS protocol instance within a virtual router."
+    ::= { xhaulMplsObjs 7 }
+
+vRtrMplsGeneralEntry    OBJECT-TYPE
+    SYNTAX      VRtrMplsGeneralEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents an instance of the MPLS protocol running
+         within a virtual router.  Entries in this table cannot be 
+         created and deleted via SNMP SET operations.  An entry in this table
+         is created by the agent when vRtrMplsStatus in the vRtrConfTable is
+         set to 'create'.  The entry is destroyed when vRtrMplsStatus is set
+         to 'delete'"
+    INDEX { vRtrID }
+    ::= { vRtrMplsGeneralTable 1 }
+
+VRtrMplsGeneralEntry ::= SEQUENCE {
+    vRtrMplsGeneralLastChange          TimeStamp,
+    vRtrMplsGeneralAdminState          XhaulAdminState,
+    vRtrMplsGeneralOperState           XhaulOperState,
+    vRtrMplsGeneralNewLspIndex         TestAndIncr,
+    vRtrMplsGeneralOperDownReason      XhaulMplsOperDownReasonCode
+ }
+
+vRtrMplsGeneralLastChange       OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The sysUpTime when this row was last modified."
+    ::= { vRtrMplsGeneralEntry 1 }
+
+vRtrMplsGeneralAdminState   OBJECT-TYPE
+    SYNTAX      XhaulAdminState
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "When vRtrMplsGeneralAdminState is set to 'inService', the agent
+         attempts to enable the MPLS protocol instance on this router.
+         
+         When vRtrMplsGeneralAdminState is set to 'outOfService', the
+         agent attempts to disable the MPLS protocol instance on this
+         router."
+    DEFVAL { inService }
+    ::= { vRtrMplsGeneralEntry 2 }
+                   
+vRtrMplsGeneralOperState    OBJECT-TYPE
+    SYNTAX      XhaulOperState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "vRtrMplsGeneralOperState indicates the current operating state
+         of this MPLS protocol instance on this router."
+    ::= { vRtrMplsGeneralEntry 3 }
+             
+
+vRtrMplsGeneralNewLspIndex  OBJECT-TYPE
+    SYNTAX      TestAndIncr
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object is used to assign values to vRtrMplsLspIndex as
+         described in 'Textual Conventions for SNMPv2'.  The network
+         manager reads the object, and then writes the value back
+         in the SET request that creates a new instance of 
+         vRtrMplsLspEntry.  If the SET fails with the code 
+         'inconsistentValue', then the process must be repeated.  
+         If the the SET succeeds, then the object is incremented 
+         and the new instance is created according to the manager's 
+         directions."
+    ::= { vRtrMplsGeneralEntry 6 }
+
+vRtrMplsGeneralOperDownReason   OBJECT-TYPE
+    SYNTAX      XhaulMplsOperDownReasonCode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsGeneralOperDownReason indicates the reason 
+         due to which the MPLS instance is operationally down." 
+    ::= { vRtrMplsGeneralEntry 13 }
+
+
+
+--
+--  Virtual Router MPLS Interface Table
+--
+
+vRtrMplsIfTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrMplsIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrMplsIfTable has an entry for each router interface 
+         configured for MPLS in the system."
+    ::= { xhaulMplsObjs 9 }
+
+vRtrMplsIfEntry      OBJECT-TYPE
+    SYNTAX      VRtrMplsIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents an interface on this virtual router
+         that participates in the MPLS protocol.  A row cannot be created
+         or deleted via SNMP SET requests.  A row with default attribute
+         values is created by setting the vRtrIfEntry attribute, 
+         vRtrIfMplsStatus, to 'create'.  A row is removed if 
+         vRtrIfMplsStatus is set to 'delete'.  However, an attempt to 
+         destroy a row will fail if vRtrMplsIfAdminState has
+         not first been set to 'outOfService'."
+    INDEX { vRtrID, vRtrIfIndex }
+    ::= { vRtrMplsIfTable 1 }
+
+VRtrMplsIfEntry ::= SEQUENCE {
+    vRtrMplsIfAdminState        XhaulAdminState,
+    vRtrMplsIfOperState         XhaulOperState
+}
+
+vRtrMplsIfAdminState OBJECT-TYPE
+    SYNTAX      XhaulAdminState
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The desired administrative state for the MPLS protocol
+         running on this MPLS interface."
+    DEFVAL { outOfService }
+    ::= { vRtrMplsIfEntry 1 }
+
+vRtrMplsIfOperState  OBJECT-TYPE
+    SYNTAX      XhaulOperState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This variable indicates the current status of the MPLS protocol
+         running on this MPLS interface. When the XHAUL-VRTR-MIB::vRtrIfPortID
+         object of this interface is set to a loopback port identifier, the 
+         operational state is not relevant and an SNMP GET request on this 
+         object will return 'unknown'."
+    ::= { vRtrMplsIfEntry 2 }
+
+
+
+--
+--   Virtual Router MPLS Interface Statistics Table
+--
+--  Augmentation of the vRtrMplsIfTable.
+--  Use of AUGMENTS clause implies a one-to-one dependent relationship 
+--  between the base table, vRtrMplsIfTable, and the augmenting table, 
+--  vRtrMplsIfStatTable. This in effect extends the vRtrMplsIfTable 
+--  with additional columns.  
+--  Creation (or deletion) of a row in the vRtrMplsIfTable results in 
+--  the same fate for the row in the vRtrMplsIfStatTable.
+--
+
+vRtrMplsIfStatTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF VRtrMplsIfStatEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The vRtrMplsIfStatTable has an entry for each router interface 
+         configured for MPLS in the system."
+    ::= { xhaulMplsObjs 10 }
+
+vRtrMplsIfStatEntry    OBJECT-TYPE
+    SYNTAX      VRtrMplsIfStatEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each row entry represents a collection of statistics for an
+         interface on this virtual router that participates in the 
+         MPLS protocol.  
+
+         Entries cannot be created and deleted via SNMP SET operations."
+    AUGMENTS { vRtrMplsIfEntry }
+    ::= { vRtrMplsIfStatTable 1 }
+
+VRtrMplsIfStatEntry ::= SEQUENCE {
+    vRtrMplsIfTxPktCount        Counter64,
+    vRtrMplsIfRxPktCount        Counter64,
+    vRtrMplsIfTxOctetCount      Counter64,
+    vRtrMplsIfRxOctetCount      Counter64
+}
+
+vRtrMplsIfTxPktCount    OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The total number of MPLS labeled packets transmitted from this
+         interface."
+    ::= { vRtrMplsIfStatEntry 1 }
+
+vRtrMplsIfRxPktCount    OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The total number of MPLS labeled packets received on this
+         interface."
+    ::= { vRtrMplsIfStatEntry 2 }
+
+vRtrMplsIfTxOctetCount  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The total number of bytes in MPLS labeled packets transmitted
+         on this interface."
+    ::= { vRtrMplsIfStatEntry 3 }
+
+vRtrMplsIfRxOctetCount  OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The total number of bytes in MPLS labeled packets received on
+         this interface."
+    ::= { vRtrMplsIfStatEntry 4 }
+
+
+--
+--
+-- Notification Information
+--
+xhaulMplsNotificationObjects OBJECT IDENTIFIER ::= { xhaulMplsObjs 16 }
+
+-- Trap control objects
+--
+
+vRtrMplsLspNotificationReasonCode  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    noError(0),
+                    noPathIsOperational(1)
+                }
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "Used by vRtrMplsLspDown, the value indicates the reason for the 
+         LSP going down."
+    ::= { xhaulMplsNotificationObjects 1 }
+
+vRtrMplsLspPathNotificationReasonCode  OBJECT-TYPE
+    SYNTAX      XhaulMplsLspFailCode
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "Used by vRtrMplsLspPathDown, the value indicates the reason for the 
+         LSP path going down."
+    ::= { xhaulMplsNotificationObjects 2 }
+  
+vRtrMplsLspSwitchStbyReasonCode       OBJECT-TYPE
+    SYNTAX    INTEGER {       
+                  none                               (0),
+                  lspIsDown                          (1),
+                  lspIsNotDynamic                    (2),
+                  lspHasNoActivePath                 (3),
+                  lspActivePathIsNotStandby          (4),
+                  pathSpecifiedIsNotLspPath          (5),
+                  pathSpecifiedIsNotStandby          (6),
+                  pathSpecifedIsDown                 (7),
+                  pathHasDiffPrefThanActLspPath      (8),
+                  lspHoldTimerIsRunning              (9),
+                  currentLspPathActiveByForce        (10),
+                  lspPathInPreemption                (11)
+               }  
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsLspSwitchStbyReasonCode indicates the 
+         reason for the failure of switch to a new standby path from the
+         current active standby path."
+    ::= { xhaulMplsNotificationObjects 13 }
+
+   
+vRtrMplsXCNotifyRednBundlingType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                        delete (1),
+                        create (2)
+                        }
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsXCNotifyRednBundlingType indicates whether this
+         notification is generated for deletion or creation of RSVP sessions on
+         this ingress, transit or egress router instance."
+    ::= { xhaulMplsNotificationObjects 16 }
+
+vRtrMplsXCNotifyRednNumOfBitsSet OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsXCNotifyRednNumOfBitsSet indicates the total
+         number of bits set in vRtrMplsXCNotifRednIndicesBitMap."
+    ::= { xhaulMplsNotificationObjects 17 }
+
+vRtrMplsXCNotifyRednStartIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsXCNotifyRednStartIndex indicates which 
+         vRtrMplsXCIndex is represented by the first bit in 
+         vRtrMplsXCNotifRednIndicesBitMap."
+    ::= { xhaulMplsNotificationObjects 18 }
+
+vRtrMplsXCNotifyRednEndIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsXCNotifyRednEndIndex indicates which
+         vRtrMplsXCIndex is represented by the last bit in 
+         vRtrMplsXCNotifRednIndicesBitMap.
+
+         The value vRtrMplsXCNotifyRednEndIndex can be useful for a sanity check
+         of vRtrMplsXCNotifyRednNumOfBitsSet.
+
+         vRtrMplsXCNotifyRednNumOfBitsSet. = (vRtrMplsXCNotifyRednEndIndex -
+         vRtrMplsXCNotifyRednStartIndex + 1)."
+    ::= { xhaulMplsNotificationObjects 19 }
+
+vRtrMplsIgpOverloadRtrAddrType  OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS accessible-for-notify
+    STATUS     current
+    DESCRIPTION
+        "The value of vRtrMplsIgpOverloadRtrAddrType indicates the address type 
+         of vRtrMplsIgpOverloadRtrAddr."
+    ::= { xhaulMplsNotificationObjects 20 }
+
+vRtrMplsIgpOverloadRtrAddr  OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|16))
+    MAX-ACCESS accessible-for-notify
+    STATUS     current
+    DESCRIPTION
+        "The value of vRtrMplsIgpOverloadRtrAddr indicates the IP address of the
+         router that is in IGP overload state."
+    ::= { xhaulMplsNotificationObjects 21 }
+
+vRtrMplsIgpOverloadIgpType    OBJECT-TYPE
+    SYNTAX      INTEGER {
+                         isis  (1),
+                         ospf  (2)
+                        }
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The value of vRtrMplsIgpOverloadIgpType indicates IGP which is 
+         notifying MPLS that a node is in the overload state."
+    ::= { xhaulMplsNotificationObjects 22 }
+--
+-- Notification Definitions
+--
+
+vRtrMplsStateChange NOTIFICATION-TYPE
+    OBJECTS     { vRtrID,
+                  vRtrMplsGeneralAdminState,
+                  vRtrMplsGeneralOperState }
+    STATUS      current
+    DESCRIPTION
+        "This Notification is generated when the MPLS
+         module changes state"
+    ::= { xhaulMplsNotifications 1 }
+
+vRtrMplsIfStateChange NOTIFICATION-TYPE
+    OBJECTS     { vRtrID,
+                  vRtrIfIndex,
+                  vRtrMplsIfAdminState,
+                  vRtrMplsIfOperState }
+    STATUS      current
+    DESCRIPTION
+        "This Notification is generated when the MPLS
+         interface changes state"
+    ::= { xhaulMplsNotifications 2 }
+  
+vRtrMplsLspUp NOTIFICATION-TYPE
+    OBJECTS     { vRtrID,
+                  vRtrMplsLspIndex,
+                  vRtrMplsLspAdminState,
+                  vRtrMplsLspOperState  }
+    STATUS      current
+    DESCRIPTION
+        "This Notification is generated when a LSP transitions
+         to the 'inService' state from any other state."
+    ::= { xhaulMplsNotifications 3 }
+  
+vRtrMplsLspDown NOTIFICATION-TYPE
+    OBJECTS     { vRtrID,
+                  vRtrMplsLspIndex,
+                  vRtrMplsLspAdminState,
+                  vRtrMplsLspOperState,
+                  vRtrMplsLspNotificationReasonCode  }
+    STATUS      current
+    DESCRIPTION
+        "This Notification is generated when a LSP transitions
+         out of 'inService' state to any other state."
+    ::= { xhaulMplsNotifications 4 }
+
+
+--
+-- Conformance Information
+--
+xhaulMplsCompliances OBJECT IDENTIFIER ::= { xhaulMplsConformance 1 }
+xhaulMplsGroups      OBJECT IDENTIFIER ::= { xhaulMplsConformance 2 }
+
+
+END
+
