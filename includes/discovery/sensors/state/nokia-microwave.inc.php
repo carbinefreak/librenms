@@ -255,7 +255,8 @@ foreach ($radio_data as $index => $entry) {
 
 
 // Fetch Alarm Data
-$alarm_data = SnmpQuery::walk([
+$alarm_data = SnmpQuery::mibs(['all'],
+    )->walk([
     'TSDIM-SUPPORT-MIB::tsdimAPTTable',
 ])->valuesByIndex();
 
@@ -271,7 +272,15 @@ foreach ($alarm_data as $index => $entry) {
 
         // Pull the Values
         $AlarmSev = $alarm_data[$index]['TSDIM-SUPPORT-MIB::tsdimAPTAlarmSeverity'] ?? null;
-        $probableCauseReponse = $alarm_data[$index]['TSDIM-SUPPORT-MIB::tsdimAPTAlarmProbableCause'] ?? null;
+        $probableCauseReponseRaw = $alarm_data[$index]['TSDIM-SUPPORT-MIB::tsdimAPTAlarmProbableCause'] ?? null;
+
+        //Explode the Reposone to extract the alarm text
+        $probableCauseReponse = explode(':', $probableCauseReponseRaw);
+
+        $alarmFilter = [ "/opticsIM/i", "/alarm/i", "/raise/i", "/clear/i" ];
+
+        // Remove the leading "opticsIMAlarm"
+        $probableCauseReponse = preg_replace($alarmFilter, "", $probableCauseReponse[2]);
 
 
         $alarmsev_state_name = 'AlarmSeverity';
@@ -294,7 +303,7 @@ foreach ($alarm_data as $index => $entry) {
             'sensor_oid' => $oidAlarmSev,
             'sensor_index' => $index,
             'sensor_type' => $alarmsev_state_name,
-            'sensor_descr' => 'Alarm ID:' . $baseIndex[2],
+            'sensor_descr' => 'Alarm ID:' . $baseIndex[2] . ' ' . $probableCauseReponse,
             'sensor_divisor' => 1,
             'sensor_multiplier' => 1,
             'sensor_limit' => null,
@@ -308,4 +317,3 @@ foreach ($alarm_data as $index => $entry) {
         ]));
     }
 }
-
