@@ -55,7 +55,7 @@ foreach ($data as $index => $entry) {
                 }
 
                 // If the radio is a Spare when the 3rd digit is '0'
-                if ( $indexArray[2] == '1' ) {
+                if ( $indexArray[2] == '0' ) {
                     $port_descr = ' Spare Slot:' . $indexArray[3] . ' Port:' . $indexArray[4];
                 }
             }

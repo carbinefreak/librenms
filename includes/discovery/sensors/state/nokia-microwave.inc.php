@@ -52,7 +52,7 @@ foreach ($radio_data as $index => $entry) {
                 }
 
                 // If the radio is a Spare when the 3rd digit is '0'
-                if ( $indexArray[2] == '1' ) {
+                if ( $indexArray[2] == '0' ) {
                     $port_descr = ' Spare Slot:' . $indexArray[3] . ' Port:' . $indexArray[4];
                 }
             }
@@ -170,86 +170,90 @@ foreach ($radio_data as $index => $entry) {
             'entPhysicalIndex_measured' => 'ports',
             'group' => 'Status',
         ]));
-
-        app('sensor-discovery')->discover(new \App\Models\Sensor([
-            'poller_type' => 'snmp',
-            'sensor_class' => 'state',
-            'device_id' => $device['device_id'],
-            'sensor_oid' => $oidManLocalMute,
-            'sensor_index' => $index,
-            'sensor_type' => $manlocalmute_state_name,
-            'sensor_descr' => $label . $port_descr . ' Local Man Mute',
-            'sensor_divisor' => 1,
-            'sensor_multiplier' => 1,
-            'sensor_limit' => null,
-            'sensor_limit_warn' => null,
-            'sensor_limit_low' => null,
-            'sensor_limit_low_warn' => null,
-            'sensor_current' => $currentManLocalMute,
-            'entPhysicalIndex' => $index,
-            'entPhysicalIndex_measured' => 'ports',
-            'group' => 'Mute',
-        ]));
-
-        app('sensor-discovery')->discover(new \App\Models\Sensor([
-            'poller_type' => 'snmp',
-            'sensor_class' => 'state',
-            'device_id' => $device['device_id'],
-            'sensor_oid' => $oidAutoLocalMute,
-            'sensor_index' => $index,
-            'sensor_type' => $autolocalmute_state_name,
-            'sensor_descr' => $label . $port_descr . ' Local Auto Mute',
-            'sensor_divisor' => 1,
-            'sensor_multiplier' => 1,
-            'sensor_limit' => null,
-            'sensor_limit_warn' => null,
-            'sensor_limit_low' => null,
-            'sensor_limit_low_warn' => null,
-            'sensor_current' => $currentAutoLocalMute,
-            'entPhysicalIndex' => $index,
-            'entPhysicalIndex_measured' => 'ports',
-            'group' => 'Mute',
-        ]));
-
-        app('sensor-discovery')->discover(new \App\Models\Sensor([
-            'poller_type' => 'snmp',
-            'sensor_class' => 'state',
-            'device_id' => $device['device_id'],
-            'sensor_oid' => $oidManRemoteMute,
-            'sensor_index' => $index,
-            'sensor_type' => $manremotemute_state_name,
-            'sensor_descr' => $label . $port_descr . ' Remote Man Mute',
-            'sensor_divisor' => 1,
-            'sensor_multiplier' => 1,
-            'sensor_limit' => null,
-            'sensor_limit_warn' => null,
-            'sensor_limit_low' => null,
-            'sensor_limit_low_warn' => null,
-            'sensor_current' => $currentManRemoteMute,
-            'entPhysicalIndex' => $index,
-            'entPhysicalIndex_measured' => 'ports',
-            'group' => 'Mute',
-        ]));
-
-        app('sensor-discovery')->discover(new \App\Models\Sensor([
-            'poller_type' => 'snmp',
-            'sensor_class' => 'state',
-            'device_id' => $device['device_id'],
-            'sensor_oid' => $oidAutoRemoteMute,
-            'sensor_index' => $index,
-            'sensor_type' => $autoremotemute_state_name,
-            'sensor_descr' => $label . $port_descr . ' Remote Auto Mute',
-            'sensor_divisor' => 1,
-            'sensor_multiplier' => 1,
-            'sensor_limit' => null,
-            'sensor_limit_warn' => null,
-            'sensor_limit_low' => null,
-            'sensor_limit_low_warn' => null,
-            'sensor_current' => $currentAutoRemoteMute,
-            'entPhysicalIndex' => $index,
-            'entPhysicalIndex_measured' => 'ports',
-            'group' => 'Mute',
-        ]));
+        if (isset($currentManLocalMute)) {
+            app('sensor-discovery')->discover(new \App\Models\Sensor([
+                'poller_type' => 'snmp',
+                'sensor_class' => 'state',
+                'device_id' => $device['device_id'],
+                'sensor_oid' => $oidManLocalMute,
+                'sensor_index' => $index,
+                'sensor_type' => $manlocalmute_state_name,
+                'sensor_descr' => $label . $port_descr . ' Local Man Mute',
+                'sensor_divisor' => 1,
+                'sensor_multiplier' => 1,
+                'sensor_limit' => null,
+                'sensor_limit_warn' => null,
+                'sensor_limit_low' => null,
+                'sensor_limit_low_warn' => null,
+                'sensor_current' => $currentManLocalMute,
+                'entPhysicalIndex' => $index,
+                'entPhysicalIndex_measured' => 'ports',
+                'group' => 'Mute',
+            ]));
+        }
+        if (isset($currentAutoLocalMute)) {
+            app('sensor-discovery')->discover(new \App\Models\Sensor([
+                'poller_type' => 'snmp',
+                'sensor_class' => 'state',
+                'device_id' => $device['device_id'],
+                'sensor_oid' => $oidAutoLocalMute,
+                'sensor_index' => $index,
+                'sensor_type' => $autolocalmute_state_name,
+                'sensor_descr' => $label . $port_descr . ' Local Auto Mute',
+                'sensor_divisor' => 1,
+                'sensor_multiplier' => 1,
+                'sensor_limit' => null,
+                'sensor_limit_warn' => null,
+                'sensor_limit_low' => null,
+                'sensor_limit_low_warn' => null,
+                'sensor_current' => $currentAutoLocalMute,
+                'entPhysicalIndex' => $index,
+                'entPhysicalIndex_measured' => 'ports',
+                'group' => 'Mute',
+            ]));
+        }
+        if (isset($currentManRemoteMute)) {
+            app('sensor-discovery')->discover(new \App\Models\Sensor([
+                'poller_type' => 'snmp',
+                'sensor_class' => 'state',
+                'device_id' => $device['device_id'],
+                'sensor_oid' => $oidManRemoteMute,
+                'sensor_index' => $index,
+                'sensor_type' => $manremotemute_state_name,
+                'sensor_descr' => $label . $port_descr . ' Remote Man Mute',
+                'sensor_divisor' => 1,
+                'sensor_multiplier' => 1,
+                'sensor_limit' => null,
+                'sensor_limit_warn' => null,
+                'sensor_limit_low' => null,
+                'sensor_limit_low_warn' => null,
+                'sensor_current' => $currentManRemoteMute,
+                'entPhysicalIndex' => $index,
+                'entPhysicalIndex_measured' => 'ports',
+                'group' => 'Mute',
+            ]));
+        }
+        if (isset($currentAutoRemoteMute)) {
+            app('sensor-discovery')->discover(new \App\Models\Sensor([
+                'poller_type' => 'snmp',
+                'sensor_class' => 'state',
+                'device_id' => $device['device_id'],
+                'sensor_oid' => $oidAutoRemoteMute,
+                'sensor_index' => $index,
+                'sensor_type' => $autoremotemute_state_name,
+                'sensor_descr' => $label . $port_descr . ' Remote Auto Mute',
+                'sensor_divisor' => 1,
+                'sensor_multiplier' => 1,
+                'sensor_limit' => null,
+                'sensor_limit_warn' => null,
+                'sensor_limit_low' => null,
+                'sensor_limit_low_warn' => null,
+                'sensor_current' => $currentAutoRemoteMute,
+                'entPhysicalIndex' => $index,
+                'entPhysicalIndex_measured' => 'ports',
+                'group' => 'Mute',
+            ]));
+        }
     }
 }
 
