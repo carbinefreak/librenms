@@ -268,11 +268,12 @@ $alarm_data = SnmpQuery::mibs(['all'],
 foreach ($alarm_data as $index => $entry) {
     if (isset($entry['TSDIM-SUPPORT-MIB::tsdimAPTAlarmSeverity'])) {
         // Figure out the chassis alarm code
-        $oidAlarmSev = '.1.3.6.1.4.1.637.54.1.10.1.1.7.1.4.' . $index;
-        $oidProbableCause =  '.1.3.6.1.4.1.637.54.1.10.3.1.1.1.2.' . $index;
 
         //Explode the Index to extract the base index
         $baseIndex = explode('.', $index);
+
+        $oidAlarmSev = '.1.3.6.1.4.1.637.54.1.1.3.1.2.1.6.' . $baseIndex[0] . '.' . $baseIndex[2];
+        $oidProbableCause =  '.1.3.6.1.4.1.637.54.1.1.3.1.2.1.1.' . $baseIndex[0] . '.' . $baseIndex[2];
 
         // Pull the Values
         $AlarmSev = $alarm_data[$index]['TSDIM-SUPPORT-MIB::tsdimAPTAlarmSeverity'] ?? null;
