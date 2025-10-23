@@ -34,7 +34,7 @@ foreach ($radio_data as $index => $entry) {
         // Define descr as something sane as a fall through
         $port_descr = ' ' . $index;
 
-        // Decode the ifIndex into human readable ifDescr
+        // Decode the ifIndex into human readable description
         // Make sure its a Radio ID that starts with a '5'
         if( $indexArray[0] == '5' ) {
 
@@ -46,12 +46,12 @@ foreach ($radio_data as $index => $entry) {
             // UBT-T interfaces where the second digit is '1'
             if( $indexArray[1] == '1' && ( count($indexArray) == 5 ) ) {
 
-                // If the radio is a Primary when the 3rd digit is '1'
+                // The radio is a Primary when the 3rd digit is '1'
                 if ( $indexArray[2] == '1' ) {
                     $port_descr = ' Primary Slot:' . $indexArray[3] . ' Port:' . $indexArray[4];
                 }
 
-                // If the radio is a Spare when the 3rd digit is '0'
+                // The radio is a Spare when the 3rd digit is '0'
                 if ( $indexArray[2] == '0' ) {
                     $port_descr = ' Spare Slot:' . $indexArray[3] . ' Port:' . $indexArray[4];
                 }
@@ -259,10 +259,38 @@ foreach ($radio_data as $index => $entry) {
 
 
 // Fetch Alarm Data
-$alarm_data = SnmpQuery::mibs(['all'],
-    )->walk([
-    'TSDIM-SUPPORT-MIB::tsdimAPTTable',
-])->valuesByIndex();
+$alarm_data = SnmpQuery::mibs([
+    'ALU-PTPV2-MIB',
+    'OPTICSIM-MSPRing-MIB',
+    'OPTICSIM-COMMROU-MIB',
+    'OPTICSIM-EQPT-MIB',
+    'IEEE8021-CFM-MIB',
+    'L2VPN-VPLS-MIB',
+    'PW-TDM-MIB',
+    'OPTICSIM-RADIO-SWTC-MIB',
+    'OPTICSIM-RADIO-TRS-COMMON-MIB',
+    'OPTICSIM-TRS-COMMON-MIB',
+    'OPTICSIM-TRS-PDH-MIB',
+    'TIMETRA-CHASSIS-MIB',
+    'TIMETRA-GLOBAL-MIB',
+    'TIMETRA-TC-MIB',
+    'TROPIC-ACCESSPORT-MIB',
+    'TROPIC-GLOBAL-REG',
+    'TROPIC-NOTIFICATION-MIB',
+    'TROPIC-OPTICALCARD-MIB',
+    'TROPIC-SHELF-MIB',
+    'TROPIC-SLOT-MIB',
+    'TROPIC-SYSTEM-MIB',
+    'TROPIC-TC',
+    'TROPIC-WAVEKEY-MIB',
+    'TSDIM-SNMPNE-MIB',
+    'TSDIM-SNMP-TC',
+    'TSDIM-SUPPORT-MIB',
+    'XHAUL-IEEE8021-CFM-MIB',
+    'XHAUL-SAP-MIB',
+    'XHAUL-SERV-MIB',
+    'XHAUL-TC-MIB',
+    ])->walk(['TSDIM-SUPPORT-MIB::tsdimAPTTable',])->valuesByIndex();
 
 // Walk the tables for the radio states
 foreach ($alarm_data as $index => $entry) {
@@ -322,3 +350,4 @@ foreach ($alarm_data as $index => $entry) {
         ]));
     }
 }
+
