@@ -54,8 +54,8 @@ function read_var($name, &$array, $default = null)
  */
 function collectd_compare_host($a, $b)
 {
-    $ea = explode('.', $a);
-    $eb = explode('.', $b);
+    $ea = explode('.', (string) $a);
+    $eb = explode('.', (string) $b);
     $i = (count($ea) - 1);
     $j = (count($eb) - 1);
     while ($i >= 0 && $j >= 0) {
@@ -66,32 +66,6 @@ function collectd_compare_host($a, $b)
 
     return 0;
 }//end collectd_compare_host()
-
-/**
- * Fetch list of hosts found in collectd's datadirs.
- *
- * @return array Sorted list of hosts (sorted by label from rigth to left)
- */
-function collectd_list_hosts()
-{
-    $hosts = [];
-    foreach (LibrenmsConfig::get('datadirs') as $datadir) {
-        if ($d = @opendir($datadir)) {
-            while (($dent = readdir($d)) !== false) {
-                if ($dent != '.' && $dent != '..' && is_dir($datadir . '/' . $dent) && preg_match(REGEXP_HOST, $dent)) {
-                    $hosts[] = $dent;
-                }
-            }
-            closedir($d);
-        } else {
-            error_log('Failed to open datadir: ' . $datadir);
-        }
-    }
-    $hosts = array_unique($hosts);
-    usort($hosts, 'collectd_compare_host');
-
-    return $hosts;
-}
 
 /**
  * Fetch list of plugins found in collectd's datadirs for given host.
@@ -176,13 +150,13 @@ function collectd_list_pinsts($arg_host, $arg_plugin)
 function collectd_list_types($arg_host, $arg_plugin, $arg_pinst)
 {
     $types = [];
-    $my_plugin = $arg_plugin . (strlen($arg_pinst) ? '-' . $arg_pinst : '');
+    $my_plugin = $arg_plugin . (strlen((string) $arg_pinst) ? '-' . $arg_pinst : '');
     if (! preg_match(REGEXP_PLUGIN, $my_plugin)) {
         return $types;
     }
 
     foreach (LibrenmsConfig::get('datadirs') as $datadir) {
-        if (preg_match(REGEXP_HOST, $arg_host) && ($d = @opendir($datadir . '/' . $arg_host . '/' . $my_plugin))) {
+        if (preg_match(REGEXP_HOST, (string) $arg_host) && ($d = @opendir($datadir . '/' . $arg_host . '/' . $my_plugin))) {
             while (($dent = readdir($d)) !== false) {
                 if ($dent != '.' && $dent != '..' && is_file($datadir . '/' . $arg_host . '/' . $my_plugin . '/' . $dent) && substr($dent, strlen($dent) - 4) == '.rrd') {
                     $dent = substr($dent, 0, strlen($dent) - 4);
@@ -220,13 +194,13 @@ function collectd_list_types($arg_host, $arg_plugin, $arg_pinst)
 function collectd_list_tinsts($arg_host, $arg_plugin, $arg_pinst, $arg_type)
 {
     $tinsts = [];
-    $my_plugin = $arg_plugin . (strlen($arg_pinst) ? '-' . $arg_pinst : '');
+    $my_plugin = $arg_plugin . (strlen((string) $arg_pinst) ? '-' . $arg_pinst : '');
     if (! preg_match(REGEXP_PLUGIN, $my_plugin)) {
         return $tinsts;
     }
 
     foreach (LibrenmsConfig::get('datadirs') as $datadir) {
-        if (preg_match(REGEXP_HOST, $arg_host) && ($d = @opendir($datadir . '/' . $arg_host . '/' . $my_plugin))) {
+        if (preg_match(REGEXP_HOST, (string) $arg_host) && ($d = @opendir($datadir . '/' . $arg_host . '/' . $my_plugin))) {
             while (($dent = readdir($d)) !== false) {
                 if ($dent != '.' && $dent != '..' && is_file($datadir . '/' . $arg_host . '/' . $my_plugin . '/' . $dent) && substr($dent, strlen($dent) - 4) == '.rrd') {
                     $dent = substr($dent, 0, strlen($dent) - 4);
@@ -384,41 +358,33 @@ function _rrd_info($file)
 
             $key = trim(substr($s, 0, $p));
             $value = trim(substr($s, $p + 1));
-            if (strncmp($key, 'ds[', 3) == 0) {
+            if (str_starts_with($key, 'ds[')) {
                 // DS definition
                 $p = strpos($key, ']');
                 $ds = substr($key, 3, $p - 3);
-                if (! isset($info['DS'])) {
-                    $info['DS'] = [];
-                }
+                $info['DS'] ??= [];
 
                 $ds_key = substr($key, $p + 2);
 
-                if (strpos($ds_key, '[') === false) {
-                    if (! isset($info['DS']["$ds"])) {
-                        $info['DS']["$ds"] = [];
-                    }
+                if (! str_contains($ds_key, '[')) {
+                    $info['DS']["$ds"] ??= [];
 
                     $info['DS']["$ds"]["$ds_key"] = rrd_strip_quotes($value);
                 }
-            } elseif (strncmp($key, 'rra[', 4) == 0) {
+            } elseif (str_starts_with($key, 'rra[')) {
                 // RRD definition
                 $p = strpos($key, ']');
                 $rra = substr($key, 4, $p - 4);
-                if (! isset($info['RRA'])) {
-                    $info['RRA'] = [];
-                }
+                $info['RRA'] ??= [];
 
                 $rra_key = substr($key, $p + 2);
 
-                if (strpos($rra_key, '[') === false) {
-                    if (! isset($info['RRA']["$rra"])) {
-                        $info['RRA']["$rra"] = [];
-                    }
+                if (! str_contains($rra_key, '[')) {
+                    $info['RRA']["$rra"] ??= [];
 
                     $info['RRA']["$rra"]["$rra_key"] = rrd_strip_quotes($value);
                 }
-            } elseif (strpos($key, '[') === false) {
+            } elseif (! str_contains($key, '[')) {
                 $info[$key] = rrd_strip_quotes($value);
             }//end if
         }//end while
@@ -468,9 +434,7 @@ function collectd_draw_rrd($host, $plugin, $type, $pinst = null, $tinst = null, 
         }
     }
 
-    if (! isset($opts['rrd_opts'])) {
-        $opts['rrd_opts'] = [];
-    }
+    $opts['rrd_opts'] ??= [];
 
     if (isset($opts['logarithmic']) && $opts['logarithmic']) {
         array_unshift($opts['rrd_opts'], '-o');
@@ -528,8 +492,8 @@ function collectd_draw_rrd($host, $plugin, $type, $pinst = null, $tinst = null, 
 
     reset($rrdinfo['DS']);
     foreach ($rrdinfo['DS'] as $k => $v) {
-        if (strlen($k) > $l_max) {
-            $l_max = strlen($k);
+        if (strlen((string) $k) > $l_max) {
+            $l_max = strlen((string) $k);
         }
 
         if ($has_min) {
@@ -558,7 +522,7 @@ function collectd_draw_rrd($host, $plugin, $type, $pinst = null, $tinst = null, 
     reset($rrdinfo['DS']);
     $n = 1;
     foreach ($rrdinfo['DS'] as $k => $v) {
-        $graph[] = sprintf('LINE1:%s_avg#%s:%s ', $k, rrd_get_color($n++, true), $k . substr('                  ', 0, $l_max - strlen($k)));
+        $graph[] = sprintf('LINE1:%s_avg#%s:%s ', $k, rrd_get_color($n++, true), $k . substr('                  ', 0, $l_max - strlen((string) $k)));
         if (isset($opts['tinylegend']) && $opts['tinylegend']) {
             continue;
         }
@@ -613,7 +577,7 @@ function collectd_draw_rrd($host, $plugin, $type, $pinst = null, $tinst = null, 
     $cmd = RRDTOOL;
     $count_rrd_cmd = count($rrd_cmd);
     for ($i = 1; $i < $count_rrd_cmd; $i++) {
-        $cmd .= ' ' . escapeshellarg($rrd_cmd[$i]);
+        $cmd .= ' ' . escapeshellarg((string) $rrd_cmd[$i]);
     }
 
     return $cmd;
@@ -641,9 +605,7 @@ function collectd_draw_generic($timespan, $host, $plugin, $type, $pinst = null, 
         }
     }
 
-    if (is_null($timespan_def)) {
-        $timespan_def = reset($timespans);
-    }
+    $timespan_def ??= reset($timespans);
 
     if (! isset($GraphDefs[$type])) {
         return false;
@@ -692,7 +654,7 @@ function collectd_draw_generic($timespan, $host, $plugin, $type, $pinst = null, 
         $cmd = RRDTOOL;
         $count_rrdgraph = count($rrdgraph);
         for ($i = 1; $i < $count_rrdgraph; $i++) {
-            $cmd .= ' ' . escapeshellarg($rrdgraph[$i]);
+            $cmd .= ' ' . escapeshellarg((string) $rrdgraph[$i]);
         }
 
         return $cmd;
@@ -722,17 +684,11 @@ function collectd_draw_meta_stack(&$opts, &$sources)
         }
     }
 
-    if (! isset($opts['title'])) {
-        $opts['title'] = 'Unknown title';
-    }
+    $opts['title'] ??= 'Unknown title';
 
-    if (! isset($opts['rrd_opts'])) {
-        $opts['rrd_opts'] = [];
-    }
+    $opts['rrd_opts'] ??= [];
 
-    if (! isset($opts['colors'])) {
-        $opts['colors'] = [];
-    }
+    $opts['colors'] ??= [];
 
     if (isset($opts['logarithmic']) && $opts['logarithmic']) {
         array_unshift($opts['rrd_opts'], '-o');
@@ -771,10 +727,10 @@ function collectd_draw_meta_stack(&$opts, &$sources)
     foreach ($sources as &$inst_data) {
         $inst_name = $inst_data['name'];
         $file = $inst_data['file'];
-        $ds = isset($inst_data['ds']) ? $inst_data['ds'] : 'value';
+        $ds = $inst_data['ds'] ?? 'value';
 
-        if (strlen($inst_name) > $max_inst_name) {
-            $max_inst_name = strlen($inst_name);
+        if (strlen((string) $inst_name) > $max_inst_name) {
+            $max_inst_name = strlen((string) $inst_name);
         }
 
         if (! is_file($file)) {
@@ -804,11 +760,11 @@ function collectd_draw_meta_stack(&$opts, &$sources)
         $inst_name = $inst_data['name'];
         // $legend = sprintf('%s', $inst_name);
         $legend = $inst_name;
-        while (strlen($legend) < $max_inst_name) {
+        while (strlen((string) $legend) < $max_inst_name) {
             $legend .= ' ';
         }
 
-        $number_format = isset($opts['number_format']) ? $opts['number_format'] : '%6.1lf';
+        $number_format = $opts['number_format'] ?? '%6.1lf';
 
         if (isset($opts['colors'][$inst_name])) {
             $line_color = new CollectdColor($opts['colors'][$inst_name]);
@@ -832,7 +788,7 @@ function collectd_draw_meta_stack(&$opts, &$sources)
     $rrdcmd = RRDTOOL;
     $count_cmd = count($cmd);
     for ($i = 1; $i < $count_cmd; $i++) {
-        $rrdcmd .= ' ' . escapeshellarg($cmd[$i]);
+        $rrdcmd .= ' ' . escapeshellarg((string) $cmd[$i]);
     }
 
     return $rrdcmd;
@@ -859,17 +815,11 @@ function collectd_draw_meta_line(&$opts, &$sources)
         }
     }
 
-    if (! isset($opts['title'])) {
-        $opts['title'] = 'Unknown title';
-    }
+    $opts['title'] ??= 'Unknown title';
 
-    if (! isset($opts['rrd_opts'])) {
-        $opts['rrd_opts'] = [];
-    }
+    $opts['rrd_opts'] ??= [];
 
-    if (! isset($opts['colors'])) {
-        $opts['colors'] = [];
-    }
+    $opts['colors'] ??= [];
 
     if (isset($opts['logarithmic']) && $opts['logarithmic']) {
         array_unshift($opts['rrd_opts'], '-o');
@@ -907,10 +857,10 @@ function collectd_draw_meta_line(&$opts, &$sources)
     foreach ($sources as &$inst_data) {
         $inst_name = $inst_data['name'];
         $file = $inst_data['file'];
-        $ds = isset($inst_data['ds']) ? $inst_data['ds'] : 'value';
+        $ds = $inst_data['ds'] ?? 'value';
 
-        if (strlen($inst_name) > $max_inst_name) {
-            $max_inst_name = strlen($inst_name);
+        if (strlen((string) $inst_name) > $max_inst_name) {
+            $max_inst_name = strlen((string) $inst_name);
         }
 
         if (! is_file($file)) {
@@ -929,7 +879,7 @@ function collectd_draw_meta_line(&$opts, &$sources)
             $legend .= ' ';
         }
 
-        $number_format = isset($opts['number_format']) ? $opts['number_format'] : '%6.1lf';
+        $number_format = $opts['number_format'] ?? '%6.1lf';
 
         if (isset($opts['colors'][$inst_name])) {
             $line_color = new CollectdColor($opts['colors'][$inst_name]);
@@ -949,7 +899,7 @@ function collectd_draw_meta_line(&$opts, &$sources)
     $rrdcmd = RRDTOOL;
     $count_cmd = count($cmd);
     for ($i = 1; $i < $count_cmd; $i++) {
-        $rrdcmd .= ' ' . escapeshellarg($cmd[$i]);
+        $rrdcmd .= ' ' . escapeshellarg((string) $cmd[$i]);
     }
 
     return $rrdcmd;

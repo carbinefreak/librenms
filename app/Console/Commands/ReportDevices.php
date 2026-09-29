@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 
 class ReportDevices extends LnmsCommand
@@ -71,6 +72,9 @@ class ReportDevices extends LnmsCommand
         return 0;
     }
 
+    /**
+     * @return Collection<int, array>
+     */
     protected function fetchDeviceData($fields): Collection
     {
         $columns = $fields->pluck('columns')->flatten()->all();
@@ -176,13 +180,16 @@ class ReportDevices extends LnmsCommand
          * with processing one device while we fetch the info for the next.
          */
         Device::when($has_relationships, fn ($q) => $q->with($relationships))
-            ->whereDeviceSpec($this->argument('device spec'))->orderBy('device_id')->chunk(1, function ($device) {
+            ->whereDeviceSpec($this->argument('device spec'))->orderBy('device_id')->chunk(1, function ($device): void {
                 $this->line(json_encode($device[0]));
             });
 
         return 0;
     }
 
+    /**
+     * @param  array|Collection<int, array>  $rows
+     */
     protected function printReport(array $headers, array|Collection $rows): void
     {
         $output = $this->option('output');
@@ -245,20 +252,23 @@ class ReportDevices extends LnmsCommand
         }
     }
 
-    public function completeOptionValue(DynamicInputOption $option, string $current): ?Collection
+    /**
+     * @return Collection<int, string>|null
+     */
+    public function completeOptionValue(DynamicInputOption $option, string $current, ?InputInterface $input = null): ?Collection
     {
         if ($option->getName() == 'fields') {
             return collect()
                 ->merge(Schema::getColumnListing('devices'))
                 ->merge(array_keys($this->getSyntheticFields()))
                 ->merge(Device::definedRelations())
-                ->when($current, fn ($c) => $c->filter(fn ($i) => str_starts_with($i, $current)));
+                ->when($current, fn ($c) => $c->filter(fn ($i) => str_starts_with((string) $i, $current)));
         }
 
         if ($option->getName() == 'relationships') {
             return collect()
                 ->merge($this->getRelationships())
-                ->when($current, fn ($c) => $c->filter(fn ($i) => str_starts_with($i, $current)));
+                ->when($current, fn ($c) => $c->filter(fn ($i) => str_starts_with((string) $i, $current)));
         }
 
         return null;

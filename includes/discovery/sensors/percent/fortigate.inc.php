@@ -20,10 +20,10 @@ $fgDhcpTables = SnmpQuery::hideMib()->walk('FORTINET-FORTIGATE-MIB::fgDhcpTables
 
 if (! empty($fgDhcpTables['fgDhcpLeaseUsage'])) {
     foreach ($fgDhcpTables['fgDhcpLeaseUsage'] as $vdomID => $table) {
-        $vdomName = SnmpQuery::enumStrings()->hideMib()->get('FORTINET-FORTIGATE-MIB:fgVdEntName.' . $vdomID)->value();
+        $vdomName = SnmpQuery::enumStrings()->hideMib()->get('FORTINET-FORTIGATE-MIB::fgVdEntName.' . $vdomID)->value();
 
         foreach ($table as $index => $value) {
-            $indexSplit = explode('.', $index);
+            $indexSplit = explode('.', (string) $index);
             $fgDhcpServerID = $indexSplit[1];
 
             discover_sensor(

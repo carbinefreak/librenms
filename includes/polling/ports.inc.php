@@ -8,7 +8,6 @@ use LibreNMS\RRD\RrdDefinition;
 use LibreNMS\Util\Debug;
 use LibreNMS\Util\Mac;
 use LibreNMS\Util\Number;
-use LibreNMS\Util\StringHelpers;
 
 // Build SNMP Cache Array
 $data_oids = [
@@ -287,7 +286,7 @@ if ($device['os'] === 'f5' && (version_compare($device['version'], '11.2.0', '>=
         $fetched_data_string .= '(Full ports polling): ';
         // For devices that are on the bad_ifXentry list, try fetching ifAlias to have nice interface descriptions.
 
-        if (! in_array(strtolower($device['hardware'] ?? ''), array_map('strtolower', (array) LibrenmsConfig::getOsSetting($device['os'], 'bad_ifXEntry', [])))) {
+        if (! in_array(strtolower($device['hardware'] ?? ''), array_map(strtolower(...), (array) LibrenmsConfig::getOsSetting($device['os'], 'bad_ifXEntry', [])))) {
             $port_stats = snmpwalk_cache_oid($device, 'ifXEntry', $port_stats, 'IF-MIB');
         } else {
             $port_stats = snmpwalk_cache_oid($device, 'ifAlias', $port_stats, 'IF-MIB', null, '-OQUst');
@@ -345,7 +344,7 @@ if (LibrenmsConfig::get('enable_ports_poe')) {
                 are cpeExtStuff.X.Z instead of cpeExtStuff.X.Y.Z
                 We need to ignore the middle subslot number so this is slot.port
                 */
-                if (preg_match('/^[a-z]+ethernet(\d+)\/(\d+)(?:\/(\d+))?$/i', $if_descr['ifDescr'], $matches)) {
+                if (preg_match('/^[a-z]+ethernet(\d+)\/(\d+)(?:\/(\d+))?$/i', (string) $if_descr['ifDescr'], $matches)) {
                     $port_ent_to_if[$matches[1] . '.' . ($matches[3] ?? $matches[2])] = ['portIfIndex' => $if_index];
                 }
             }
@@ -355,7 +354,7 @@ if (LibrenmsConfig::get('enable_ports_poe')) {
             //We replace the ENTITY EntIndex by the IfIndex using the portIfIndex table (stored in $port_ent_to_if).
             //Result is merged into $port_stats
             if ($port_ent_to_if[$p_index] && $port_ent_to_if[$p_index]['portIfIndex'] && $port_stats[$port_ent_to_if[$p_index]['portIfIndex']]) {
-                $port_stats[$port_ent_to_if[$p_index]['portIfIndex']] = $port_stats[$port_ent_to_if[$p_index]['portIfIndex']] + $p_stats;
+                $port_stats[$port_ent_to_if[$p_index]['portIfIndex']] += $p_stats;
             }
         }
     } elseif ($device['os'] == 'vrp') {
@@ -387,7 +386,7 @@ if (LibrenmsConfig::get('enable_ports_poe')) {
         }
         foreach ($port_stats_temp as $key => $value) {
             //remove the group index and only keep the ifIndex
-            [$group_id, $if_id] = explode('.', $key);
+            [$group_id, $if_id] = explode('.', (string) $key);
             $port_stats[$if_id] = array_merge($port_stats[$if_id], $value);
         }
     } elseif ($device['os'] == 'jetstream') {
@@ -397,7 +396,7 @@ if (LibrenmsConfig::get('enable_ports_poe')) {
 
         $port_ent_to_if = [];
         foreach ($ifTable_ifDescr as $if_index => $if_descr) {
-            if (preg_match('/^[a-z]+ethernet \d+\/\d+\/(\d+)$/i', $if_descr['ifDescr'], $matches)) {
+            if (preg_match('/^[a-z]+ethernet \d+\/\d+\/(\d+)$/i', (string) $if_descr['ifDescr'], $matches)) {
                 $port_ent_to_if[$matches[1]] = $if_index;
             }
         }
@@ -406,6 +405,15 @@ if (LibrenmsConfig::get('enable_ports_poe')) {
             $if_id = $port_ent_to_if[$p_index];
             if (is_array($port_stats[$if_id])) {
                 $port_stats[$if_id] = array_merge($port_stats[$if_id], $p_stats);
+            }
+        }
+    } elseif ($device['os'] == 'ironware') {
+        $fetched_data_string .= 'snAgentPoePortTable ';
+        $port_stats_poe = SnmpQuery::hideMib()->walk('FOUNDRY-POE-MIB::snAgentPoePortTable')->table(1);
+
+        foreach ($port_stats_poe as $p_index => $p_stats) {
+            if (is_array($port_stats[$p_index])) {
+                $port_stats[$p_index] = array_merge($port_stats[$p_index], $p_stats);
             }
         }
     }
@@ -574,7 +582,7 @@ foreach ($ports as $port) {
         // Check to make sure Port data is cached.
         $this_port = &$port_stats[$ifIndex];
 
-        if ($device['os'] == 'vmware-vcsa' && preg_match('/Device ([a-z0-9]+) at .*/', $this_port['ifDescr'], $matches)) {
+        if ($device['os'] == 'vmware-vcsa' && preg_match('/Device ([a-z0-9]+) at .*/', (string) $this_port['ifDescr'], $matches)) {
             $this_port['ifName'] = $matches[1];
         }
 
@@ -673,11 +681,11 @@ foreach ($ports as $port) {
                 $ifAlias_override = DeviceCache::getPrimary()->getAttrib('ifName:' . $port['ifName']);
                 if ($ifAlias_override !== null) {
                     // handle legacy '1' setting, otherwise use value set by override
-                    $current_oid = $ifAlias_override === '1' ? $port['ifAlias'] : $ifAlias_override;
+                    $ifAlias_override = $ifAlias_override === '1' ? $port['ifAlias'] : $ifAlias_override;
+                    $current_oid = $ifAlias_override;
                 } else {
                     $current_oid = $this_port['ifAlias'];
                 }
-                $current_oid = StringHelpers::inferEncoding($current_oid); // prevent invalid non-utf8 characters
             }
             if ($oid == 'ifSpeed') {
                 $ifSpeed_override = DeviceCache::getPrimary()->getAttrib('ifSpeed:' . $port['ifName']);
@@ -734,8 +742,15 @@ foreach ($ports as $port) {
             }
         }//end foreach
 
-        // Parse description (usually ifAlias) if config option set
-        if (LibrenmsConfig::has('port_descr_parser') && is_file(LibrenmsConfig::get('install_dir') . '/' . LibrenmsConfig::get('port_descr_parser'))) {
+        // Parse description (usually ifAlias) if config option set.
+        $port_parser_file = LibrenmsConfig::has('port_descr_parser')
+            ? realpath(LibrenmsConfig::get('install_dir') . '/' . LibrenmsConfig::get('port_descr_parser'))
+            : false;
+        $port_parser_base = realpath(LibrenmsConfig::get('install_dir') . '/includes');
+
+        if ($port_parser_file && $port_parser_base
+            && str_starts_with($port_parser_file, $port_parser_base . DIRECTORY_SEPARATOR)
+            && str_ends_with($port_parser_file, '.php')) {
             $port_attribs = [
                 'type',
                 'descr',
@@ -745,21 +760,28 @@ foreach ($ports as $port) {
             ];
 
             $port_ifAlias = []; // for port descr parser mappings
-            include LibrenmsConfig::get('install_dir') . '/' . LibrenmsConfig::get('port_descr_parser');
+            $port_parser ??= include $port_parser_file;
+
+            // handle functional style parsers
+            if (is_callable($port_parser)) {
+                $port_ifAlias = app()->call($port_parser, [
+                    'ifAlias' => $this_port['ifAlias'] ?? '',
+                    'ifAlias_override' => $ifAlias_override ?? null,
+                    'ifIndex' => $port['ifIndex'] ?? '',
+                    'ifName' => $this_port['ifName'] ?? '',
+                    'port_id' => $port['port_id'] ?? 0,
+                ]);
+            } else {
+                unset($port_parser);
+            }
 
             foreach ($port_attribs as $attrib) {
                 $attrib_key = 'port_descr_' . $attrib;
-                if (($port_ifAlias[$attrib] ?? null) != $port[$attrib_key]) {
-                    if (! isset($port_ifAlias[$attrib])) {
-                        $port_ifAlias[$attrib] = null;
-                        $log_port = 'NULL';
-                    } else {
-                        $log_port = $port_ifAlias[$attrib];
-                    }
+                $attrib_value = $port_ifAlias[$attrib] ?? null;
+                if ($attrib_value != $port[$attrib_key]) {
+                    $port['update'][$attrib_key] = $attrib_value;
 
-                    $port['update'][$attrib_key] = $port_ifAlias[$attrib];
-                    Eventlog::log($attrib . ': ' . $port[$attrib_key] . ' -> ' . $log_port, $device['device_id'], 'interface', Severity::Notice, $port['port_id']);
-                    unset($log_port);
+                    Eventlog::log($attrib . ': ' . $port[$attrib_key] . ' -> ' . ($attrib_value ?? 'NULL'), $device['device_id'], 'interface', Severity::Notice, $port['port_id']);
                 }
             }
         }//end if

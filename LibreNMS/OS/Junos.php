@@ -128,11 +128,12 @@ class Junos extends \LibreNMS\OS implements SlaDiscovery, OSPolling, SlaPolling,
         }
 
         $chassisName = null;
+        $boxSerial = $this->getDevice()->serial;
 
         $containers = SnmpQuery::hideMib()
             ->mibs(['JUNIPER-CHASSIS-DEFINES-MIB'])
             ->walk('JUNIPER-MIB::jnxContainersTable')
-            ->mapTable(function ($entry, $index) use (&$chassisName) {
+            ->mapTable(function ($entry, $index) use (&$chassisName, $boxSerial) {
                 $modelName = $this->parseType($entry['jnxContainersType'] ?? null, $chassisName);
                 $chassisName ??= $modelName;
                 $descr = $entry['jnxContainersDescr'] ?? null;
@@ -144,6 +145,8 @@ class Junos extends \LibreNMS\OS implements SlaDiscovery, OSPolling, SlaPolling,
                     'entPhysicalDescr' => $descr,
                     'entPhysicalModelName' => $modelName,
                     'entPhysicalContainedIn' => $within,
+                    'entPhysicalSerialNum' => $within == '0' ? $boxSerial : null,
+                    'entPhysicalMfgName' => 'Juniper',
                 ]);
             });
 
@@ -154,33 +157,21 @@ class Junos extends \LibreNMS\OS implements SlaDiscovery, OSPolling, SlaPolling,
         return $containers->merge(SnmpQuery::hideMib()->enumStrings()
             ->mibs(['JUNIPER-CHASSIS-DEFINES-MIB'])
             ->walk('JUNIPER-MIB::jnxContentsTable')
-            ->mapTable(function ($entry, $container, $indexL1, $indexL2, $indexL3) use ($chassisName, $containers) {
-                // set serial for the chassis, but don't add another container
-                if ($container == 1 && $indexL1 == 1 && $indexL2 == 0 && $indexL3 == 0) {
-                    $chassis = $containers->firstWhere('entPhysicalClass', 'chassis');
-                    if ($chassis) {
-                        $chassis->entPhysicalSerialNum = $entry['jnxContentsSerialNo'] ?? null;
-
-                        return null;
-                    }
-                }
-
-                // Juniper's MIB doesn't have the same objects as the Entity MIB, so some values are made up here.
-                return new EntPhysical([
-                    'entPhysicalIndex' => $container + $indexL1 * 1000000 + $indexL2 * 10000 + $indexL3 * 100,
-                    'entPhysicalDescr' => $entry['jnxContentsDescr'] ?? null,
-                    'entPhysicalContainedIn' => $container,
-                    'entPhysicalClass' => $this->parseClass($entry['jnxContentsType'] ?? null),
-                    'entPhysicalName' => $entry['jnxOperatingDescr'] ?? null,
-                    'entPhysicalSerialNum' => $entry['jnxContentsSerialNo'] ?? null,
-                    'entPhysicalModelName' => $entry['jnxContentsPartNo'] ?? null,
-                    'entPhysicalMfgName' => 'Juniper',
-                    'entPhysicalVendorType' => $this->parseType($entry['jnxContentsType'] ?? null, $chassisName),
-                    'entPhysicalParentRelPos' => -1,
-                    'entPhysicalHardwareRev' => $entry['jnxContentsRevision'] ?? null,
-                    'entPhysicalIsFRU' => isset($entry['jnxContentsSerialNo']) ? ($entry['jnxContentsSerialNo'] == 'BUILTIN' ? 'false' : 'true') : null,
-                ]);
-            }))->filter();
+            // Juniper's MIB doesn't have the same objects as the Entity MIB, so some values are made up here.
+            ->mapTable(fn ($entry, $container, $indexL1, $indexL2, $indexL3) => new EntPhysical([
+                'entPhysicalIndex' => $container + $indexL1 * 1000000 + $indexL2 * 10000 + $indexL3 * 100,
+                'entPhysicalDescr' => $entry['jnxContentsDescr'] ?? null,
+                'entPhysicalContainedIn' => $container,
+                'entPhysicalClass' => $this->parseClass($entry['jnxContentsType'] ?? null),
+                'entPhysicalName' => $entry['jnxOperatingDescr'] ?? null,
+                'entPhysicalSerialNum' => $entry['jnxContentsSerialNo'] ?? null,
+                'entPhysicalModelName' => $entry['jnxContentsPartNo'] ?? null,
+                'entPhysicalMfgName' => 'Juniper',
+                'entPhysicalVendorType' => $this->parseType($entry['jnxContentsType'] ?? null, $chassisName),
+                'entPhysicalParentRelPos' => -1,
+                'entPhysicalHardwareRev' => $entry['jnxContentsRevision'] ?? null,
+                'entPhysicalIsFRU' => isset($entry['jnxContentsSerialNo']) ? ($entry['jnxContentsSerialNo'] == 'BUILTIN' ? 'false' : 'true') : null,
+            ])))->filter();
     }
 
     public function pollSlas($slas): void
@@ -251,24 +242,16 @@ class Junos extends \LibreNMS\OS implements SlaDiscovery, OSPolling, SlaPolling,
      */
     private function retrieveJuniperType($rtt_type)
     {
-        switch ($rtt_type) {
-            case 'enterprises.2636.3.7.2.1':
-                return 'IcmpTimeStamp';
-            case 'enterprises.2636.3.7.2.2':
-                return 'HttpGet';
-            case 'enterprises.2636.3.7.2.3':
-                return 'HttpGetMetadata';
-            case 'enterprises.2636.3.7.2.4':
-                return 'DnsQuery';
-            case 'enterprises.2636.3.7.2.5':
-                return 'NtpQuery';
-            case 'enterprises.2636.3.7.2.6':
-                return 'UdpTimestamp';
-            case 'zeroDotZero':
-                return 'twamp';
-            default:
-                return str_replace('ping', '', $rtt_type);
-        }
+        return match ($rtt_type) {
+            'enterprises.2636.3.7.2.1' => 'IcmpTimeStamp',
+            'enterprises.2636.3.7.2.2' => 'HttpGet',
+            'enterprises.2636.3.7.2.3' => 'HttpGetMetadata',
+            'enterprises.2636.3.7.2.4' => 'DnsQuery',
+            'enterprises.2636.3.7.2.5' => 'NtpQuery',
+            'enterprises.2636.3.7.2.6' => 'UdpTimestamp',
+            'zeroDotZero' => 'twamp',
+            default => str_replace('ping', '', $rtt_type),
+        };
     }
 
     /**
@@ -292,7 +275,7 @@ class Junos extends \LibreNMS\OS implements SlaDiscovery, OSPolling, SlaPolling,
 
         // $chassisName is known
         $name = preg_replace("/jnx($chassisName)?([^.]+).*/", '$2', $type);
-        $words = preg_split('/(^[^A-Z]+|[A-Z][^A-Z0-9]+)/', $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+        $words = preg_split('/(^[^A-Z]+|[A-Z][^A-Z0-9]+)/', (string) $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
 
         return implode(' ', $words);
     }
@@ -336,13 +319,11 @@ class Junos extends \LibreNMS\OS implements SlaDiscovery, OSPolling, SlaPolling,
 
         // could use improvement by mapping JUNIPER-IFOPTICS-MIB::jnxOpticsConfigTable for a tiny bit more info
         return SnmpQuery::cache()->walk('JUNIPER-IFOPTICS-MIB::jnxOpticsPMCurrentTable')
-            ->mapTable(function ($data, $ifIndex) {
-                return new Transceiver([
-                    'port_id' => (int) PortCache::getIdFromIfIndex($ifIndex),
-                    'index' => $ifIndex,
-                    'entity_physical_index' => $ifIndex,
-                ]);
-            });
+            ->mapTable(fn ($data, $ifIndex) => new Transceiver([
+                'port_id' => (int) PortCache::getIdFromIfIndex($ifIndex),
+                'index' => $ifIndex,
+                'entity_physical_index' => $ifIndex,
+            ]));
     }
 
     private function findTransceiverEntityByPortName(array $entPhysical, ?string $ifName): array
@@ -396,28 +377,24 @@ class Junos extends \LibreNMS\OS implements SlaDiscovery, OSPolling, SlaPolling,
             return $QBridgeMibVlans;
         }
 
-        $vlans = SnmpQuery::enumStrings()->walk('JUNIPER-VLAN-MIB::jnxExVlanTable')->mapTable(function ($data, $vlanId) {
-            return new Vlan([
-                'vlan_vlan' => $data['JUNIPER-VLAN-MIB::jnxExVlanTag'],
-                'vlan_domain' => $data['JUNIPER-VLAN-MIB::jnxExVlanPortGroupInstance'],
-                'vlan_type' => $data['JUNIPER-VLAN-MIB::jnxExVlanType'],
-                'vlan_name' => $data['JUNIPER-VLAN-MIB::jnxExVlanName'],
-            ]);
-        });
+        $vlans = SnmpQuery::enumStrings()->walk('JUNIPER-VLAN-MIB::jnxExVlanTable')->mapTable(fn ($data, $vlanId) => new Vlan([
+            'vlan_vlan' => $data['JUNIPER-VLAN-MIB::jnxExVlanTag'],
+            'vlan_domain' => $data['JUNIPER-VLAN-MIB::jnxExVlanPortGroupInstance'],
+            'vlan_type' => $data['JUNIPER-VLAN-MIB::jnxExVlanType'],
+            'vlan_name' => $data['JUNIPER-VLAN-MIB::jnxExVlanName'],
+        ]));
 
         if ($vlans->isNotEmpty()) {
             return $vlans;
         }
 
         return SnmpQuery::enumStrings()->walk('JUNIPER-L2ALD-MIB::jnxL2aldVlanTable')
-            ->mapTable(function ($data) {
-                return new Vlan([
-                    'vlan_vlan' => $data['JUNIPER-L2ALD-MIB::jnxL2aldVlanTag'] ?? 0,
-                    'vlan_domain' => 1,
-                    'vlan_type' => $data['JUNIPER-L2ALD-MIB::jnxL2aldVlanType'] ?? '',
-                    'vlan_name' => $data['JUNIPER-L2ALD-MIB::jnxL2aldVlanName'] ?? '',
-                ]);
-            });
+            ->mapTable(fn ($data) => new Vlan([
+                'vlan_vlan' => $data['JUNIPER-L2ALD-MIB::jnxL2aldVlanTag'] ?? 0,
+                'vlan_domain' => 1,
+                'vlan_type' => $data['JUNIPER-L2ALD-MIB::jnxL2aldVlanType'] ?? '',
+                'vlan_name' => $data['JUNIPER-L2ALD-MIB::jnxL2aldVlanName'] ?? '',
+            ]));
     }
 
     public function discoverVlanPorts(Collection $vlans): Collection

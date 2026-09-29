@@ -31,6 +31,7 @@ use App\Models\Device;
 use Illuminate\Support\Arr;
 use LibreNMS\Enum\PortAssociationMode;
 use LibreNMS\Exceptions\HostIpExistsException;
+use LibreNMS\Exceptions\HostNameEmptyException;
 use LibreNMS\Exceptions\HostnameExistsException;
 use LibreNMS\Exceptions\HostSysnameExistsException;
 use LibreNMS\Exceptions\HostUnreachablePingException;
@@ -41,15 +42,8 @@ use SnmpQuery;
 
 class ValidateDeviceAndCreate
 {
-    private Device $device;
-    private bool $force;
-    private bool $ping_fallback;
-
-    public function __construct(Device $device, bool $force = false, bool $ping_fallback = false)
+    public function __construct(private readonly Device $device, private readonly bool $force = false, private readonly bool $ping_fallback = false)
     {
-        $this->device = $device;
-        $this->force = $force;
-        $this->ping_fallback = $ping_fallback;
     }
 
     /**
@@ -62,6 +56,10 @@ class ValidateDeviceAndCreate
      */
     public function execute(): bool
     {
+        if (empty($this->device->hostname)) {
+            throw new HostNameEmptyException();
+        }
+
         if ($this->device->exists) {
             return false;
         }
@@ -72,7 +70,7 @@ class ValidateDeviceAndCreate
         if (! $this->force) {
             $this->exceptIfIpExists();
 
-            if (! app(DeviceIsPingable::class)->execute($this->device)->success()) {
+            if (! app(DeviceIsPingable::class)->execute($this->device)->isAlive()) {
                 throw new HostUnreachablePingException($this->device->hostname);
             }
 
@@ -105,9 +103,7 @@ class ValidateDeviceAndCreate
         // which snmp version should we try (and in what order)
         $snmp_versions = $this->device->snmpver ? [$this->device->snmpver] : LibrenmsConfig::get('snmp.version');
 
-        $communities = Arr::where(Arr::wrap(LibrenmsConfig::get('snmp.community')), function ($community) {
-            return $community && is_string($community);
-        });
+        $communities = Arr::where(Arr::wrap(LibrenmsConfig::get('snmp.community')), fn ($community) => $community && is_string($community));
         if ($this->device->community) {
             array_unshift($communities, $this->device->community);
         }
@@ -228,7 +224,7 @@ class ValidateDeviceAndCreate
         }
 
         if (Device::where('sysName', $this->device->sysName)
-            ->when(LibrenmsConfig::get('mydomain'), function ($query, $domain) {
+            ->when(LibrenmsConfig::get('mydomain'), function ($query, $domain): void {
                 $query->orWhere('sysName', rtrim($this->device->sysName, '.') . '.' . $domain);
             })->exists()) {
             throw new HostSysnameExistsException($this->device->hostname, $this->device->sysName);

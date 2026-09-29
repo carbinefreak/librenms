@@ -18,11 +18,14 @@ if (isset($app->data['checks'])) {
         if (isset($checks_list[0])) {
             echo 'Check Info: ';
             foreach ($checks_list as $index => $check) {
-                $label = $vars['sneck_check'] == $check
-                    ? '<span class="pagemenu-selected">' . htmlspecialchars($check) . '</span>'
-                    : htmlspecialchars($check);
+                $label = htmlspecialchars((string) $check);
+                $link = generate_link($label, $link_array, ['sneck_check' => $check]);
 
-                echo generate_link($label, $link_array, ['sneck_check' => $check]) . "\n";
+                $link = $vars['sneck_check'] == $check
+                    ? '<span class="pagemenu-selected">' . $link . '</span>'
+                    : $link;
+
+                echo $link . "\n";
 
                 if ($index < (count($checks_list) - 1)) {
                     echo ', ';
@@ -34,11 +37,14 @@ if (isset($app->data['checks'])) {
         if (isset($debugs_list[0])) {
             echo 'Debug Info: ';
             foreach ($debugs_list as $index => $debug) {
-                $label = $vars['sneck_debug'] == $debug
-                    ? '<span class="pagemenu-selected">' . htmlspecialchars($debug) . '</span>'
-                    : htmlspecialchars($debug);
+                $label = htmlspecialchars((string) $debug);
+                $link = generate_link($label, $link_array, ['sneck_debug' => $debug]);
 
-                echo generate_link($label, $link_array, ['sneck_debug' => $debug]) . "\n";
+                $link = $vars['sneck_debug'] == $debug
+                    ? '<span class="pagemenu-selected">' . $link . '</span>'
+                    : $link;
+
+                echo $link . "\n";
 
                 if ($index < (count($debugs_list) - 1)) {
                     echo ', ';
@@ -129,7 +135,7 @@ if ((isset($vars['sneck_check']) && isset($app->data['checks'][$vars['sneck_chec
         print_optionbar_start();
         echo 'Last Return...<br>';
         echo "<b>Alert(s):</b><br>\n";
-        echo str_replace("\n", "<br>\n", htmlspecialchars($app->data['alertString'])) . "<br><br>\n";
+        echo str_replace("\n", "<br>\n", htmlspecialchars((string) $app->data['alertString'])) . "<br><br>\n";
         echo "<b>Raw JSON:</b><br>\n";
         echo "<pre>\n" . htmlspecialchars(json_encode($app->data, JSON_PRETTY_PRINT)) . "</pre>\n";
         print_optionbar_end();

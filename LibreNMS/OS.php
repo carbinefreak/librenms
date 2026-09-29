@@ -171,16 +171,12 @@ class OS implements
         }
 
         // create missing graphs
-        $device->graphs()->saveMany($graphs->diff($device->graphs->pluck('graph'))->map(function ($graph) {
-            return new DeviceGraph(['graph' => $graph]);
-        }));
+        $device->graphs()->saveMany($graphs->diff($device->graphs->pluck('graph'))->map(fn ($graph) => new DeviceGraph(['graph' => $graph])));
     }
 
     public function preCache()
     {
-        if (is_null($this->pre_cache)) {
-            $this->pre_cache = YamlDiscovery::preCache($this);
-        }
+        $this->pre_cache ??= YamlDiscovery::preCache($this);
 
         return $this->pre_cache;
     }
@@ -205,7 +201,7 @@ class OS implements
 
         if (! isset($this->cache['cache_oid'][$oid])) {
             $data = snmpwalk_cache_oid($this->getDeviceArray(), $oid, [], $mib, null, $snmpflags);
-            $this->cache['cache_oid'][$oid] = array_map('current', $data);
+            $this->cache['cache_oid'][$oid] = array_map(current(...), $data);
         }
 
         return $this->cache['cache_oid'][$oid];
@@ -229,9 +225,7 @@ class OS implements
             return null;
         }
 
-        if (! isset($this->cache['group'][$depth][$oid])) {
-            $this->cache['group'][$depth][$oid] = snmpwalk_group($this->getDeviceArray(), $oid, $mib, $depth);
-        }
+        $this->cache['group'][$depth][$oid] ??= snmpwalk_group($this->getDeviceArray(), $oid, $mib, $depth);
 
         return $this->cache['group'][$depth][$oid];
     }
@@ -293,7 +287,7 @@ class OS implements
         $name = $rf->getShortName();
         preg_match_all('/[A-Z][a-z]*/', $name, $segments);
 
-        return implode('-', array_map('strtolower', $segments[0]));
+        return implode('-', array_map(strtolower(...), $segments[0]));
     }
 
     /**

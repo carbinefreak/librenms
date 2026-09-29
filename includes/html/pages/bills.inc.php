@@ -1,9 +1,12 @@
 <?php
 
+use App\Models\Bill;
+use Illuminate\Support\Facades\Gate;
+
 $no_refresh = true;
 
 if (isset($_POST['addbill']) && $_POST['addbill'] == 'yes') {
-    if (! Auth::user()->hasGlobalAdmin()) {
+    if (Gate::denies('create', Bill::class)) {
         include 'includes/html/error-no-perm.inc.php';
         exit;
     }
@@ -51,26 +54,26 @@ if (isset($_POST['addbill']) && $_POST['addbill'] == 'yes') {
     }//end if
 
     $insert = [
-        'bill_name'   => $_POST['bill_name'],
-        'bill_type'   => $_POST['bill_type'],
-        'bill_cdr'    => $bill_cdr,
-        'bill_day'    => $_POST['bill_day'],
-        'bill_quota'  => $bill_quota,
+        'bill_name' => $_POST['bill_name'],
+        'bill_type' => $_POST['bill_type'],
+        'bill_cdr' => $bill_cdr,
+        'bill_day' => $_POST['bill_day'],
+        'bill_quota' => $bill_quota,
         'bill_custid' => $_POST['bill_custid'],
-        'bill_ref'    => $_POST['bill_ref'],
-        'bill_notes'  => $_POST['bill_notes'],
-        'rate_95th_in'      => 0,
-        'rate_95th_out'     => 0,
-        'rate_95th'         => 0,
-        'dir_95th'          => $_POST['dir_95th'],
-        'total_data'        => 0,
-        'total_data_in'     => 0,
-        'total_data_out'    => 0,
-        'rate_average'      => 0,
-        'rate_average_in'   => 0,
-        'rate_average_out'  => 0,
-        'bill_last_calc'    => ['NOW()'],
-        'bill_autoadded'    => 0,
+        'bill_ref' => $_POST['bill_ref'],
+        'bill_notes' => $_POST['bill_notes'],
+        'rate_95th_in' => 0,
+        'rate_95th_out' => 0,
+        'rate_95th' => 0,
+        'dir_95th' => $_POST['dir_95th'],
+        'total_data' => 0,
+        'total_data_in' => 0,
+        'total_data_out' => 0,
+        'rate_average' => 0,
+        'rate_average_in' => 0,
+        'rate_average_out' => 0,
+        'bill_last_calc' => ['NOW()'],
+        'bill_autoadded' => 0,
     ];
 
     $bill_id = dbInsert($insert, 'bills');
@@ -114,7 +117,7 @@ include 'includes/html/modal/new_bill.inc.php';
     <div id="{{ctx.id}}" class="{{css.header}}">
         <div class="row">
             <div class="col-sm-4">
-            <?php if (Auth::user()->hasGlobalAdmin()) {  ?>
+            <?php if (Gate::allows('create', Bill::class)) {  ?>
                 <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#create-bill"><i class="fa fa-plus"></i> Create Bill</button>
             <?php } ?>
             </div>

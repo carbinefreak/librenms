@@ -7,7 +7,7 @@ use App\Models\Device;
 use DeviceCache;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use LibreNMS\Data\Source\SnmpResponse;
+use LibreNMS\Data\Source\Snmp\SnmpResponse;
 use SnmpQuery;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
@@ -16,7 +16,7 @@ abstract class SnmpFetch extends LnmsCommand
 {
     protected string $type;
     protected array $oids;
-    protected ?bool $numeric;
+    protected ?bool $numeric = null;
     private string $outputFormat;
     protected int $depth;
     protected string $deviceSpec;
@@ -41,8 +41,6 @@ abstract class SnmpFetch extends LnmsCommand
      */
     public function handle(): int
     {
-        $this->configureOutputOptions();
-
         $this->validate([
             'output' => ['nullable', Rule::in(['value', 'values', 'table', 'index-table'])],
         ]);
@@ -154,6 +152,9 @@ abstract class SnmpFetch extends LnmsCommand
         }
     }
 
+    /**
+     * @return \Illuminate\Support\Collection<int, \App\Models\Device>
+     */
     protected function getDevices(): \Illuminate\Support\Collection
     {
         return Device::whereDeviceSpec($this->deviceSpec)->pluck('device_id')

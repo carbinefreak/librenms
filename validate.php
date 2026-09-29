@@ -34,7 +34,6 @@ if (isset($options['h'])) {
           Non-default groups:
           - mail: this will test your email settings  (uses default_mail option even if default_only is not set)
           - distributedpoller: this will test for the install running as a distributed poller
-          - rrdcheck: this will check to see if your rrd files are corrupt
           Default groups:
           - configuration: checks various config settings are correct
           - database: checks the database for errors
@@ -88,19 +87,19 @@ $pre_checks_failed = false;
 
 // config.php checks
 if (file_exists('config.php')) {
-    $syntax_check = `php -ln config.php`;
+    $syntax_check = (string) shell_exec('php -ln config.php');
     if (strpos($syntax_check, 'No syntax errors detected') === false) {
         print_fail('Syntax error in config.php');
         echo $syntax_check;
         $pre_checks_failed = true;
     }
 
-    $first_line = rtrim(`head -n1 config.php`);
+    $first_line = rtrim((string) shell_exec('head -n1 config.php'));
     if (! strpos($first_line, '<?php') === 0) {
         print_fail("config.php doesn't start with a <?php - please fix this ($first_line)");
         $pre_checks_failed = true;
     }
-    if (strpos(`tail config.php`, '?>') !== false) {
+    if (strpos((string) shell_exec('tail config.php'), '?>') !== false) {
         print_fail('Remove the ?> at the end of config.php');
         $pre_checks_failed = true;
     }

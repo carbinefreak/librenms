@@ -192,13 +192,13 @@ final class AuthSSOTest extends DBTestCase
         $this->basicEnvironmentEnv();
         unset($_SERVER);
 
-        $this->expectException('LibreNMS\Exceptions\AuthenticationException');
+        $this->expectException(\LibreNMS\Exceptions\AuthenticationException::class);
         $a->authenticate([]);
 
         $this->basicEnvironmentHeader();
         unset($_SERVER);
 
-        $this->expectException('LibreNMS\Exceptions\AuthenticationException');
+        $this->expectException(\LibreNMS\Exceptions\AuthenticationException::class);
         $a->authenticate([]);
     }
 
@@ -280,14 +280,14 @@ final class AuthSSOTest extends DBTestCase
         LibrenmsConfig::set('sso.mode', 'env');
         $this->assertNull($a->authSSOGetAttr('foobar'));
         $this->assertNull($a->authSSOGetAttr(null));
-        $this->assertNull($a->authSSOGetAttr(1));
+        $this->assertNull($a->authSSOGetAttr(''));
         $this->assertIsString($a->authSSOGetAttr('alsoVALID-ATTR'));
         $this->assertIsString($a->authSSOGetAttr('HTTP_VALID_ATTR'));
 
         LibrenmsConfig::set('sso.mode', 'header');
         $this->assertNull($a->authSSOGetAttr('foobar'));
         $this->assertNull($a->authSSOGetAttr(null));
-        $this->assertNull($a->authSSOGetAttr(1));
+        $this->assertNull($a->authSSOGetAttr(''));
         $this->assertNull($a->authSSOGetAttr('alsoVALID-ATTR'));
         $this->assertIsString($a->authSSOGetAttr('VALID-ATTR'));
     }
@@ -371,25 +371,25 @@ final class AuthSSOTest extends DBTestCase
         //Invalid String
         LibrenmsConfig::set('sso.level_attr', 'level');
         $_SERVER['level'] = 'foobar';
-        $this->expectException('LibreNMS\Exceptions\AuthenticationException');
+        $this->expectException(\LibreNMS\Exceptions\AuthenticationException::class);
         $a->getRoles('');
 
         //null
         LibrenmsConfig::set('sso.level_attr', 'level');
         $_SERVER['level'] = null;
-        $this->expectException('LibreNMS\Exceptions\AuthenticationException');
+        $this->expectException(\LibreNMS\Exceptions\AuthenticationException::class);
         $a->getRoles('');
 
         //Unset pointer
         LibrenmsConfig::forget('sso.level_attr');
         $_SERVER['level'] = '9';
-        $this->expectException('LibreNMS\Exceptions\AuthenticationException');
+        $this->expectException(\LibreNMS\Exceptions\AuthenticationException::class);
         $a->getRoles('');
 
         //Unset attr
         LibrenmsConfig::set('sso.level_attr', 'level');
         unset($_SERVER['level']);
-        $this->expectException('LibreNMS\Exceptions\AuthenticationException');
+        $this->expectException(\LibreNMS\Exceptions\AuthenticationException::class);
         $a->getRoles('');
     }
 
@@ -477,6 +477,7 @@ final class AuthSSOTest extends DBTestCase
     {
         LibrenmsConfig::set('auth_mechanism', $this->original_auth_mech);
         LibrenmsConfig::forget('sso');
+        LegacyAuth::reset();
         $_SERVER = $this->server;
         parent::tearDown();
     }
